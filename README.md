@@ -7,6 +7,17 @@ no account, and nothing leaves your device.
 
 ![Overview](docs/overview.png)
 
+## Two ways to use it
+
+- **No install — just open a file.** Download [`budget.html`](budget.html) and
+  double-click it. It opens in your browser and works completely offline (no
+  Node, no npm, no build step, no internet needed). It's the whole app in a
+  single self-contained file.
+- **Run the dev project.** The `src/` React app below, for development or if you
+  want to modify and rebuild it. See [Getting started](#getting-started).
+
+Both store data privately in your browser and have the same features.
+
 ## Features
 
 - **Month-by-month view** — step through any month with the arrows; totals and
