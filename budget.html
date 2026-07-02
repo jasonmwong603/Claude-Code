@@ -230,6 +230,15 @@ h1,h2,h3{font-family:var(--font-display);}
 .rate-row input{width:110px;background:var(--card);border:2px solid transparent;border-radius:var(--r-sm);
   padding:8px 10px;font-family:var(--font-display);font-weight:600;color:var(--ink);}
 .rate-row input:focus{border-color:var(--coral);outline:none;}
+.summary-start{font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:10px;}
+.summary-start strong{color:var(--ink);}
+.start-input-wrap{display:inline-flex;align-items:center;gap:2px;background:var(--bg);border-radius:8px;padding:3px 8px;margin-left:4px;}
+.start-input-wrap>span{font-family:var(--font-display);font-size:12px;color:var(--ink-faint);}
+.start-input-wrap input{border:none;background:transparent;width:90px;text-align:right;
+  font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--ink);}
+.start-input-wrap input:focus{outline:none;}
+.seg#balModeSeg{border-radius:var(--r-sm);}
+.seg#balModeSeg .seg__btn{border-radius:calc(var(--r-sm) - 3px);padding:9px 14px;}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
@@ -270,6 +279,7 @@ h1,h2,h3{font-family:var(--font-display);}
     <div class="summary-amount" id="summaryAmount">$0</div>
     <div class="summary-bar-track"><div class="summary-bar-fill" id="summaryBarFill"></div></div>
     <div class="summary-message" id="summaryMessage"></div>
+    <div class="summary-start" id="summaryStart"></div>
     <div class="summary-sub">
       <span class="in">↑ <span id="totalInDisplay">$0</span> in</span>
       <span class="out">↓ <span id="totalOutDisplay">$0</span> out</span>
@@ -325,6 +335,18 @@ h1,h2,h3{font-family:var(--font-display);}
       <select id="budgetAddSelect" onchange="addBudgetFromSelect(this.value)"></select>
     </div>
     <div class="budget-totals" id="budgetTotals"></div>
+  </div>
+
+  <div class="section-title">Starting balance</div>
+  <div class="card">
+    <div class="field">
+      <label>Each month starts with…</label>
+      <div class="seg" id="balModeSeg">
+        <button type="button" class="seg__btn" id="balManual" onclick="setBalanceMode('manual')">A balance I enter</button>
+        <button type="button" class="seg__btn" id="balCarry" onclick="setBalanceMode('carryover')">Last month's leftover</button>
+      </div>
+    </div>
+    <p class="privacy-note" id="balModeNote"></p>
   </div>
 
   <div class="section-title">Your data</div>
@@ -419,6 +441,8 @@ let nextEntryId=1;
 let budgets={};            // {categoryId: monthlyTarget} stored in CAD (base currency)
 let viewCurrency='CAD';    // currency the combined totals are shown/converted in
 let fxUsdToCad=1.37;       // exchange rate: 1 USD = fxUsdToCad CAD
+let balanceMode='manual';  // 'manual' = type a start balance each month; 'carryover' = previous month's leftover
+let manualBalances={};     // {'YYYY-MM': cadAmount} starting balances used in manual mode
 let modalEntryType='in';
 let modalCategory=null;
 let modalCurrency='CAD';
@@ -740,6 +764,21 @@ function nativeNet(cur){
   const spent=es.filter(e=>e.type==='out').reduce((s,e)=>s+e.amount,0);
   return {income:income,spent:spent,net:income-spent};
 }
+// A month's own net (income - expenses), in CAD.
+function netCadOfMonth(month){
+  return entries.filter(e=>e.month===month).reduce((s,e)=>{
+    const v=convert(e.amount,e.currency,'CAD');
+    return s+(e.type==='in'?v:-v);
+  },0);
+}
+// The balance a month starts with, in CAD.
+function startingBalanceCad(month){
+  if(balanceMode!=='carryover') return manualBalances[month]||0;
+  // Carryover: sum the nets of every month before this one (chained from zero).
+  const priorMonths={};
+  entries.forEach(e=>{ if(e.month<month) priorMonths[e.month]=true; });
+  return Object.keys(priorMonths).reduce((s,m)=>s+netCadOfMonth(m),0);
+}
 
 function render(){
   document.getElementById('mnLabel').textContent=formatMonth(selectedMonth);
@@ -751,7 +790,9 @@ function render(){
   const fxInput=document.getElementById('fxInput');
   if(fxInput&&document.activeElement!==fxInput) fxInput.value=fxUsdToCad;
 
-  const inc=totalIn(), out=totalOut(), rem=inc-out;
+  const inc=totalIn(), out=totalOut();
+  const startView=convert(startingBalanceCad(selectedMonth),'CAD',viewCurrency);
+  const rem=startView+inc-out; // money left this month = start + income - expenses
   document.getElementById('totalInDisplay').textContent=money(inc,viewCurrency);
   document.getElementById('totalOutDisplay').textContent=money(out,viewCurrency);
 
@@ -762,7 +803,17 @@ function render(){
     `<span>CAD net <span class="cur">${signed(cadN.net,'CAD')}</span></span>`+
     `<span>USD net <span class="cur">${signed(usdN.net,'USD')}</span></span>`;
 
-  const pctLeft=inc>0?Math.max(0,Math.min(100,(rem/inc)*100)):0;
+  // Starting-balance line: editable in manual mode, carried-over (read-only) otherwise.
+  const startEl=document.getElementById('summaryStart');
+  if(balanceMode==='manual'){
+    startEl.innerHTML=`Starting balance <span class="start-input-wrap"><span>${CUR_PREFIX[viewCurrency]}</span>`+
+      `<input type="number" step="0.01" id="startBalInput" value="${startView.toFixed(2)}" onchange="setStartBalance(this.value)" aria-label="Starting balance for this month"></span>`;
+  }else{
+    startEl.innerHTML=`Carried over from last month: <strong>${signed(startView,viewCurrency)}</strong>`;
+  }
+
+  const available=startView+inc;
+  const pctLeft=available>0?Math.max(0,Math.min(100,(rem/available)*100)):0;
   const amountEl=document.getElementById('summaryAmount');
   amountEl.textContent=(rem<0?'-':'')+money(Math.abs(rem),viewCurrency);
   amountEl.style.color=rem<0?'var(--berry)':'var(--ink)';
@@ -771,11 +822,18 @@ function render(){
     rem<0?'var(--berry)':pctLeft<20?'var(--honey)':'var(--leaf)';
 
   const msgEl=document.getElementById('summaryMessage');
-  if(inc<=0&&out<=0){ msgEl.textContent="Add what you've made and spent to see where you stand"; msgEl.style.color='var(--ink-soft)'; }
+  if(inc<=0&&out<=0&&startView===0){ msgEl.textContent="Add what you've made and spent to see where you stand"; msgEl.style.color='var(--ink-soft)'; }
   else if(rem<0){ msgEl.textContent="You've gone a bit over this month — that happens 💛"; msgEl.style.color='var(--berry)'; }
   else if(pctLeft<20){ msgEl.textContent='Getting close to your limit — keep an eye on it 👀'; msgEl.style.color='var(--honey)'; }
   else if(pctLeft<50){ msgEl.textContent='Looking good! 👍'; msgEl.style.color='var(--leaf)'; }
   else { msgEl.textContent="You're doing great! 🌟"; msgEl.style.color='var(--leaf)'; }
+
+  // Balance-mode toggle state + explainer (Manage tab).
+  document.getElementById('balManual').classList.toggle('active',balanceMode==='manual');
+  document.getElementById('balCarry').classList.toggle('active',balanceMode==='carryover');
+  document.getElementById('balModeNote').textContent = balanceMode==='manual'
+    ? 'Each month starts from a balance you type in on the Overview tab.'
+    : "Each month starts with the previous month's leftover, chained forward from your first month (which starts at zero).";
 
   renderActivity();
   renderBreakdown();
@@ -985,9 +1043,11 @@ function goToday(){ selectedMonth=currentMonthKey(); render(); }
 /* ---------- Data: currency, backup, reset ---------- */
 function setViewCurrency(cur){ viewCurrency=cur==='USD'?'USD':'CAD'; render(); }
 function setFxRate(val){ const n=parseFloat(val); if(isFinite(n)&&n>0) fxUsdToCad=n; render(); }
+function setBalanceMode(mode){ balanceMode=mode==='carryover'?'carryover':'manual'; render(); }
+function setStartBalance(val){ manualBalances[selectedMonth]=convert(parseMoney(val),viewCurrency,'CAD'); render(); }
 
 function exportBackup(){
-  const data={version:5,entries,nextEntryId,budgets,viewCurrency,fxUsdToCad};
+  const data={version:6,entries,nextEntryId,budgets,viewCurrency,fxUsdToCad,balanceMode,manualBalances};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -1008,6 +1068,8 @@ function handleBackupFile(file){
       budgets=(data.budgets&&typeof data.budgets==='object')?data.budgets:{};
       viewCurrency=data.viewCurrency==='USD'?'USD':'CAD';
       if(isFinite(data.fxUsdToCad)&&data.fxUsdToCad>0) fxUsdToCad=data.fxUsdToCad;
+      balanceMode=data.balanceMode==='carryover'?'carryover':'manual';
+      manualBalances=(data.manualBalances&&typeof data.manualBalances==='object')?data.manualBalances:{};
       render();
     }catch(err){ alert('That file does not look like a My Money backup.'); }
   };
@@ -1030,7 +1092,7 @@ function scheduleSave(){
   saveTimer=setTimeout(saveState,500);
 }
 function saveState(){
-  storageSet(STORAGE_KEY,JSON.stringify({version:5,entries,nextEntryId,budgets,viewCurrency,fxUsdToCad}));
+  storageSet(STORAGE_KEY,JSON.stringify({version:6,entries,nextEntryId,budgets,viewCurrency,fxUsdToCad,balanceMode,manualBalances}));
 }
 function flushSave(){
   if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
@@ -1052,6 +1114,8 @@ function loadState(){
     budgets=(data.budgets&&typeof data.budgets==='object')?data.budgets:{};
     viewCurrency=data.viewCurrency==='USD'?'USD':'CAD';
     if(isFinite(data.fxUsdToCad)&&data.fxUsdToCad>0) fxUsdToCad=data.fxUsdToCad;
+    balanceMode=data.balanceMode==='carryover'?'carryover':'manual';
+    manualBalances=(data.manualBalances&&typeof data.manualBalances==='object')?data.manualBalances:{};
     return true;
   }catch(err){ console.error('Could not load saved data',err); return false; }
 }
