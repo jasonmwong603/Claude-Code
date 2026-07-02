@@ -126,6 +126,7 @@ h1,h2,h3{font-family:var(--font-display);}
 .activity-emoji{font-size:20px;flex-shrink:0;width:24px;text-align:center;}
 .activity-info{flex:1;min-width:0;}
 .activity-note{font-size:14px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.activity-sub{font-size:12px;font-weight:600;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .activity-amt{font-family:var(--font-display);font-weight:600;font-size:16px;flex-shrink:0;}
 .activity-del{background:none;border:none;color:var(--ink-faint);font-size:18px;cursor:pointer;padding:2px 4px;flex-shrink:0;}
 .activity-del:active{color:var(--berry);}
@@ -396,7 +397,10 @@ h1,h2,h3{font-family:var(--font-display);}
     <div class="field">
       <label>What was it for?</label>
       <div class="cat-picker" id="categoryGroups"></div>
-      <input type="text" id="entryOtherNote" placeholder="Tell us what it was" style="display:none;margin-top:8px;">
+    </div>
+    <div class="field">
+      <label>Description (optional)</label>
+      <input type="text" id="entryNote" placeholder="e.g. Coffee with a friend" maxlength="80">
     </div>
     <div class="modal-actions">
       <button class="btn btn-primary" id="entrySaveBtn" onclick="saveEntry()">Add it</button>
@@ -747,6 +751,7 @@ function confirmImport(){
 }
 
 function fmt(n){return Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function money(amount,cur){return CUR_PREFIX[cur||'CAD']+fmt(amount);}
 function parseMoney(v){
   if(v==null) return 0;
@@ -895,11 +900,14 @@ function renderActivity(){
   }
   list.innerHTML=sorted.map(e=>{
     const cat=categoryInfo(e);
-    const label=e.note?e.note:cat.label;
+    const hasNote=!!(e.note&&String(e.note).trim());
+    const title=hasNote?esc(e.note):cat.label;
+    const sub=hasNote?esc(cat.label):'';
     return `<div class="activity-row">
       <span class="activity-emoji">${cat.emoji}</span>
       <div class="activity-info">
-        <div class="activity-note">${label}</div>
+        <div class="activity-note">${title}</div>
+        ${sub?`<div class="activity-sub">${sub}</div>`:''}
       </div>
       <span class="activity-amt" style="color:${e.type==='in'?'var(--leaf)':'var(--coral)'}">${e.type==='in'?'+':'-'}${money(e.amount,e.currency)}</span>
       <button class="activity-del" onclick="deleteEntry(${e.id})" aria-label="Remove">×</button>
@@ -971,8 +979,7 @@ function openEntryModal(type){
   modalCategory=null;
   document.getElementById('entryTitle').textContent=type==='in'?'How much did you get?':'How much did you spend?';
   document.getElementById('entryAmt').value='';
-  document.getElementById('entryOtherNote').value='';
-  document.getElementById('entryOtherNote').style.display='none';
+  document.getElementById('entryNote').value='';
   modalCurrency=viewCurrency;
   syncEntryCurrency();
   renderCategoryPicker();
@@ -1003,9 +1010,6 @@ function selectCategory(id){
     b.classList.toggle('sel-in',sel&&modalEntryType==='in');
     b.classList.toggle('sel-out',sel&&modalEntryType==='out');
   });
-  const otherField=document.getElementById('entryOtherNote');
-  if(id==='other'){ otherField.style.display='block'; otherField.focus(); }
-  else { otherField.style.display='none'; }
 }
 function setEntryCurrency(cur){ modalCurrency=cur; syncEntryCurrency(); }
 function syncEntryCurrency(){
@@ -1017,7 +1021,7 @@ function closeEntryModal(){ document.getElementById('entryOverlay').classList.re
 function saveEntry(){
   const amount=parseMoney(document.getElementById('entryAmt').value);
   if(amount<=0||!modalCategory) return;
-  const note=modalCategory==='other'?document.getElementById('entryOtherNote').value.trim():'';
+  const note=document.getElementById('entryNote').value.trim();
   entries.push({id:nextEntryId++,type:modalEntryType,category:modalCategory,amount,note,month:selectedMonth,currency:modalCurrency});
   closeEntryModal();render();
 }
