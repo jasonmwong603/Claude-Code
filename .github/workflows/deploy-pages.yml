@@ -28,10 +28,11 @@ jobs:
 
       - name: Assemble site
         run: |
-          mkdir -p _site
-          # Serve the app at the site root, and keep /budget.html working too.
-          cp budget.html _site/index.html
-          cp budget.html _site/budget.html
+          # Serve the app at /budgeting/ …
+          mkdir -p _site/budgeting
+          cp budget.html _site/budgeting/index.html
+          # … and redirect the bare repo URL to it for convenience.
+          printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./budgeting/"><title>My Money</title><a href="./budgeting/">Open My Money →</a>\n' > _site/index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
