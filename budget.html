@@ -216,6 +216,21 @@ h1,h2,h3{font-family:var(--font-display);}
 .cat-chip.is-selected.sel-out{border-color:var(--coral);background:var(--coral-soft);color:var(--coral);}
 .modal-actions{display:flex;flex-direction:column;gap:10px;margin-top:6px;}
 
+/* ---------- Currency segmented toggle & native totals ---------- */
+.view-toggle{display:flex;align-items:center;justify-content:center;gap:10px;margin:-4px 0 16px;}
+.view-toggle__label{font-size:12px;font-weight:700;color:var(--ink-soft);}
+.seg{display:inline-flex;background:var(--card);border-radius:999px;padding:3px;box-shadow:0 2px 10px rgba(54,50,62,0.06);}
+.seg__btn{border:none;background:transparent;font-family:var(--font-body);font-weight:800;font-size:13px;
+  color:var(--ink-soft);padding:6px 16px;border-radius:999px;cursor:pointer;}
+.seg__btn.active{background:var(--leaf);color:#fff;}
+.summary-native{display:flex;justify-content:center;gap:22px;margin-top:12px;padding-top:12px;
+  border-top:1px solid var(--bg);font-size:12.5px;font-weight:700;color:var(--ink-soft);}
+.summary-native .cur{color:var(--ink);}
+.rate-row{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--ink);}
+.rate-row input{width:110px;background:var(--card);border:2px solid transparent;border-radius:var(--r-sm);
+  padding:8px 10px;font-family:var(--font-display);font-weight:600;color:var(--ink);}
+.rate-row input:focus{border-color:var(--coral);outline:none;}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -240,6 +255,14 @@ h1,h2,h3{font-family:var(--font-display);}
   <button class="mn-arrow" onclick="changeMonth(1)" aria-label="Next month">›</button>
 </div>
 
+<div class="view-toggle">
+  <span class="view-toggle__label">View totals in</span>
+  <div class="seg">
+    <button class="seg__btn active" id="viewCad" onclick="setViewCurrency('CAD')">CAD</button>
+    <button class="seg__btn" id="viewUsd" onclick="setViewCurrency('USD')">USD</button>
+  </div>
+</div>
+
 <!-- ============ OVERVIEW TAB ============ -->
 <div id="overviewTab">
   <div class="card summary-card" id="summaryCard">
@@ -251,6 +274,7 @@ h1,h2,h3{font-family:var(--font-display);}
       <span class="in">↑ <span id="totalInDisplay">$0</span> in</span>
       <span class="out">↓ <span id="totalOutDisplay">$0</span> out</span>
     </div>
+    <div class="summary-native" id="summaryNative"></div>
   </div>
 
   <div class="action-row">
@@ -306,14 +330,8 @@ h1,h2,h3{font-family:var(--font-display);}
   <div class="section-title">Your data</div>
   <div class="card">
     <div class="field">
-      <label>Currency</label>
-      <select id="currencySelect" onchange="setCurrency(this.value)">
-        <option value="$">$ — Dollar</option>
-        <option value="£">£ — Pound</option>
-        <option value="€">€ — Euro</option>
-        <option value="¥">¥ — Yen</option>
-        <option value="₹">₹ — Rupee</option>
-      </select>
+      <label>Exchange rate (used for combined CAD/USD totals)</label>
+      <div class="rate-row">1 USD = <input type="number" min="0" step="0.0001" id="fxInput" onchange="setFxRate(this.value)"> CAD</div>
     </div>
     <div class="data-actions">
       <button class="btn btn-ghost" onclick="exportBackup()">Export backup</button>
@@ -344,7 +362,14 @@ h1,h2,h3{font-family:var(--font-display);}
   <div class="sheet">
     <h3 id="entryTitle">How much did you get?</h3>
     <div class="field">
-      <div class="amount-wrap"><span class="amount-dollar">$</span><input type="text" inputmode="decimal" id="entryAmt" placeholder="0"></div>
+      <div class="amount-wrap"><span class="amount-dollar">CA$</span><input type="text" inputmode="decimal" id="entryAmt" placeholder="0"></div>
+    </div>
+    <div class="field">
+      <label>Currency</label>
+      <div class="seg" id="entryCurSeg">
+        <button type="button" class="seg__btn active" id="entryCurCad" onclick="setEntryCurrency('CAD')">CAD</button>
+        <button type="button" class="seg__btn" id="entryCurUsd" onclick="setEntryCurrency('USD')">USD</button>
+      </div>
     </div>
     <div class="field">
       <label>What was it for?</label>
@@ -389,15 +414,27 @@ const OLD_KEY='simple-budget-state-v3';
 let stateLoaded=false;
 let saveTimer=null;
 
-let entries=[]; // {id,type:'in'|'out',amount,category,note,month:'YYYY-MM'}
+let entries=[]; // {id,type:'in'|'out',amount,category,note,month:'YYYY-MM',currency:'CAD'|'USD'}
 let nextEntryId=1;
-let budgets={};            // {categoryId: monthlyTarget}
-let currencySymbol='$';
+let budgets={};            // {categoryId: monthlyTarget} stored in CAD (base currency)
+let viewCurrency='CAD';    // currency the combined totals are shown/converted in
+let fxUsdToCad=1.37;       // exchange rate: 1 USD = fxUsdToCad CAD
 let modalEntryType='in';
 let modalCategory=null;
+let modalCurrency='CAD';
 
 let selectedMonth=currentMonthKey();
 let activeTab='overview';
+
+/* ---------- Currency helpers ---------- */
+const CUR_PREFIX={CAD:'CA$',USD:'US$'};
+// Convert an amount from one currency to another via a CAD base.
+function convert(amount,fromCur,toCur){
+  fromCur=fromCur||'CAD'; toCur=toCur||'CAD';
+  if(fromCur===toCur) return amount;
+  const cad=fromCur==='USD'?amount*fxUsdToCad:amount;
+  return toCur==='USD'?cad/(fxUsdToCad||1):cad;
+}
 
 /* ---------- Month helpers ---------- */
 function monthKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
@@ -621,7 +658,7 @@ function renderImportReview(){
       <span class="imp-summary-text" id="impSummaryText"></span>
       <button class="imp-select-all" onclick="toggleSelectAllImport()" id="impSelectAllBtn">Deselect all</button>
     </div>
-    <div style="font-size:12px;color:var(--ink-faint);font-weight:700;margin-bottom:8px;">These will be added to <strong>${formatMonth(selectedMonth)}</strong>.</div>
+    <div style="font-size:12px;color:var(--ink-faint);font-weight:700;margin-bottom:8px;">These will be added to <strong>${formatMonth(selectedMonth)}</strong> as <strong>${viewCurrency}</strong> (switch the CAD/USD toggle before importing to change this).</div>
     <div class="imp-list" id="impList"></div>`;
   renderImportRows();
   actions.style.display='flex';
@@ -638,7 +675,7 @@ function renderImportRows(){
         <input type="checkbox" class="imp-check" ${c.include?'checked':''} onchange="toggleImportRow(${i})">
         <input type="text" class="imp-date" value="${c.date}" oninput="updateImportField(${i},'date',this.value)">
         <input type="text" class="imp-desc" value="${c.desc.replace(/"/g,'&quot;')}" oninput="updateImportField(${i},'desc',this.value)">
-        <div class="imp-amt-wrap"><span>${currencySymbol}</span><input type="text" inputmode="decimal" value="${c.amount.toFixed(2)}" oninput="updateImportAmt(${i},this.value)"></div>
+        <div class="imp-amt-wrap"><span>${CUR_PREFIX[viewCurrency]}</span><input type="text" inputmode="decimal" value="${c.amount.toFixed(2)}" oninput="updateImportAmt(${i},this.value)"></div>
       </div>
       <div class="imp-row-bottom">
         <div class="imp-type-toggle">
@@ -655,7 +692,7 @@ function updateImportSummary(){
   const included=importCandidates.filter(c=>c.include);
   const total=included.reduce((s,c)=>s+(c.type==='in'?c.amount:-c.amount),0);
   document.getElementById('impSummaryText').textContent=
-    `${included.length} of ${importCandidates.length} selected · net ${total<0?'-':'+'}${money(Math.abs(total))}`;
+    `${included.length} of ${importCandidates.length} selected · net ${total<0?'-':'+'}${money(Math.abs(total),viewCurrency)}`;
   const allOn=importCandidates.every(c=>c.include);
   document.getElementById('impSelectAllBtn').textContent=allOn?'Deselect all':'Select all';
 }
@@ -679,34 +716,55 @@ function setImportType(i,type){
 function closeImportModal(){ document.getElementById('importOverlay').classList.remove('open'); }
 function confirmImport(){
   importCandidates.filter(c=>c.include).forEach(c=>{
-    entries.push({id:nextEntryId++,type:c.type,category:c.category,amount:c.amount,note:c.desc,month:selectedMonth});
+    entries.push({id:nextEntryId++,type:c.type,category:c.category,amount:c.amount,note:c.desc,month:selectedMonth,currency:viewCurrency});
   });
   closeImportModal();
   render();
 }
 
-function fmt(n){return Math.round(n).toLocaleString();}
-function money(n){return currencySymbol+fmt(n);}
+function fmt(n){return Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+function money(amount,cur){return CUR_PREFIX[cur||'CAD']+fmt(amount);}
 function parseMoney(v){
   if(v==null) return 0;
   const n=parseFloat(String(v).replace(/,/g,''));
   return isNaN(n)?0:n;
 }
 
-function totalIn(){ return entriesForMonth(selectedMonth).filter(e=>e.type==='in').reduce((s,e)=>s+e.amount,0); }
-function totalOut(){ return entriesForMonth(selectedMonth).filter(e=>e.type==='out').reduce((s,e)=>s+e.amount,0); }
+// Totals for the selected month, converted into the current view currency.
+function totalIn(){ return entriesForMonth(selectedMonth).filter(e=>e.type==='in').reduce((s,e)=>s+convert(e.amount,e.currency,viewCurrency),0); }
+function totalOut(){ return entriesForMonth(selectedMonth).filter(e=>e.type==='out').reduce((s,e)=>s+convert(e.amount,e.currency,viewCurrency),0); }
+// Native (unconverted) net for a single currency in the selected month.
+function nativeNet(cur){
+  const es=entriesForMonth(selectedMonth).filter(e=>(e.currency||'CAD')===cur);
+  const income=es.filter(e=>e.type==='in').reduce((s,e)=>s+e.amount,0);
+  const spent=es.filter(e=>e.type==='out').reduce((s,e)=>s+e.amount,0);
+  return {income:income,spent:spent,net:income-spent};
+}
 
 function render(){
   document.getElementById('mnLabel').textContent=formatMonth(selectedMonth);
   document.getElementById('mnToday').style.display=selectedMonth===currentMonthKey()?'none':'inline-block';
 
+  // Reflect the current view currency in the toggle + exchange-rate field.
+  document.getElementById('viewCad').classList.toggle('active',viewCurrency==='CAD');
+  document.getElementById('viewUsd').classList.toggle('active',viewCurrency==='USD');
+  const fxInput=document.getElementById('fxInput');
+  if(fxInput&&document.activeElement!==fxInput) fxInput.value=fxUsdToCad;
+
   const inc=totalIn(), out=totalOut(), rem=inc-out;
-  document.getElementById('totalInDisplay').textContent=money(inc);
-  document.getElementById('totalOutDisplay').textContent=money(out);
+  document.getElementById('totalInDisplay').textContent=money(inc,viewCurrency);
+  document.getElementById('totalOutDisplay').textContent=money(out,viewCurrency);
+
+  // Standalone, unconverted totals for each currency.
+  const cadN=nativeNet('CAD'), usdN=nativeNet('USD');
+  const signed=(n,cur)=>(n<0?'-':'')+money(Math.abs(n),cur);
+  document.getElementById('summaryNative').innerHTML=
+    `<span>CAD net <span class="cur">${signed(cadN.net,'CAD')}</span></span>`+
+    `<span>USD net <span class="cur">${signed(usdN.net,'USD')}</span></span>`;
 
   const pctLeft=inc>0?Math.max(0,Math.min(100,(rem/inc)*100)):0;
   const amountEl=document.getElementById('summaryAmount');
-  amountEl.textContent=(rem<0?'-':'')+money(Math.abs(rem));
+  amountEl.textContent=(rem<0?'-':'')+money(Math.abs(rem),viewCurrency);
   amountEl.style.color=rem<0?'var(--berry)':'var(--ink)';
   document.getElementById('summaryBarFill').style.width=pctLeft+'%';
   document.getElementById('summaryBarFill').style.background=
@@ -733,12 +791,12 @@ function renderBreakdown(){
   const out=entriesForMonth(selectedMonth).filter(e=>e.type==='out');
   if(!out.length){
     donutWrap.innerHTML='';
-    document.getElementById('donutCenterAmt').textContent=money(0);
+    document.getElementById('donutCenterAmt').textContent=money(0,viewCurrency);
     legend.innerHTML='<div class="empty-note">Nothing to show yet — once you log some expenses, you\'ll see where it\'s going.</div>';
     return;
   }
   const sums={};
-  out.forEach(e=>{ sums[e.category]=(sums[e.category]||0)+e.amount; });
+  out.forEach(e=>{ sums[e.category]=(sums[e.category]||0)+convert(e.amount,e.currency,viewCurrency); });
   const total=Object.values(sums).reduce((a,b)=>a+b,0)||1;
   const rows=Object.keys(sums).map(catId=>({catId,info:categoryInfo({type:'out',category:catId}),amt:sums[catId]}))
     .sort((a,b)=>b.amt-a.amt);
@@ -760,13 +818,13 @@ function renderBreakdown(){
       stroke-dasharray="${s.dash.toFixed(2)} ${circumference.toFixed(2)}"
       stroke-dashoffset="${s.offset.toFixed(2)}" transform="rotate(-90 50 50)"/>`).join('')}
   </svg>`;
-  document.getElementById('donutCenterAmt').textContent=money(total);
+  document.getElementById('donutCenterAmt').textContent=money(total,viewCurrency);
 
   legend.innerHTML=segments.map(s=>`
     <div class="legend-row">
       <span class="legend-dot" style="background:${s.color}"></span>
       <span class="legend-label"><span>${s.row.info.emoji}</span>${s.row.info.label}</span>
-      <span class="legend-amt">${money(s.row.amt)}<span class="legend-pct">${s.pct.toFixed(0)}%</span></span>
+      <span class="legend-amt">${money(s.row.amt,viewCurrency)}<span class="legend-pct">${s.pct.toFixed(0)}%</span></span>
     </div>`).join('');
 }
 
@@ -785,7 +843,7 @@ function renderActivity(){
       <div class="activity-info">
         <div class="activity-note">${label}</div>
       </div>
-      <span class="activity-amt" style="color:${e.type==='in'?'var(--leaf)':'var(--coral)'}">${e.type==='in'?'+':'-'}${money(e.amount)}</span>
+      <span class="activity-amt" style="color:${e.type==='in'?'var(--leaf)':'var(--coral)'}">${e.type==='in'?'+':'-'}${money(e.amount,e.currency)}</span>
       <button class="activity-del" onclick="deleteEntry(${e.id})" aria-label="Remove">×</button>
     </div>`;
   }).join('');
@@ -794,9 +852,9 @@ function renderActivity(){
 /* ---------- Budgets (Manage tab) ---------- */
 function renderBudgets(){
   const list=document.getElementById('budgetList');
-  const spentByCat={};
+  const spentByCat={}; // spending per category, converted into the view currency
   entriesForMonth(selectedMonth).filter(e=>e.type==='out')
-    .forEach(e=>{ spentByCat[e.category]=(spentByCat[e.category]||0)+e.amount; });
+    .forEach(e=>{ spentByCat[e.category]=(spentByCat[e.category]||0)+convert(e.amount,e.currency,viewCurrency); });
   const catIds=Object.keys(budgets);
 
   if(!catIds.length){
@@ -805,7 +863,7 @@ function renderBudgets(){
     catIds.sort((a,b)=>categoryInfo({type:'out',category:a}).label.localeCompare(categoryInfo({type:'out',category:b}).label));
     list.innerHTML=catIds.map(catId=>{
       const info=categoryInfo({type:'out',category:catId});
-      const budget=budgets[catId];
+      const budget=convert(budgets[catId],'CAD',viewCurrency); // shown in view currency
       const spent=spentByCat[catId]||0;
       const pct=budget>0?Math.min(100,spent/budget*100):(spent>0?100:0);
       const over=budget>0&&spent>budget;
@@ -814,15 +872,15 @@ function renderBudgets(){
       return `<div class="budget-row">
         <div class="budget-top">
           <span class="budget-label"><span class="chip-emoji">${info.emoji}</span>${info.label}</span>
-          <div class="budget-edit"><span>${currencySymbol}</span>
-            <input type="number" min="0" step="1" value="${budget}" onchange="setBudget('${catId}',this.value)" aria-label="Budget for ${info.label}">
+          <div class="budget-edit"><span>${CUR_PREFIX[viewCurrency]}</span>
+            <input type="number" min="0" step="0.01" value="${budget.toFixed(2)}" onchange="setBudget('${catId}',this.value)" aria-label="Budget for ${info.label}">
             <button class="budget-remove" onclick="removeBudget('${catId}')" aria-label="Remove budget">×</button>
           </div>
         </div>
         <div class="budget-bar-track"><div class="budget-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
         <div class="budget-foot">
-          <span>${money(spent)} spent</span>
-          <span style="color:${over?'var(--berry)':'var(--ink-soft)'}">${over?money(-remaining)+' over':money(remaining)+' left'}</span>
+          <span>${money(spent,viewCurrency)} spent</span>
+          <span style="color:${over?'var(--berry)':'var(--ink-soft)'}">${over?money(-remaining,viewCurrency)+' over':money(remaining,viewCurrency)+' left'}</span>
         </div>
       </div>`;
     }).join('');
@@ -838,14 +896,14 @@ function renderBudgets(){
 
   const totalsEl=document.getElementById('budgetTotals');
   if(catIds.length){
-    const totalBudget=catIds.reduce((s,c)=>s+budgets[c],0);
+    const totalBudget=catIds.reduce((s,c)=>s+convert(budgets[c],'CAD',viewCurrency),0);
     const totalSpent=catIds.reduce((s,c)=>s+(spentByCat[c]||0),0);
-    totalsEl.textContent=`${money(totalSpent)} spent of ${money(totalBudget)} budgeted this month`;
+    totalsEl.textContent=`${money(totalSpent,viewCurrency)} spent of ${money(totalBudget,viewCurrency)} budgeted this month`;
   }else{
     totalsEl.textContent='';
   }
 }
-function setBudget(catId,val){ budgets[catId]=Math.max(0,parseMoney(val)); render(); }
+function setBudget(catId,val){ budgets[catId]=convert(Math.max(0,parseMoney(val)),viewCurrency,'CAD'); render(); }
 function removeBudget(catId){ delete budgets[catId]; render(); }
 function addBudgetFromSelect(catId){ if(!catId) return; if(!(catId in budgets)) budgets[catId]=0; render(); }
 
@@ -857,7 +915,8 @@ function openEntryModal(type){
   document.getElementById('entryAmt').value='';
   document.getElementById('entryOtherNote').value='';
   document.getElementById('entryOtherNote').style.display='none';
-  document.querySelector('#entryOverlay .amount-dollar').textContent=currencySymbol;
+  modalCurrency=viewCurrency;
+  syncEntryCurrency();
   renderCategoryPicker();
   const saveBtn=document.getElementById('entrySaveBtn');
   saveBtn.textContent=type==='in'?'Add income':'Add expense';
@@ -890,12 +949,18 @@ function selectCategory(id){
   if(id==='other'){ otherField.style.display='block'; otherField.focus(); }
   else { otherField.style.display='none'; }
 }
+function setEntryCurrency(cur){ modalCurrency=cur; syncEntryCurrency(); }
+function syncEntryCurrency(){
+  document.getElementById('entryCurCad').classList.toggle('active',modalCurrency==='CAD');
+  document.getElementById('entryCurUsd').classList.toggle('active',modalCurrency==='USD');
+  document.querySelector('#entryOverlay .amount-dollar').textContent=CUR_PREFIX[modalCurrency];
+}
 function closeEntryModal(){ document.getElementById('entryOverlay').classList.remove('open'); }
 function saveEntry(){
   const amount=parseMoney(document.getElementById('entryAmt').value);
   if(amount<=0||!modalCategory) return;
   const note=modalCategory==='other'?document.getElementById('entryOtherNote').value.trim():'';
-  entries.push({id:nextEntryId++,type:modalEntryType,category:modalCategory,amount,note,month:selectedMonth});
+  entries.push({id:nextEntryId++,type:modalEntryType,category:modalCategory,amount,note,month:selectedMonth,currency:modalCurrency});
   closeEntryModal();render();
 }
 function deleteEntry(id){
@@ -918,10 +983,11 @@ function changeMonth(delta){ selectedMonth=shiftMonth(selectedMonth,delta); rend
 function goToday(){ selectedMonth=currentMonthKey(); render(); }
 
 /* ---------- Data: currency, backup, reset ---------- */
-function setCurrency(sym){ currencySymbol=sym||'$'; render(); }
+function setViewCurrency(cur){ viewCurrency=cur==='USD'?'USD':'CAD'; render(); }
+function setFxRate(val){ const n=parseFloat(val); if(isFinite(n)&&n>0) fxUsdToCad=n; render(); }
 
 function exportBackup(){
-  const data={version:4,entries,nextEntryId,budgets,currencySymbol};
+  const data={version:5,entries,nextEntryId,budgets,viewCurrency,fxUsdToCad};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -937,11 +1003,11 @@ function handleBackupFile(file){
     try{
       const data=JSON.parse(String(reader.result));
       if(!data||!Array.isArray(data.entries)) throw new Error('bad file');
-      entries=data.entries.map(e=>Object.assign({month:currentMonthKey()},e));
+      entries=data.entries.map(e=>Object.assign({month:currentMonthKey(),currency:'CAD'},e));
       nextEntryId=data.nextEntryId||(entries.reduce((m,e)=>Math.max(m,e.id||0),0)+1);
       budgets=(data.budgets&&typeof data.budgets==='object')?data.budgets:{};
-      currencySymbol=data.currencySymbol||'$';
-      syncCurrencySelect();
+      viewCurrency=data.viewCurrency==='USD'?'USD':'CAD';
+      if(isFinite(data.fxUsdToCad)&&data.fxUsdToCad>0) fxUsdToCad=data.fxUsdToCad;
       render();
     }catch(err){ alert('That file does not look like a My Money backup.'); }
   };
@@ -955,11 +1021,6 @@ function resetAll(){
   nextEntryId=1;
   render();
 }
-function syncCurrencySelect(){
-  const sel=document.getElementById('currencySelect');
-  if(sel) sel.value=currencySymbol;
-}
-
 /* ---------- Persistence (local storage) ---------- */
 function storageSet(key,value){ try{ window.localStorage.setItem(key,value); return true; }catch(err){ return false; } }
 function storageGet(key){ try{ return window.localStorage.getItem(key); }catch(err){ return null; } }
@@ -969,7 +1030,7 @@ function scheduleSave(){
   saveTimer=setTimeout(saveState,500);
 }
 function saveState(){
-  storageSet(STORAGE_KEY,JSON.stringify({version:4,entries,nextEntryId,budgets,currencySymbol}));
+  storageSet(STORAGE_KEY,JSON.stringify({version:5,entries,nextEntryId,budgets,viewCurrency,fxUsdToCad}));
 }
 function flushSave(){
   if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
@@ -986,10 +1047,11 @@ function loadState(){
   try{
     const data=JSON.parse(raw);
     entries=Array.isArray(data.entries)?data.entries:[];
-    entries.forEach(e=>{ if(!e.month) e.month=currentMonthKey(); });
+    entries.forEach(e=>{ if(!e.month) e.month=currentMonthKey(); if(!e.currency) e.currency='CAD'; });
     nextEntryId=data.nextEntryId||(entries.reduce((m,e)=>Math.max(m,e.id||0),0)+1);
     budgets=(data.budgets&&typeof data.budgets==='object')?data.budgets:{};
-    currencySymbol=data.currencySymbol||'$';
+    viewCurrency=data.viewCurrency==='USD'?'USD':'CAD';
+    if(isFinite(data.fxUsdToCad)&&data.fxUsdToCad>0) fxUsdToCad=data.fxUsdToCad;
     return true;
   }catch(err){ console.error('Could not load saved data',err); return false; }
 }
@@ -997,7 +1059,6 @@ function loadState(){
 /* ---------- Init ---------- */
 loadState();
 stateLoaded=true;
-syncCurrencySelect();
 render();
 </script>
 </body>
