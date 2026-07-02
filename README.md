@@ -5,7 +5,16 @@ donut chart show where your money goes, set monthly budgets per category, and
 step through your finances month by month. **All data stays in your browser** —
 there is no server, no account, and nothing leaves your device.
 
-## No install — just open a file
+## Open it online
+
+**Live app: https://jasonmwong603.github.io/Claude-Code/budgeting/**
+
+Open that on your phone, tablet, or any computer — no install needed. Every
+push to the app auto-deploys there via GitHub Actions (see
+`.github/workflows/deploy-pages.yml`). Your data is saved per-device in the
+browser, so use Manage → Export/Import backup to move entries between devices.
+
+## Or run it as a local file
 
 Download [`budget.html`](budget.html) and **double-click it**. It opens in your
 browser and runs as a single self-contained file — no Node, no npm, no build
