@@ -56,6 +56,33 @@ devices.
 
 ---
 
+## Also in this repo: Easy Invoice
+
+A friendly, fill-in-the-blanks invoicing app for business owners. Download
+[`invoice.html`](invoice.html) and **double-click it** — like the budgeting
+app it's a single self-contained file with no Node, npm, or build step, and
+**all data stays in your browser** (no server, no account).
+
+- **My Business** — set your business name, contact details, address, default
+  currency and tax rate once, and **upload your own logo**. It's saved locally
+  and appears on every invoice.
+- **Create** — fill in the invoice number, dates, who it's billed to, and line
+  items (description, qty, price). Subtotal, discount (% or flat), and tax are
+  calculated automatically, with a **live preview** of the finished invoice next
+  to the form.
+- **Print / PDF** — one click opens your browser's print dialog; choose "Save
+  as PDF" to send a clean, logo-branded invoice to your client.
+- **Saved** — save invoices to reopen, duplicate for the next client, or mark as
+  draft / sent / paid / overdue. Export and import a JSON backup to move between
+  devices.
+
+Everything is stored locally under the `easy-invoice-invoices-v1` and
+`easy-invoice-business-v1` keys — use **Saved → Export backup** to keep a copy.
+(An internet connection is only used to load nicer fonts; everything else works
+fully offline.)
+
+---
+
 ## Also in this repo: a React version
 
 An earlier React + TypeScript + Vite implementation of a budgeting app lives in
