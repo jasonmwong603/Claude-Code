@@ -70,6 +70,11 @@ app it's a single self-contained file with no Node, npm, or build step, and
   items (description, qty, price). Subtotal, discount (% or flat), and tax are
   calculated automatically, with a **live preview** of the finished invoice next
   to the form.
+- **Currency & conversion** — choose the currency to **charge each invoice in**
+  (12 supported), independent of your default. Optionally show the client a
+  **converted total in a second currency**: enter the exchange rate yourself, or
+  tap **Fetch live rate** to pull today's rate (falls back to manual entry if
+  you're offline). The invoice then prints the total in both currencies.
 - **Print / PDF** — one click opens your browser's print dialog; choose "Save
   as PDF" to send a clean, logo-branded invoice to your client.
 - **Saved** — save invoices to reopen, duplicate for the next client, or mark as

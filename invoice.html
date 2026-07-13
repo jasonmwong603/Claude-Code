@@ -191,6 +191,8 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
 .inv-tot .grand{border-top:2px solid var(--ink);margin-top:6px;padding-top:10px;
   font-family:var(--font-display);font-size:19px;color:var(--ink);}
 .inv-tot .grand .amt{color:var(--blue-deep);}
+.inv-conv{margin-top:8px;text-align:right;font-family:var(--font-display);font-size:14px;color:var(--teal);}
+.inv-conv .inv-conv-rate{display:block;font-family:var(--font-body);font-size:11px;font-weight:700;color:var(--ink-faint);margin-top:2px;}
 .inv-foot{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);display:flex;gap:24px;flex-wrap:wrap;}
 .inv-foot .fblock{flex:1;min-width:150px;}
 .inv-foot .flabel{font-size:11px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
@@ -265,6 +267,10 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
           <input type="date" id="f-due">
         </div>
       </div>
+      <div class="field">
+        <label class="lbl" for="f-currency">💵 Charge invoice in</label>
+        <select id="f-currency"></select>
+      </div>
     </div>
 
     <div class="card">
@@ -326,6 +332,29 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
       <div class="tot-line tot-grand">
         <span class="k">Total due</span>
         <span class="v" id="ed-total">—</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ic">💱</span>Convert to another currency</h3>
+      <div class="hint">Optional — also show your client the total in a second currency.</div>
+      <div class="field">
+        <label class="lbl" for="ed-convert-to">Also show total in</label>
+        <select id="ed-convert-to"></select>
+      </div>
+      <div id="convert-detail" style="display:none;">
+        <div class="field">
+          <label class="lbl" id="ed-rate-lbl" for="ed-rate">Exchange rate</label>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <input type="number" id="ed-rate" class="mini-input" style="width:120px;text-align:left;" placeholder="1.00" min="0" step="any">
+            <button class="btn btn-ghost btn-sm" id="ed-fetch-rate" type="button">🌐 Fetch live rate</button>
+          </div>
+        </div>
+        <div class="tot-line" style="border-top:1px dashed var(--line);padding-top:12px;">
+          <span class="k" id="ed-convert-k">Converted total</span>
+          <span class="v" id="ed-convert-total" style="color:var(--teal);">—</span>
+        </div>
+        <div class="hint" id="ed-rate-note" style="margin:6px 0 0;"></div>
       </div>
     </div>
 
@@ -478,12 +507,14 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
     return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
   function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
   function num(v){var n=parseFloat(v);return isFinite(n)?n:0;}
-  function currencyOf(){var c=CURRENCIES.filter(function(x){return x.code===business.currency;})[0];return c||CURRENCIES[0];}
-  function money(n){
-    var c=currencyOf(); var neg=n<0; n=Math.abs(n);
+  function currencyMeta(code){var c=CURRENCIES.filter(function(x){return x.code===code;})[0];return c||CURRENCIES[0];}
+  function fmtMoney(n,code){
+    var c=currencyMeta(code); var neg=n<0; n=Math.abs(n);
     var s=n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
     return (neg?"-":"")+c.sym+s;
   }
+  // convenience: format in the current draft's currency (used by the editor)
+  function money(n){return fmtMoney(n,(draft&&draft.currency)||business.currency);}
   function todayISO(){var d=new Date();return d.toISOString().slice(0,10);}
   function addDaysISO(iso,days){var d=new Date(iso+"T00:00:00");d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
   function fmtDate(iso){
@@ -519,6 +550,8 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
       items:[blankItem()],
       discount:0,discountType:"pct",
       taxRate:num(business.taxRate),
+      currency:business.currency||"USD",
+      convertTo:"",convertRate:0,
       notes:"",terms:business.terms||""
     };
   }
@@ -585,6 +618,48 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
     $("ed-subtotal").textContent=money(c.subtotal);
     $("ed-total").textContent=money(c.total);
     $("ed-tax-k").textContent=business.taxLabel||"Tax";
+    syncConvertEditor(c);
+  }
+  function syncConvertEditor(c){
+    c=c||calc(draft);
+    var from=draft.currency, to=draft.convertTo;
+    var wrap=$("convert-detail");
+    if(!to||to===from){
+      if(to===from&&from)draft.convertTo="";
+      wrap.style.display="none";
+      return;
+    }
+    wrap.style.display="";
+    $("ed-rate-lbl").textContent="Exchange rate (1 "+from+" = ? "+to+")";
+    var rate=num(draft.convertRate);
+    $("ed-convert-k").textContent="Converted total ("+to+")";
+    if(rate>0){
+      $("ed-convert-total").textContent=fmtMoney(c.total*rate,to);
+      $("ed-rate-note").textContent="1 "+from+" = "+rate+" "+to;
+    }else{
+      $("ed-convert-total").textContent="—";
+      $("ed-rate-note").textContent="Enter a rate, or tap “Fetch live rate”.";
+    }
+  }
+  function fetchLiveRate(){
+    var from=draft.currency, to=draft.convertTo;
+    if(!to){toast("Choose a currency to convert to first");return;}
+    if(from===to){$("ed-rate").value=1;draft.convertRate=1;syncTotals();syncPreview();return;}
+    var btn=$("ed-fetch-rate"); btn.disabled=true; var was=btn.textContent; btn.textContent="Fetching…";
+    function done(){btn.disabled=false;btn.textContent=was;}
+    fetch("https://open.er-api.com/v6/latest/"+encodeURIComponent(from))
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d&&d.result==="success"&&d.rates&&d.rates[to]){
+          var rate=d.rates[to];
+          draft.convertRate=rate;
+          $("ed-rate").value=(Math.round(rate*10000)/10000);
+          syncTotals();syncPreview();
+          toast("Live rate: 1 "+from+" = "+(Math.round(rate*10000)/10000)+" "+to);
+        }else{toast("Rate unavailable — enter it manually");}
+        done();
+      })
+      .catch(function(){toast("Couldn't reach rates — enter it manually");done();});
   }
 
   // push form field values into draft (called on input)
@@ -593,6 +668,10 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
     $("f-status").addEventListener("change",function(e){draft.status=e.target.value;});
     $("f-date").addEventListener("change",function(e){draft.date=e.target.value;syncPreview();});
     $("f-due").addEventListener("change",function(e){draft.due=e.target.value;syncPreview();});
+    $("f-currency").addEventListener("change",function(e){draft.currency=e.target.value;syncTotals();syncPreview();});
+    $("ed-convert-to").addEventListener("change",function(e){draft.convertTo=e.target.value;syncTotals();syncPreview();});
+    $("ed-rate").addEventListener("input",function(e){draft.convertRate=e.target.value;syncTotals();syncPreview();});
+    $("ed-fetch-rate").addEventListener("click",fetchLiveRate);
     $("c-name").addEventListener("input",function(e){draft.client.name=e.target.value;syncPreview();});
     $("c-email").addEventListener("input",function(e){draft.client.email=e.target.value;syncPreview();});
     $("c-phone").addEventListener("input",function(e){draft.client.phone=e.target.value;syncPreview();});
@@ -617,6 +696,9 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
     $("ed-discount").value=draft.discount||"";
     $("ed-discount-type").value=draft.discountType;
     $("ed-tax").value=draft.taxRate||"";
+    $("f-currency").value=draft.currency;
+    $("ed-convert-to").value=draft.convertTo||"";
+    $("ed-rate").value=draft.convertRate||"";
     $("f-notes").value=draft.notes;
     $("f-terms").value=draft.terms;
     renderItemsEditor();
@@ -646,6 +728,8 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
   }
   function renderInvoice(inv,target){
     var c=calc(inv);
+    var cur=inv.currency||business.currency||"USD";
+    var m=function(n){return fmtMoney(n,cur);};
     var taxLabel=business.taxLabel||"Tax";
     var logoHtml=business.logo?'<img class="inv-logo" src="'+esc(business.logo)+'" alt="Logo">':"";
     var bizName=business.name||"Your Business";
@@ -657,15 +741,23 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
       return '<tr>'+
         '<td><span class="d-desc">'+esc(it.desc||"—")+'</span></td>'+
         '<td class="r">'+esc(String(num(it.qty)))+'</td>'+
-        '<td class="r">'+esc(money(num(it.price)))+'</td>'+
-        '<td class="r">'+esc(money(amt))+'</td>'+
+        '<td class="r">'+esc(m(num(it.price)))+'</td>'+
+        '<td class="r">'+esc(m(amt))+'</td>'+
       '</tr>';
     }).join("");
     if(!rows)rows='<tr><td colspan="4" style="color:var(--ink-faint);text-align:center;padding:18px;">Add line items to see them here</td></tr>';
 
-    var totRows='<div class="tl"><span>Subtotal</span><b>'+esc(money(c.subtotal))+'</b></div>';
-    if(c.discAmt>0)totRows+='<div class="tl"><span>Discount</span><b>-'+esc(money(c.discAmt))+'</b></div>';
-    if(num(inv.taxRate)>0||c.taxAmt>0)totRows+='<div class="tl"><span>'+esc(taxLabel)+' ('+esc(String(num(inv.taxRate)))+'%)</span><b>'+esc(money(c.taxAmt))+'</b></div>';
+    var totRows='<div class="tl"><span>Subtotal</span><b>'+esc(m(c.subtotal))+'</b></div>';
+    if(c.discAmt>0)totRows+='<div class="tl"><span>Discount</span><b>-'+esc(m(c.discAmt))+'</b></div>';
+    if(num(inv.taxRate)>0||c.taxAmt>0)totRows+='<div class="tl"><span>'+esc(taxLabel)+' ('+esc(String(num(inv.taxRate)))+'%)</span><b>'+esc(m(c.taxAmt))+'</b></div>';
+
+    // optional converted total in a second currency
+    var convHtml="";
+    if(inv.convertTo && inv.convertTo!==cur && num(inv.convertRate)>0){
+      var rate=num(inv.convertRate);
+      convHtml='<div class="inv-conv">'+esc(fmtMoney(c.total*rate,inv.convertTo))+' '+esc(inv.convertTo)+
+        '<span class="inv-conv-rate">1 '+esc(cur)+' = '+esc(String(rate))+' '+esc(inv.convertTo)+'</span></div>';
+    }
 
     var footBlocks="";
     if(inv.notes)footBlocks+='<div class="fblock"><div class="flabel">Notes</div><div class="ftext">'+esc(inv.notes)+'</div></div>';
@@ -693,7 +785,8 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
         '<th>Description</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Amount</th>'+
       '</tr></thead><tbody>'+rows+'</tbody></table>'+
       '<div class="inv-tot-wrap"><div class="inv-tot">'+totRows+
-        '<div class="tl grand"><span>Total due</span><span class="amt">'+esc(money(c.total))+'</span></div>'+
+        '<div class="tl grand"><span>Total due</span><span class="amt">'+esc(m(c.total))+' '+esc(cur)+'</span></div>'+
+        convHtml+
       '</div></div>'+
       (footBlocks?'<div class="inv-foot">'+footBlocks+'</div>':'')+
       '<div class="inv-thanks">Thank you for your business! 🙌</div>';
@@ -724,6 +817,9 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
     if(!rec)return;
     draft=JSON.parse(JSON.stringify(rec));
     if(!draft.items||!draft.items.length)draft.items=[blankItem()];
+    if(!draft.currency)draft.currency=business.currency||"USD";
+    if(draft.convertTo==null)draft.convertTo="";
+    if(draft.convertRate==null)draft.convertRate=0;
     editingId=id;
     fillForm();
     switchTab("create");
@@ -737,6 +833,9 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
     draft.status="draft";
     draft.date=todayISO();
     draft.due=addDaysISO(todayISO(),14);
+    if(!draft.currency)draft.currency=business.currency||"USD";
+    if(draft.convertTo==null)draft.convertTo="";
+    if(draft.convertRate==null)draft.convertRate=0;
     editingId=null;
     fillForm();
     switchTab("create");
@@ -778,7 +877,7 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
           '<div class="sn">'+esc(inv.number||"(no number)")+' &nbsp;<span class="status-pill '+stClass+'">'+esc(st)+'</span></div>'+
           '<div class="sc">'+esc(inv.client.name||"No client")+' · '+esc(fmtDate(inv.date))+'</div>'+
         '</div>'+
-        '<div class="saved-amt"><div class="sa">'+esc(money(c.total))+'</div></div>'+
+        '<div class="saved-amt"><div class="sa">'+esc(fmtMoney(c.total,inv.currency||business.currency))+' '+esc(inv.currency||business.currency||"")+'</div></div>'+
         '<div class="saved-actions">'+
           '<button class="btn btn-ghost btn-sm act-open">Open</button>'+
           '<button class="btn btn-soft btn-sm act-dup"><span class="lbltxt">Copy</span><span style="display:none">⧉</span></button>'+
@@ -794,8 +893,9 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
   // =======================================================
   //  BUSINESS  settings
   // =======================================================
-  function fillCurrencySelect(sel){
+  function fillCurrencySelect(sel,withNone){
     sel.innerHTML="";
+    if(withNone){var n=el("option");n.value="";n.textContent="— none —";sel.appendChild(n);}
     CURRENCIES.forEach(function(c){
       var o=el("option");o.value=c.code;o.textContent=c.code+" — "+c.label;sel.appendChild(o);
     });
@@ -898,6 +998,8 @@ table.inv-tbl tbody td .d-desc{font-weight:700;color:var(--ink);}
   // =======================================================
   function init(){
     fillCurrencySelect($("b-currency"));
+    fillCurrencySelect($("f-currency"));
+    fillCurrencySelect($("ed-convert-to"),true);
     fillBusinessForm();
     draft=newDraft();
     bindFormInputs();
