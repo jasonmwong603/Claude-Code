@@ -1,0 +1,67 @@
+name: Deploy KeyDate to GitHub Pages
+
+# Builds the KeyDate app (apps/keydate) and publishes it to GitHub Pages at
+# /keydate/. The existing "My Money" budgeting app is included at /budgeting/ so
+# nothing is lost when this branch is the Pages source.
+
+on:
+  push:
+    branches: ["claude/app-development-publication-cuiwpm"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Share the "pages" concurrency group with the other deploy workflow so the two
+# never publish at the same time.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/keydate/package-lock.json
+
+      - name: Build KeyDate
+        working-directory: apps/keydate
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/keydate _site/budgeting
+          cp -r apps/keydate/dist/* _site/keydate/
+          # Keep the existing budgeting app published alongside KeyDate.
+          cp budget.html _site/budgeting/index.html
+          # Redirect the bare repo URL to KeyDate.
+          printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./keydate/"><title>KeyDate</title><a href="./keydate/">Open KeyDate →</a>\n' > _site/index.html
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,253 @@
+import { useEffect, useState } from 'react'
+import { C, DISPLAY_FONT, BODY_FONT } from './theme'
+import { Onboarding, type OnboardingResult } from './screens/Onboarding'
+import { Dashboard } from './screens/Dashboard'
+import { Learn } from './screens/Learn'
+import { TYPE_MULT } from './lib/locations'
+import { maxAffordablePrice, savingsGoal } from './lib/math'
+import { clearState, loadState, saveState } from './lib/storage'
+import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
+import type { AppState, Badge, Plan } from './types'
+
+type Screen = 'loading' | 'onboard' | 'dashboard' | 'learn'
+
+function progressOf(state: AppState): number {
+  const totalSaved =
+    state.plan.startingSavings + state.contributions.reduce((a, c) => a + c.amount, 0)
+  return Math.min(1, totalSaved / savingsGoal(state.plan.target, state.plan.homeType))
+}
+
+/** Award any newly-earned badges for the given interim state + progress. */
+function awardBadges(s: AppState, progress: number): { earnedBadges: string[]; newly: Badge[] } {
+  const tests = badgeTests({
+    contributions: s.contributions,
+    progress,
+    streak: calcStreak(s.contributions),
+    completedLessons: s.completedLessons,
+  })
+  const newly = KEYRING.filter((k) => !s.earnedBadges.includes(k.id) && tests[k.id])
+  return { earnedBadges: [...s.earnedBadges, ...newly.map((k) => k.id)], newly }
+}
+
+export default function KeyDateApp() {
+  const [screen, setScreen] = useState<Screen>('loading')
+  const [state, setState] = useState<AppState | null>(null)
+  const [activeLesson, setActiveLesson] = useState<string | null>(null)
+  const [celebrate, setCelebrate] = useState<Badge | null>(null)
+
+  // Load persisted state once, and award the daily check-in XP.
+  useEffect(() => {
+    let s = loadState()
+    if (s) {
+      const today = new Date().toDateString()
+      if (s.lastVisit !== today) {
+        s = { ...s, lastVisit: today, xp: s.xp + 10 }
+        saveState(s)
+      }
+      setState(s)
+      setScreen('dashboard')
+    } else {
+      setScreen('onboard')
+    }
+  }, [])
+
+  const persist = (s: AppState) => {
+    setState(s)
+    saveState(s)
+  }
+
+  const celebrateNewly = (newly: Badge[]) => {
+    if (newly.length) {
+      setCelebrate(newly[newly.length - 1])
+      setTimeout(() => setCelebrate(null), 3500)
+    }
+  }
+
+  const createPlan = ({ resolved, homeType, income, savings, monthly }: OnboardingResult) => {
+    const areaAvg = resolved.base * TYPE_MULT[homeType]
+    const target = Math.min(areaAvg, maxAffordablePrice(income, homeType))
+    const s: AppState = {
+      plan: {
+        location: resolved.name,
+        base: resolved.base,
+        homeType,
+        income,
+        startingSavings: savings,
+        monthly,
+        target,
+        createdAt: new Date().toISOString(),
+      },
+      contributions: [],
+      earnedBadges: ['plan'],
+      completedLessons: [],
+      xp: 25,
+      lastVisit: new Date().toDateString(),
+    }
+    persist(s)
+    setScreen('dashboard')
+  }
+
+  const logContribution = (amount: number) => {
+    if (!state || amount <= 0) return
+    const contributions = [...state.contributions, { date: new Date().toISOString(), amount }]
+    const interim: AppState = { ...state, contributions }
+    const progress = progressOf(interim)
+    const { earnedBadges, newly } = awardBadges(interim, progress)
+    persist({ ...interim, earnedBadges, xp: state.xp + 50 + newly.length * 50 })
+    celebrateNewly(newly)
+  }
+
+  const completeLesson = (lessonId: string, bonus = 0) => {
+    if (!state) return
+    const alreadyDone = state.completedLessons.includes(lessonId)
+    const completedLessons = alreadyDone
+      ? state.completedLessons
+      : [...state.completedLessons, lessonId]
+    const interim: AppState = { ...state, completedLessons }
+    const { earnedBadges, newly } = awardBadges(interim, progressOf(interim))
+    const lessonXp = alreadyDone ? 0 : 100 + bonus
+    persist({ ...interim, earnedBadges, xp: state.xp + lessonXp + newly.length * 50 })
+    setActiveLesson(null)
+    celebrateNewly(newly)
+  }
+
+  const updatePlan = (patch: Partial<Plan>, xpReward = 40) => {
+    if (!state) return
+    persist({ ...state, plan: { ...state.plan, ...patch }, xp: state.xp + xpReward })
+  }
+
+  const resetPlan = () => {
+    clearState()
+    setState(null)
+    setActiveLesson(null)
+    setScreen('onboard')
+  }
+
+  const openLesson = (id: string) => {
+    setActiveLesson(id)
+    setScreen('learn')
+  }
+
+  const lvl = state ? levelInfo(state.xp) : null
+
+  if (screen === 'loading') {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: C.paper,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: BODY_FONT,
+          color: C.sub,
+        }}
+      >
+        Loading your plan…
+      </div>
+    )
+  }
+
+  const NavBar = () => (
+    <div
+      style={{
+        display: 'flex',
+        gap: 8,
+        margin: '0 0 4px',
+        background: '#fff',
+        border: `1.5px solid ${C.line}`,
+        borderRadius: 999,
+        padding: 4,
+      }}
+    >
+      {[
+        { id: 'dashboard', label: '🏠 Dashboard' },
+        { id: 'learn', label: '📚 Learn' },
+      ].map((t) => {
+        const active = screen === t.id
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => {
+              setScreen(t.id as Screen)
+              setActiveLesson(null)
+            }}
+            style={{
+              flex: 1,
+              padding: '10px',
+              fontSize: 13.5,
+              fontWeight: 700,
+              fontFamily: BODY_FONT,
+              border: 'none',
+              borderRadius: 999,
+              cursor: 'pointer',
+              background: active ? C.spruce : 'transparent',
+              color: active ? '#fff' : C.sub,
+            }}
+          >
+            {t.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  return (
+    <div style={{ minHeight: '100vh', background: C.paper, fontFamily: BODY_FONT, color: C.ink }}>
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '28px 20px 48px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em' }}>
+            Key<span style={{ color: C.sprout }}>Date</span>
+          </div>
+          {state && lvl && (
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.spruce }}>
+              Lv {lvl.level} {lvl.title} · {state.xp} XP
+            </div>
+          )}
+        </div>
+
+        {state && screen !== 'onboard' && <NavBar />}
+
+        {celebrate && (
+          <div
+            style={{
+              background: C.goldSoft,
+              border: `2px solid ${C.gold}`,
+              borderRadius: 16,
+              padding: '14px 18px',
+              margin: '14px 0',
+              textAlign: 'center',
+              fontSize: 15,
+              fontWeight: 700,
+            }}
+          >
+            {celebrate.emoji} New key earned: {celebrate.label}!
+          </div>
+        )}
+
+        {screen === 'onboard' && <Onboarding onSubmit={createPlan} />}
+
+        {screen === 'dashboard' && state && (
+          <Dashboard
+            state={state}
+            onLog={logContribution}
+            onUpdatePlan={updatePlan}
+            onReset={resetPlan}
+            onOpenLesson={openLesson}
+          />
+        )}
+
+        {screen === 'learn' && state && (
+          <Learn
+            state={state}
+            activeLesson={activeLesson}
+            onOpenLesson={setActiveLesson}
+            onCloseLesson={() => setActiveLesson(null)}
+            onComplete={completeLesson}
+          />
+        )}
+      </div>
+    </div>
+  )
+}

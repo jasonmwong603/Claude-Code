@@ -1,0 +1,43 @@
+/* KeyDate global styles. The prototype styled everything inline; this file only
+   holds the resets and things inline styles can't express (font import, box-sizing,
+   safe-area padding for notched phones). Design tokens live in src/theme.ts. */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Inter:wght@400;500;600;700&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #f7f8f4;
+  color: #17302a;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Respect the notch / home indicator on iOS + Android when wrapped by Capacitor. */
+#root {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Avoid the iOS zoom-on-focus jump: inputs render at >=16px already, but be explicit. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}

@@ -1,5 +1,11 @@
 # My Money
 
+> **Also in this repo:** [**KeyDate**](apps/keydate/) — a mobile-first Canadian
+> first-home planner (Vite + React + TypeScript, wrapped with Capacitor for the
+> App Store / Play Store). It lives under `apps/keydate/` and is independent of
+> the budgeting app below. See its [README](apps/keydate/README.md) to run,
+> build, or publish it.
+
 A simple, friendly, private budgeting app. Log what you earn and spend, watch a
 donut chart show where your money goes, set monthly budgets per category, and
 step through your finances month by month. **All data stays in your browser** —
