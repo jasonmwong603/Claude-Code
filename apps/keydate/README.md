@@ -21,7 +21,10 @@ echoing the level-up house that builds itself as you save. The location field
 is **editable any time** ("Edit my plan") without losing your saved progress.
 There's also a **Community** tab: an
 achievement feed where users share milestones, first-home stories, and advice —
-with **photos or video** attached if they like.
+with **photos or video** attached if they like. Every player gets an editable
+**profile / calling card** (avatar, headwear & accessories, avatar frame, banner,
+title, name, bio) whose cosmetics **unlock as they level up** — turning the XP
+bar into a real reward loop.
 
 > Educational content only — not financial, legal, or tax advice. The financial
 > rules shown (FHSA, HBP, stress test, down-payment tiers) reflect current

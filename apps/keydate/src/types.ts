@@ -43,6 +43,18 @@ export interface Contribution {
   amount: number
 }
 
+/** Customizable profile / calling card. Each cosmetic id points at an item in
+ *  data/cosmetics.ts; items unlock as the user's level rises. */
+export interface Profile {
+  displayName: string
+  bio: string
+  avatar: string
+  accessory: string
+  frame: string
+  banner: string
+  title: string
+}
+
 export interface AppState {
   plan: Plan
   contributions: Contribution[]
@@ -50,6 +62,7 @@ export interface AppState {
   completedLessons: string[]
   xp: number
   lastVisit: string
+  profile?: Profile
 }
 
 export interface Quiz {

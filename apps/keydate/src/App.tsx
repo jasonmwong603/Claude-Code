@@ -6,14 +6,18 @@ import { Learn } from './screens/Learn'
 import { Forum } from './screens/Forum'
 import { EditPlan } from './screens/EditPlan'
 import { Bank } from './screens/Bank'
+import { Profile } from './screens/Profile'
+import { Avatar } from './components/Avatar'
+import { DEFAULT_PROFILE } from './data/cosmetics'
 import type { PlanFormValues } from './components/PlanForm'
+import type { Profile as ProfileT } from './types'
 import { TYPE_MULT } from './lib/locations'
 import { maxAffordablePrice, savingsGoal } from './lib/math'
 import { clearState, loadState, saveState } from './lib/storage'
 import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
 import type { AppState, Badge, Plan } from './types'
 
-type Screen = 'loading' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan' | 'bank'
+type Screen = 'loading' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan' | 'bank' | 'profile'
 
 /** Derive a target price from the plan inputs (area typical, or exact custom). */
 function targetFrom(
@@ -114,9 +118,15 @@ export default function KeyDateApp() {
       completedLessons: [],
       xp: 25,
       lastVisit: new Date().toDateString(),
+      profile: { ...DEFAULT_PROFILE },
     }
     persist(s)
     setScreen('dashboard')
+  }
+
+  const saveProfile = (profile: ProfileT) => {
+    if (!state) return
+    persist({ ...state, profile })
   }
 
   const logContribution = (amount: number) => {
@@ -266,18 +276,41 @@ export default function KeyDateApp() {
   return (
     <div style={{ minHeight: '100vh', background: C.paper, fontFamily: BODY_FONT, color: C.ink }}>
       <div style={{ maxWidth: 480, margin: '0 auto', padding: '28px 20px 48px' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em' }}>
             Key<span style={{ color: C.sprout }}>Date</span>
           </div>
-          {state && lvl && (
-            <div style={{ fontSize: 12, fontWeight: 700, color: C.spruce }}>
-              Lv {lvl.level} {lvl.title} · {state.xp} XP
-            </div>
+          {state && state.profile && lvl && (
+            <button
+              type="button"
+              onClick={() => setScreen('profile')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: '#fff',
+                border: `1.5px solid ${C.line}`,
+                borderRadius: 999,
+                padding: '4px 10px 4px 4px',
+                cursor: 'pointer',
+              }}
+            >
+              <Avatar
+                avatar={state.profile.avatar}
+                accessory={state.profile.accessory}
+                frame={state.profile.frame}
+                size={28}
+              />
+              <span style={{ fontSize: 12, fontWeight: 700, color: C.spruce }}>Lv {lvl.level} · {state.xp} XP</span>
+            </button>
           )}
         </div>
 
-        {state && screen !== 'onboard' && screen !== 'editplan' && screen !== 'bank' && <NavBar />}
+        {state &&
+          screen !== 'onboard' &&
+          screen !== 'editplan' &&
+          screen !== 'bank' &&
+          screen !== 'profile' && <NavBar />}
 
         {celebrate && (
           <div
@@ -319,6 +352,10 @@ export default function KeyDateApp() {
             onBack={() => setScreen('dashboard')}
             onSetSavings={(total) => updatePlan({ startingSavings: total }, 0)}
           />
+        )}
+
+        {screen === 'profile' && state && state.profile && (
+          <Profile state={state} onSave={saveProfile} onBack={() => setScreen('dashboard')} />
         )}
 
         {screen === 'learn' && state && (

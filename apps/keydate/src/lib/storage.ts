@@ -1,4 +1,5 @@
 import { STORAGE_KEY } from './config'
+import { DEFAULT_PROFILE } from '../data/cosmetics'
 import type { AppState } from '../types'
 
 /* Real persistence for KeyDate.
@@ -16,6 +17,7 @@ function migrate(s: Partial<AppState>): AppState {
   if (s.xp === undefined) s.xp = 0
   if (!s.contributions) s.contributions = []
   if (!s.earnedBadges) s.earnedBadges = []
+  if (!s.profile) s.profile = { ...DEFAULT_PROFILE }
   return s as AppState
 }
 
