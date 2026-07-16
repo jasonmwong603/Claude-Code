@@ -4,13 +4,28 @@ import { Onboarding, type OnboardingResult } from './screens/Onboarding'
 import { Dashboard } from './screens/Dashboard'
 import { Learn } from './screens/Learn'
 import { Forum } from './screens/Forum'
+import { EditPlan } from './screens/EditPlan'
+import type { PlanFormValues } from './components/PlanForm'
 import { TYPE_MULT } from './lib/locations'
 import { maxAffordablePrice, savingsGoal } from './lib/math'
 import { clearState, loadState, saveState } from './lib/storage'
 import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
 import type { AppState, Badge, Plan } from './types'
 
-type Screen = 'loading' | 'onboard' | 'dashboard' | 'learn' | 'forum'
+type Screen = 'loading' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan'
+
+/** Derive a target price from the plan inputs (area typical, or exact custom). */
+function targetFrom(
+  source: PlanFormValues['targetSource'],
+  base: number,
+  homeType: PlanFormValues['homeType'],
+  income: number,
+  customPrice: number,
+): number {
+  return source === 'custom'
+    ? Math.max(1, customPrice)
+    : Math.min(base * TYPE_MULT[homeType], maxAffordablePrice(income, homeType))
+}
 
 function progressOf(state: AppState): number {
   const totalSaved =
@@ -75,14 +90,10 @@ export default function KeyDateApp() {
     targetLabel,
     listingUrl,
   }: OnboardingResult) => {
-    const areaAvg = resolved.base * TYPE_MULT[homeType]
     // A custom target (a listing or a chosen budget) is honoured exactly — we
     // never quietly cap it to "affordable"; the faster-paths nudges surface on
     // their own if the date lands far out.
-    const target =
-      targetSource === 'custom'
-        ? Math.max(1, customPrice)
-        : Math.min(areaAvg, maxAffordablePrice(income, homeType))
+    const target = targetFrom(targetSource, resolved.base, homeType, income, customPrice)
     const s: AppState = {
       plan: {
         location: resolved.name,
@@ -141,6 +152,37 @@ export default function KeyDateApp() {
     setState(null)
     setActiveLesson(null)
     setScreen('onboard')
+  }
+
+  const savePlanEdits = ({
+    resolved,
+    homeType,
+    income,
+    savings,
+    monthly,
+    targetSource,
+    customPrice,
+    targetLabel,
+    listingUrl,
+  }: PlanFormValues) => {
+    if (!state) return
+    // Patch only the plan inputs; contributions, XP, badges, and lessons are
+    // preserved because we spread the existing plan and never touch the rest.
+    const plan: Plan = {
+      ...state.plan,
+      location: resolved.name,
+      base: resolved.base,
+      homeType,
+      income,
+      startingSavings: savings,
+      monthly,
+      target: targetFrom(targetSource, resolved.base, homeType, income, customPrice),
+      targetSource,
+      targetLabel: targetSource === 'custom' ? targetLabel.trim() || 'My target' : undefined,
+      listingUrl: targetSource === 'custom' ? listingUrl.trim() || undefined : undefined,
+    }
+    persist({ ...state, plan })
+    setScreen('dashboard')
   }
 
   const openLesson = (id: string) => {
@@ -234,7 +276,7 @@ export default function KeyDateApp() {
           )}
         </div>
 
-        {state && screen !== 'onboard' && <NavBar />}
+        {state && screen !== 'onboard' && screen !== 'editplan' && <NavBar />}
 
         {celebrate && (
           <div
@@ -262,7 +304,12 @@ export default function KeyDateApp() {
             onUpdatePlan={updatePlan}
             onReset={resetPlan}
             onOpenLesson={openLesson}
+            onEdit={() => setScreen('editplan')}
           />
+        )}
+
+        {screen === 'editplan' && state && (
+          <EditPlan plan={state.plan} onSave={savePlanEdits} onCancel={() => setScreen('dashboard')} />
         )}
 
         {screen === 'learn' && state && (

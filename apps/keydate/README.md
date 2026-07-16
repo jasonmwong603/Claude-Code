@@ -15,9 +15,11 @@ Store / Play Store from one codebase** (Vite + React + TypeScript, wrapped with
 The home screen is laid out as a **house cross-section** — the keys date sits in
 the attic under a roofline, "floor" rooms hold your target / progress /
 this-month actions / next lesson, and a brick foundation holds your keyring —
-echoing the level-up house that builds itself as you save. You can aim your plan
-at the **area's typical price** or at a **specific listing / budget** you choose
-(editable any time from the Home screen). There's also a **Community** tab: an
+echoing the level-up house that builds itself as you save. The location field
+**autocompletes** from 160+ built-in communities, you can aim your plan at the
+**area's typical price** or a **specific listing / budget**, and the whole plan
+is **editable any time** ("Edit my plan") without losing your saved progress.
+There's also a **Community** tab: an
 achievement feed where users share milestones, first-home stories, and advice —
 with **photos or video** attached if they like.
 

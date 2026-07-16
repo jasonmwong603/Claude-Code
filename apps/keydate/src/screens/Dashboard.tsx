@@ -30,12 +30,14 @@ export function Dashboard({
   onUpdatePlan,
   onReset,
   onOpenLesson,
+  onEdit,
 }: {
   state: AppState
   onLog: (amount: number) => void
   onUpdatePlan: (patch: Partial<Plan>, xpReward?: number) => void
   onReset: () => void
   onOpenLesson: (id: string) => void
+  onEdit: () => void
 }) {
   const { plan } = state
   const [logAmount, setLogAmount] = useState(plan.monthly)
@@ -355,23 +357,43 @@ export function Dashboard({
     <>
       <HouseFrame attic={attic} floors={floors} foundation={foundation} />
 
-      <button
-        type="button"
-        onClick={onReset}
-        style={{
-          width: '100%',
-          padding: '13px',
-          fontSize: 14,
-          fontWeight: 600,
-          color: C.sub,
-          background: 'transparent',
-          border: `1.5px solid ${C.line}`,
-          borderRadius: 14,
-          cursor: 'pointer',
-        }}
-      >
-        Start over with a new plan
-      </button>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button
+          type="button"
+          onClick={onEdit}
+          style={{
+            flex: 2,
+            padding: '13px',
+            fontSize: 14,
+            fontWeight: 700,
+            fontFamily: DISPLAY_FONT,
+            color: '#fff',
+            background: C.spruce,
+            border: 'none',
+            borderRadius: 14,
+            cursor: 'pointer',
+          }}
+        >
+          ✏️ Edit my plan
+        </button>
+        <button
+          type="button"
+          onClick={onReset}
+          style={{
+            flex: 1,
+            padding: '13px',
+            fontSize: 13,
+            fontWeight: 600,
+            color: C.sub,
+            background: 'transparent',
+            border: `1.5px solid ${C.line}`,
+            borderRadius: 14,
+            cursor: 'pointer',
+          }}
+        >
+          Start over
+        </button>
+      </div>
     </>
   )
 }

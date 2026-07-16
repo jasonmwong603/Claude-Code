@@ -100,6 +100,34 @@ export function matchBuiltIn(q: string): ResolvedLocation | null {
   return null
 }
 
+// Accent- and punctuation-insensitive key, used to dedupe spelling variants
+// like "montreal"/"montréal" and "st albert"/"st. albert" in suggestions.
+const dedupeKey = (s: string) =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '')
+
+/** Ranked location suggestions for the autocomplete: names that start with the
+ *  query first, then names that merely contain it, de-duplicated. */
+export function suggestLocations(q: string, limit = 6): ResolvedLocation[] {
+  const norm = q.trim().toLowerCase()
+  if (norm.length < 2) return []
+  const starts: string[] = []
+  const contains: string[] = []
+  for (const key of Object.keys(BUILT_IN)) {
+    if (key.startsWith(norm)) starts.push(key)
+    else if (key.includes(norm)) contains.push(key)
+  }
+  const seen = new Set<string>()
+  const out: ResolvedLocation[] = []
+  for (const key of [...starts.sort(), ...contains.sort()]) {
+    const d = dedupeKey(key)
+    if (seen.has(d)) continue
+    seen.add(d)
+    out.push({ name: titleCase(key), base: BUILT_IN[key], source: 'built-in estimate' })
+    if (out.length >= limit) break
+  }
+  return out
+}
+
 /**
  * Production hook for a live price lookup by location.
  *
