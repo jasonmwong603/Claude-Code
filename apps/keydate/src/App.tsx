@@ -3,13 +3,14 @@ import { C, DISPLAY_FONT, BODY_FONT } from './theme'
 import { Onboarding, type OnboardingResult } from './screens/Onboarding'
 import { Dashboard } from './screens/Dashboard'
 import { Learn } from './screens/Learn'
+import { Forum } from './screens/Forum'
 import { TYPE_MULT } from './lib/locations'
 import { maxAffordablePrice, savingsGoal } from './lib/math'
 import { clearState, loadState, saveState } from './lib/storage'
 import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
 import type { AppState, Badge, Plan } from './types'
 
-type Screen = 'loading' | 'onboard' | 'dashboard' | 'learn'
+type Screen = 'loading' | 'onboard' | 'dashboard' | 'learn' | 'forum'
 
 function progressOf(state: AppState): number {
   const totalSaved =
@@ -128,6 +129,11 @@ export default function KeyDateApp() {
     setScreen('learn')
   }
 
+  const earnXp = (n: number) => {
+    if (!state) return
+    persist({ ...state, xp: state.xp + n })
+  }
+
   const lvl = state ? levelInfo(state.xp) : null
 
   if (screen === 'loading') {
@@ -161,8 +167,9 @@ export default function KeyDateApp() {
       }}
     >
       {[
-        { id: 'dashboard', label: '🏠 Dashboard' },
+        { id: 'dashboard', label: '🏠 Home' },
         { id: 'learn', label: '📚 Learn' },
+        { id: 'forum', label: '🏘️ Community' },
       ].map((t) => {
         const active = screen === t.id
         return (
@@ -175,13 +182,14 @@ export default function KeyDateApp() {
             }}
             style={{
               flex: 1,
-              padding: '10px',
-              fontSize: 13.5,
+              padding: '10px 4px',
+              fontSize: 12.5,
               fontWeight: 700,
               fontFamily: BODY_FONT,
               border: 'none',
               borderRadius: 999,
               cursor: 'pointer',
+              whiteSpace: 'nowrap',
               background: active ? C.spruce : 'transparent',
               color: active ? '#fff' : C.sub,
             }}
@@ -247,6 +255,8 @@ export default function KeyDateApp() {
             onComplete={completeLesson}
           />
         )}
+
+        {screen === 'forum' && state && <Forum state={state} onEarnXp={earnXp} />}
       </div>
     </div>
   )

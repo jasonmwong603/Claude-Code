@@ -12,6 +12,12 @@ split into modules and built as a **real app that ships to the web _and_ the App
 Store / Play Store from one codebase** (Vite + React + TypeScript, wrapped with
 [Capacitor](https://capacitorjs.com/) for native iOS/Android).
 
+The home screen is laid out as a **house cross-section** — the keys date sits in
+the attic under a roofline, "floor" rooms hold your progress / this-month
+actions / next lesson, and a brick foundation holds your keyring — echoing the
+level-up house that builds itself as you save. There's also a **Community** tab:
+an achievement feed where users share milestones, first-home stories, and advice.
+
 > Educational content only — not financial, legal, or tax advice. The financial
 > rules shown (FHSA, HBP, stress test, down-payment tiers) reflect current
 > federal programs and can change. See the compliance note below before launch.
@@ -91,6 +97,13 @@ src/
   removed; `lookupPrices()` in `src/lib/locations.ts` is a documented hook for
   your own backend. Until it's wired, unknown locations fall back to **manual
   price entry**, so the app is fully usable standalone.
+- **The Community forum is an on-device preview.** Posts and likes are stored in
+  `localStorage` (seeded example stories in `src/data/forumSeed.ts`), so it ships
+  on static hosting with no accounts. `src/lib/forum.ts` exposes `loadFeed` /
+  `addPost` / `toggleLike` / `deletePost` as the single seam to swap for a real
+  shared backend (e.g. Supabase: a `posts`/`likes` table + anon auth + RLS) when
+  you want cross-user posting. The screen calls nothing else, so the UI is
+  unchanged by that upgrade. Add basic moderation before a public launch.
 - **Financial constants are centralized** in `src/lib/config.ts` with a
   `LAST_REVIEWED` date — update them there when programs/rates change.
 - **Built-in market prices** are a hand-maintained illustrative table; the

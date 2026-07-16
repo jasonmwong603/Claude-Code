@@ -83,3 +83,20 @@ export interface ResolvedLocation {
   base: number
   source: string
 }
+
+/* ————— Community forum ————— */
+export type ForumCategory = 'milestone' | 'firsthome' | 'advice' | 'question'
+
+export interface ForumPost {
+  id: string
+  author: string
+  avatar: string
+  location?: string
+  category: ForumCategory
+  title: string
+  body: string
+  createdAt: string
+  likes: number
+  /** True for posts written by this device's user (deletable, pre-liked state). */
+  mine?: boolean
+}

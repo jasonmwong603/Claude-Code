@@ -1,0 +1,379 @@
+import { useMemo, useState } from 'react'
+import { C, DISPLAY_FONT, BODY_FONT } from '../theme'
+import { Pills, bigBtn, card, inputStyle } from '../components/atoms'
+import { CATEGORY_META } from '../data/forumSeed'
+import {
+  AVATARS,
+  addPost,
+  deletePost,
+  getIdentity,
+  loadFeed,
+  saveIdentity,
+  timeAgo,
+  toggleLike,
+  type Identity,
+} from '../lib/forum'
+import type { AppState, ForumCategory, ForumPost } from '../types'
+
+const CATEGORY_OPTIONS = (Object.keys(CATEGORY_META) as ForumCategory[]).map((k) => ({
+  key: k,
+  label: `${CATEGORY_META[k].emoji} ${CATEGORY_META[k].label}`,
+}))
+
+/** Suggestions to share, derived from what the user has already earned. */
+function achievementPrompts(state: AppState): { category: ForumCategory; title: string }[] {
+  const b = state.earnedBadges
+  const out: { category: ForumCategory; title: string }[] = []
+  if (b.includes('done')) out.push({ category: 'firsthome', title: "I'm fully funded — ready to buy! 🔑" })
+  if (b.includes('p75')) out.push({ category: 'milestone', title: 'Hit 75% of my down payment goal!' })
+  else if (b.includes('p50')) out.push({ category: 'milestone', title: 'Halfway to my down payment! 🎯' })
+  else if (b.includes('p25')) out.push({ category: 'milestone', title: 'Passed 25% of my goal.' })
+  else if (b.includes('p10')) out.push({ category: 'milestone', title: 'First 10% saved!' })
+  if (b.includes('streak6')) out.push({ category: 'milestone', title: '6-month saving streak 🔥' })
+  else if (b.includes('streak3')) out.push({ category: 'milestone', title: '3-month saving streak 🔥' })
+  if (b.includes('learnAll')) out.push({ category: 'advice', title: 'Finished the whole curriculum — happy to answer questions' })
+  return out.slice(0, 3)
+}
+
+function CategoryTag({ category }: { category: ForumCategory }) {
+  const m = CATEGORY_META[category]
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        fontWeight: 700,
+        color: '#fff',
+        background: m.color,
+        borderRadius: 999,
+        padding: '3px 9px',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {m.emoji} {m.label}
+    </span>
+  )
+}
+
+export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: number) => void }) {
+  const [feed, setFeed] = useState(() => loadFeed())
+  const [liked, setLiked] = useState<Set<string>>(() => feed.liked)
+  const [filter, setFilter] = useState<ForumCategory | 'all'>('all')
+  const [open, setOpen] = useState(false)
+
+  const [identity, setIdentity] = useState<Identity>(() => {
+    const saved = getIdentity()
+    return { author: saved.author, avatar: saved.avatar || AVATARS[0] }
+  })
+  const [category, setCategory] = useState<ForumCategory>('milestone')
+  const [title, setTitle] = useState('')
+  const [body, setBody] = useState('')
+
+  const prompts = useMemo(() => achievementPrompts(state), [state])
+
+  const refresh = () => {
+    const f = loadFeed()
+    setFeed(f)
+    setLiked(f.liked)
+  }
+
+  const submit = () => {
+    if (!title.trim() || !body.trim()) return
+    saveIdentity(identity)
+    addPost({ identity, location: state.plan.location, category, title, body })
+    onEarnXp(15)
+    setTitle('')
+    setBody('')
+    setOpen(false)
+    refresh()
+  }
+
+  const like = (id: string) => {
+    setLiked(toggleLike(id))
+    setFeed(loadFeed())
+  }
+
+  const remove = (id: string) => {
+    deletePost(id)
+    refresh()
+  }
+
+  const posts = feed.posts.filter((p) => filter === 'all' || p.category === filter)
+
+  return (
+    <>
+      <h2 style={{ fontFamily: DISPLAY_FONT, fontSize: 26, fontWeight: 700, margin: '16px 0 4px' }}>
+        Community
+      </h2>
+      <p style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.5, margin: '0 0 14px' }}>
+        Share your wins, first-home stories, and advice with other future owners.
+      </p>
+
+      <div
+        style={{
+          fontSize: 12,
+          color: C.sub,
+          background: C.goldSoft,
+          border: `1px solid ${C.gold}`,
+          borderRadius: 12,
+          padding: '10px 12px',
+          lineHeight: 1.5,
+          marginBottom: 14,
+        }}
+      >
+        👋 <strong>Preview.</strong> The posts below are example stories. Anything you post is saved
+        on <em>this device</em> for now — shared posting across everyone turns on when the community
+        server is connected.
+      </div>
+
+      {/* Share prompts from the user's own achievements */}
+      {prompts.length > 0 && !open && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, marginBottom: 8 }}>
+            🎉 Share one of your wins:
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {prompts.map((p) => (
+              <button
+                key={p.title}
+                type="button"
+                onClick={() => {
+                  setCategory(p.category)
+                  setTitle(p.title)
+                  setOpen(true)
+                }}
+                style={{
+                  padding: '8px 12px',
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  fontFamily: BODY_FONT,
+                  color: C.spruce,
+                  background: C.sproutSoft,
+                  border: 'none',
+                  borderRadius: 999,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                {CATEGORY_META[p.category].emoji} {p.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Composer */}
+      {!open ? (
+        <button type="button" onClick={() => setOpen(true)} style={{ ...bigBtn(true, C.sprout), marginBottom: 16 }}>
+          ✍️ Write a post
+        </button>
+      ) : (
+        <div style={{ ...card, marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+            <input
+              type="text"
+              placeholder="Your name or handle"
+              value={identity.author}
+              onChange={(e) => setIdentity({ ...identity, author: e.target.value })}
+              style={{ ...inputStyle, flex: 1 }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+            {AVATARS.map((a) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() => setIdentity({ ...identity, avatar: a })}
+                style={{
+                  fontSize: 20,
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  background: identity.avatar === a ? C.sproutSoft : '#fff',
+                  border: `1.5px solid ${identity.avatar === a ? C.sprout : C.line}`,
+                }}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <Pills options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />
+          </div>
+
+          <input
+            type="text"
+            placeholder="Title — e.g. Hit 50% of my goal!"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={{ ...inputStyle, marginBottom: 10 }}
+          />
+          <textarea
+            placeholder="Share the details, what worked, or ask the community…"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={4}
+            style={{ ...inputStyle, resize: 'vertical', marginBottom: 12 }}
+          />
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              style={{
+                flex: 1,
+                padding: '14px',
+                fontSize: 15,
+                fontWeight: 600,
+                color: C.sub,
+                background: '#fff',
+                border: `1.5px solid ${C.line}`,
+                borderRadius: 14,
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!title.trim() || !body.trim()}
+              style={{ ...bigBtn(!!title.trim() && !!body.trim(), C.sprout), flex: 2 }}
+            >
+              Post (+15 XP)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Category filter */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+        {(['all', ...(Object.keys(CATEGORY_META) as ForumCategory[])] as const).map((k) => {
+          const active = filter === k
+          const label = k === 'all' ? '🏘️ All' : `${CATEGORY_META[k].emoji} ${CATEGORY_META[k].label}`
+          return (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setFilter(k)}
+              style={{
+                padding: '7px 12px',
+                fontSize: 12.5,
+                fontWeight: 600,
+                fontFamily: BODY_FONT,
+                borderRadius: 999,
+                cursor: 'pointer',
+                border: `1.5px solid ${active ? C.spruce : C.line}`,
+                background: active ? C.spruce : '#fff',
+                color: active ? '#fff' : C.ink,
+              }}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Feed */}
+      {posts.map((p) => (
+        <PostCard key={p.id} post={p} liked={liked.has(p.id)} onLike={() => like(p.id)} onDelete={() => remove(p.id)} />
+      ))}
+
+      <p style={{ fontSize: 11.5, color: C.sub, lineHeight: 1.55, marginTop: 6 }}>
+        Be kind and keep it real. Posts are personal stories, not financial advice.
+      </p>
+    </>
+  )
+}
+
+function PostCard({
+  post,
+  liked,
+  onLike,
+  onDelete,
+}: {
+  post: ForumPost
+  liked: boolean
+  onLike: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div style={card}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+        <div
+          style={{
+            fontSize: 20,
+            width: 38,
+            height: 38,
+            borderRadius: 999,
+            background: C.sproutSoft,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {post.avatar}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>
+            {post.author}
+            {post.mine && <span style={{ color: C.sub, fontWeight: 500 }}> · you</span>}
+          </div>
+          <div style={{ fontSize: 11.5, color: C.sub }}>
+            {post.location ? `${post.location} · ` : ''}
+            {timeAgo(post.createdAt)}
+          </div>
+        </div>
+        <CategoryTag category={post.category} />
+      </div>
+
+      <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 16.5, lineHeight: 1.25, marginBottom: 5 }}>
+        {post.title}
+      </div>
+      <div style={{ fontSize: 14, lineHeight: 1.6, color: C.ink, whiteSpace: 'pre-wrap' }}>{post.body}</div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 12 }}>
+        <button
+          type="button"
+          onClick={onLike}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 13.5,
+            fontWeight: 600,
+            fontFamily: BODY_FONT,
+            color: liked ? C.err : C.sub,
+            padding: 0,
+          }}
+        >
+          <span style={{ fontSize: 16 }}>{liked ? '❤️' : '🤍'}</span> {post.likes}
+        </button>
+        {post.mine && (
+          <button
+            type="button"
+            onClick={onDelete}
+            style={{
+              marginLeft: 'auto',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: C.sub,
+              fontFamily: BODY_FONT,
+              padding: 0,
+            }}
+          >
+            Delete
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
