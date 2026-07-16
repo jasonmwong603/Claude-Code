@@ -64,9 +64,25 @@ export default function KeyDateApp() {
     }
   }
 
-  const createPlan = ({ resolved, homeType, income, savings, monthly }: OnboardingResult) => {
+  const createPlan = ({
+    resolved,
+    homeType,
+    income,
+    savings,
+    monthly,
+    targetSource,
+    customPrice,
+    targetLabel,
+    listingUrl,
+  }: OnboardingResult) => {
     const areaAvg = resolved.base * TYPE_MULT[homeType]
-    const target = Math.min(areaAvg, maxAffordablePrice(income, homeType))
+    // A custom target (a listing or a chosen budget) is honoured exactly — we
+    // never quietly cap it to "affordable"; the faster-paths nudges surface on
+    // their own if the date lands far out.
+    const target =
+      targetSource === 'custom'
+        ? Math.max(1, customPrice)
+        : Math.min(areaAvg, maxAffordablePrice(income, homeType))
     const s: AppState = {
       plan: {
         location: resolved.name,
@@ -77,6 +93,9 @@ export default function KeyDateApp() {
         monthly,
         target,
         createdAt: new Date().toISOString(),
+        targetSource,
+        targetLabel: targetSource === 'custom' ? targetLabel.trim() || 'My target' : undefined,
+        listingUrl: targetSource === 'custom' ? listingUrl.trim() || undefined : undefined,
       },
       contributions: [],
       earnedBadges: ['plan'],

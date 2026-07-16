@@ -13,10 +13,13 @@ Store / Play Store from one codebase** (Vite + React + TypeScript, wrapped with
 [Capacitor](https://capacitorjs.com/) for native iOS/Android).
 
 The home screen is laid out as a **house cross-section** — the keys date sits in
-the attic under a roofline, "floor" rooms hold your progress / this-month
-actions / next lesson, and a brick foundation holds your keyring — echoing the
-level-up house that builds itself as you save. There's also a **Community** tab:
-an achievement feed where users share milestones, first-home stories, and advice.
+the attic under a roofline, "floor" rooms hold your target / progress /
+this-month actions / next lesson, and a brick foundation holds your keyring —
+echoing the level-up house that builds itself as you save. You can aim your plan
+at the **area's typical price** or at a **specific listing / budget** you choose
+(editable any time from the Home screen). There's also a **Community** tab: an
+achievement feed where users share milestones, first-home stories, and advice —
+with **photos or video** attached if they like.
 
 > Educational content only — not financial, legal, or tax advice. The financial
 > rules shown (FHSA, HBP, stress test, down-payment tiers) reflect current
@@ -104,6 +107,10 @@ src/
   shared backend (e.g. Supabase: a `posts`/`likes` table + anon auth + RLS) when
   you want cross-user posting. The screen calls nothing else, so the UI is
   unchanged by that upgrade. Add basic moderation before a public launch.
+- **Post photos/videos** are held as blobs in IndexedDB (`src/lib/media.ts`);
+  the post only stores a short id. When the backend lands, replace
+  `putMedia`/`getMedia` with a real upload that returns a URL and set it on the
+  post's `media.url` (seeded posts already render via `url`). 30 MB per-file cap.
 - **Financial constants are centralized** in `src/lib/config.ts` with a
   `LAST_REVIEWED` date — update them there when programs/rates change.
 - **Built-in market prices** are a hand-maintained illustrative table; the

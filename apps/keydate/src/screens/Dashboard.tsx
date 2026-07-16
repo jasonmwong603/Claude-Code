@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { C, DISPLAY_FONT, BODY_FONT } from '../theme'
-import { HouseSvg, MoneyInput } from '../components/atoms'
+import { HouseSvg, MoneyInput, Pills, inputStyle } from '../components/atoms'
 import { HouseFrame, type FloorSpec } from '../components/HouseFrame'
 import { HOME_TYPES, TYPE_MULT, homeTypeLabel } from '../lib/locations'
 import {
@@ -15,7 +15,7 @@ import {
 import { CLOSING_RATE } from '../lib/config'
 import { KEYRING, calcStreak, levelInfo } from '../lib/gamification'
 import { LESSONS, STAGES } from '../data/curriculum'
-import type { AppState, Plan } from '../types'
+import type { AppState, Plan, TargetSource } from '../types'
 
 /** A cream "furniture" panel that sits inside a room. */
 const roomCard = {
@@ -88,6 +88,35 @@ export function Dashboard({
         {fmtShort(plan.target)} {homeTypeLabel(plan.homeType).toLowerCase()} · est.{' '}
         {fmt(dash.payment)}/mo mortgage{plan.coBuyer ? ' · 👥 with co-buyer' : ''}
       </div>
+      {plan.targetSource === 'custom' && plan.targetLabel && (
+        <div style={{ marginTop: 10 }}>
+          <span
+            style={{
+              display: 'inline-block',
+              background: 'rgba(255,255,255,0.14)',
+              borderRadius: 999,
+              padding: '5px 12px',
+              fontSize: 12.5,
+              fontWeight: 600,
+            }}
+          >
+            🏡 {plan.targetLabel}
+            {plan.listingUrl && (
+              <>
+                {' · '}
+                <a
+                  href={plan.listingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: C.gold, textDecoration: 'underline' }}
+                >
+                  view listing
+                </a>
+              </>
+            )}
+          </span>
+        </div>
+      )}
       <div style={{ marginTop: 18 }}>
         <div style={{ height: 12, borderRadius: 999, background: 'rgba(255,255,255,0.18)', overflow: 'hidden' }}>
           <div
@@ -161,6 +190,13 @@ export function Dashboard({
         </div>
       </div>
     ),
+  })
+
+  // Plans: what you're aiming at (area price, or a listing/budget you chose).
+  floors.push({
+    key: 'target',
+    label: 'Plans · your target',
+    node: <TargetRoom plan={plan} onUpdatePlan={onUpdatePlan} />,
   })
 
   // Blueprint: faster paths (only when the date is 4+ years out).
@@ -435,6 +471,165 @@ function FasterPaths({
           </button>
         </div>
       ))}
+    </div>
+  )
+}
+
+const TARGET_MODES: { key: TargetSource; label: string }[] = [
+  { key: 'area', label: 'Area typical' },
+  { key: 'custom', label: 'Listing / budget' },
+]
+
+/** Shows the current target and lets the user re-aim it at a specific listing
+ *  price or a budget they're envisioning (or back to the area's typical price). */
+function TargetRoom({
+  plan,
+  onUpdatePlan,
+}: {
+  plan: Plan
+  onUpdatePlan: (patch: Partial<Plan>, xpReward?: number) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [mode, setMode] = useState<TargetSource>(plan.targetSource ?? 'area')
+  const [price, setPrice] = useState(plan.targetSource === 'custom' ? plan.target : 0)
+  const [label, setLabel] = useState(plan.targetLabel ?? '')
+  const [url, setUrl] = useState(plan.listingUrl ?? '')
+
+  const start = () => {
+    setMode(plan.targetSource ?? 'area')
+    setPrice(plan.targetSource === 'custom' ? plan.target : 0)
+    setLabel(plan.targetLabel ?? '')
+    setUrl(plan.listingUrl ?? '')
+    setEditing(true)
+  }
+
+  const save = () => {
+    if (mode === 'area') {
+      const target = Math.min(
+        plan.base * TYPE_MULT[plan.homeType],
+        maxAffordablePrice(plan.income, plan.homeType),
+      )
+      onUpdatePlan({ target, targetSource: 'area', targetLabel: undefined, listingUrl: undefined }, 0)
+      setEditing(false)
+    } else if (price > 0) {
+      onUpdatePlan(
+        {
+          target: Math.max(1, price),
+          targetSource: 'custom',
+          targetLabel: label.trim() || 'My target',
+          listingUrl: url.trim() || undefined,
+        },
+        0,
+      )
+      setEditing(false)
+    }
+  }
+
+  const isCustom = plan.targetSource === 'custom'
+
+  if (!editing) {
+    return (
+      <div style={{ ...roomCard, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+        <div>
+          <div style={{ fontSize: 12, color: C.sub, fontWeight: 600 }}>Aiming at</div>
+          <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 800, fontSize: 22 }}>{fmt(plan.target)}</div>
+          <div style={{ fontSize: 12, color: C.sub, marginTop: 2, lineHeight: 1.4 }}>
+            {isCustom
+              ? `🏡 ${plan.targetLabel || 'Your target'}`
+              : `Typical ${homeTypeLabel(plan.homeType).toLowerCase()} in ${plan.location}`}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={start}
+          style={{
+            padding: '8px 14px',
+            fontSize: 13,
+            fontWeight: 700,
+            color: C.spruce,
+            background: '#fff',
+            border: `1.5px solid ${C.line}`,
+            borderRadius: 10,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          Edit
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={roomCard}>
+      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>Set your target</div>
+      <Pills options={TARGET_MODES} value={mode} onChange={setMode} />
+      {mode === 'custom' && (
+        <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 12, color: C.sub, marginBottom: 6 }}>Target price</div>
+            <MoneyInput value={price} onChange={setPrice} step={5000} />
+          </div>
+          <input
+            type="text"
+            placeholder="Name it — e.g. 123 Elm St, or “My budget”"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            style={inputStyle}
+          />
+          <input
+            type="url"
+            inputMode="url"
+            placeholder="Listing link (optional)"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+      )}
+      {mode === 'area' && (
+        <div style={{ fontSize: 12.5, color: C.sub, marginTop: 10, lineHeight: 1.45 }}>
+          Uses a typical {homeTypeLabel(plan.homeType).toLowerCase()} price for {plan.location}.
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+        <button
+          type="button"
+          onClick={() => setEditing(false)}
+          style={{
+            flex: 1,
+            padding: '12px',
+            fontSize: 14,
+            fontWeight: 600,
+            color: C.sub,
+            background: '#fff',
+            border: `1.5px solid ${C.line}`,
+            borderRadius: 12,
+            cursor: 'pointer',
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={save}
+          disabled={mode === 'custom' && price <= 0}
+          style={{
+            flex: 2,
+            padding: '12px',
+            fontSize: 14,
+            fontWeight: 700,
+            fontFamily: DISPLAY_FONT,
+            color: '#fff',
+            background: mode === 'custom' && price <= 0 ? '#A9B8B0' : C.sprout,
+            border: 'none',
+            borderRadius: 12,
+            cursor: mode === 'custom' && price <= 0 ? 'not-allowed' : 'pointer',
+          }}
+        >
+          Update target
+        </button>
+      </div>
     </div>
   )
 }

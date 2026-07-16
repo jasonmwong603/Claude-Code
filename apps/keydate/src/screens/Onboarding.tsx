@@ -3,7 +3,7 @@ import { C, DISPLAY_FONT } from '../theme'
 import { Field, MoneyInput, Pills, bigBtn, inputStyle } from '../components/atoms'
 import { HOME_TYPES, matchBuiltIn } from '../lib/locations'
 import { fmtShort } from '../lib/math'
-import type { HomeTypeKey, ResolvedLocation } from '../types'
+import type { HomeTypeKey, ResolvedLocation, TargetSource } from '../types'
 
 export interface OnboardingResult {
   resolved: ResolvedLocation
@@ -11,7 +11,16 @@ export interface OnboardingResult {
   income: number
   savings: number
   monthly: number
+  targetSource: TargetSource
+  customPrice: number
+  targetLabel: string
+  listingUrl: string
 }
+
+const TARGET_MODES: { key: TargetSource; label: string }[] = [
+  { key: 'area', label: 'Typical for this area' },
+  { key: 'custom', label: 'A listing or budget' },
+]
 
 export function Onboarding({ onSubmit }: { onSubmit: (r: OnboardingResult) => void }) {
   const [locQuery, setLocQuery] = useState('')
@@ -21,6 +30,10 @@ export function Onboarding({ onSubmit }: { onSubmit: (r: OnboardingResult) => vo
   const [income, setIncome] = useState(72000)
   const [savings, setSavings] = useState(8000)
   const [monthly, setMonthly] = useState(600)
+  const [targetSource, setTargetSource] = useState<TargetSource>('area')
+  const [customPrice, setCustomPrice] = useState(0)
+  const [targetLabel, setTargetLabel] = useState('')
+  const [listingUrl, setListingUrl] = useState('')
 
   const handleLocationChange = (v: string) => {
     setLocQuery(v)
@@ -36,6 +49,7 @@ export function Onboarding({ onSubmit }: { onSubmit: (r: OnboardingResult) => vo
 
   // Offer manual entry once the user has typed a plausible place we don't know.
   const showManual = !matchBuiltIn(locQuery) && locQuery.trim().length > 2
+  const canBuild = !!resolved && (targetSource === 'area' || customPrice > 0)
 
   return (
     <>
@@ -53,7 +67,7 @@ export function Onboarding({ onSubmit }: { onSubmit: (r: OnboardingResult) => vo
         <span style={{ color: C.sprout }}>It has a date.</span>
       </h1>
       <p style={{ fontSize: 15, color: C.sub, lineHeight: 1.55, margin: '0 0 28px' }}>
-        Answer five things and we’ll build your plan.
+        Answer a few things and we’ll build your plan.
       </p>
 
       <Field
@@ -96,6 +110,41 @@ export function Onboarding({ onSubmit }: { onSubmit: (r: OnboardingResult) => vo
       <Field label="What kind of place?">
         <Pills options={HOME_TYPES} value={homeType} onChange={setHomeType} />
       </Field>
+
+      <Field
+        label="What are you aiming at?"
+        hint={
+          targetSource === 'area'
+            ? "We'll use a typical price for your area and home type."
+            : 'Found a listing or have a number in mind? Aim straight at it.'
+        }
+      >
+        <Pills options={TARGET_MODES} value={targetSource} onChange={setTargetSource} />
+        {targetSource === 'custom' && (
+          <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 12, color: C.sub, marginBottom: 6 }}>Target price</div>
+              <MoneyInput value={customPrice} onChange={setCustomPrice} step={5000} />
+            </div>
+            <input
+              type="text"
+              placeholder="Name it — e.g. 123 Elm St, or “My budget”"
+              value={targetLabel}
+              onChange={(e) => setTargetLabel(e.target.value)}
+              style={inputStyle}
+            />
+            <input
+              type="url"
+              inputMode="url"
+              placeholder="Listing link (optional)"
+              value={listingUrl}
+              onChange={(e) => setListingUrl(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+        )}
+      </Field>
+
       <Field label="Household income (before tax, per year)">
         <MoneyInput value={income} onChange={setIncome} />
       </Field>
@@ -108,11 +157,19 @@ export function Onboarding({ onSubmit }: { onSubmit: (r: OnboardingResult) => vo
 
       <button
         type="button"
-        onClick={() => resolved && onSubmit({ resolved, homeType, income, savings, monthly })}
-        disabled={!resolved}
-        style={bigBtn(!!resolved)}
+        onClick={() =>
+          canBuild &&
+          resolved &&
+          onSubmit({ resolved, homeType, income, savings, monthly, targetSource, customPrice, targetLabel, listingUrl })
+        }
+        disabled={!canBuild}
+        style={bigBtn(canBuild)}
       >
-        {resolved ? 'Build my plan →' : 'Add a location first'}
+        {!resolved
+          ? 'Add a location first'
+          : targetSource === 'custom' && customPrice <= 0
+            ? 'Enter your target price'
+            : 'Build my plan →'}
       </button>
     </>
   )

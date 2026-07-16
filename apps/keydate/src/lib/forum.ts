@@ -1,5 +1,6 @@
-import type { ForumCategory, ForumPost } from '../types'
+import type { ForumCategory, ForumPost, PostMediaRef } from '../types'
 import { SEED_POSTS } from '../data/forumSeed'
+import { delMedia } from './media'
 
 /* Community forum persistence — ON-DEVICE PREVIEW.
 
@@ -73,6 +74,7 @@ export function addPost(input: {
   category: ForumCategory
   title: string
   body: string
+  media?: PostMediaRef
 }): ForumPost {
   const post: ForumPost = {
     id: `me-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -84,14 +86,19 @@ export function addPost(input: {
     body: input.body.trim(),
     createdAt: new Date().toISOString(),
     likes: 0,
+    media: input.media,
     mine: true,
   }
   writeJSON(POSTS_KEY, [post, ...getMyPosts()])
   return post
 }
 
-export function deletePost(id: string): void {
-  writeJSON(POSTS_KEY, getMyPosts().filter((p) => p.id !== id))
+export async function deletePost(id: string): Promise<void> {
+  const posts = getMyPosts()
+  const gone = posts.find((p) => p.id === id)
+  writeJSON(POSTS_KEY, posts.filter((p) => p.id !== id))
+  // Reclaim the attachment blob, if any.
+  if (gone?.media?.id) await delMedia(gone.media.id)
 }
 
 /** Toggle a like on a post (device-local). Returns the new liked set. */

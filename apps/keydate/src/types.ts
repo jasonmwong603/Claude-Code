@@ -11,6 +11,10 @@ export type HomeTypeKey =
 
 export type StageId = 'save' | 'prep' | 'search' | 'close'
 
+/** How the target price was set: the area's typical price, or a specific number
+ *  the user chose (a listing they found, or a budget they're envisioning). */
+export type TargetSource = 'area' | 'custom'
+
 export interface Plan {
   location: string
   /** Average detached price for the area, before the home-type multiplier. */
@@ -26,6 +30,12 @@ export interface Plan {
   createdAt: string
   /** Optional plan tweaks applied from the "faster paths" cards. */
   coBuyer?: boolean
+  /** Where `target` came from (defaults to 'area' when absent). */
+  targetSource?: TargetSource
+  /** A name for a custom target, e.g. "123 Elm St" or "My budget". */
+  targetLabel?: string
+  /** Optional link to the listing a custom target is based on. */
+  listingUrl?: string
 }
 
 export interface Contribution {
@@ -87,6 +97,14 @@ export interface ResolvedLocation {
 /* ————— Community forum ————— */
 export type ForumCategory = 'milestone' | 'firsthome' | 'advice' | 'question'
 
+/** A photo or video attached to a post. `id` points at a blob in IndexedDB
+ *  (user uploads); `url` is a ready-to-use source (seeded examples). */
+export interface PostMediaRef {
+  kind: 'image' | 'video'
+  id?: string
+  url?: string
+}
+
 export interface ForumPost {
   id: string
   author: string
@@ -97,6 +115,7 @@ export interface ForumPost {
   body: string
   createdAt: string
   likes: number
+  media?: PostMediaRef
   /** True for posts written by this device's user (deletable, pre-liked state). */
   mine?: boolean
 }

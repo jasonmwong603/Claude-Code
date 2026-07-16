@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { C, DISPLAY_FONT, BODY_FONT } from '../theme'
 import { Pills, bigBtn, card, inputStyle } from '../components/atoms'
 import { CATEGORY_META } from '../data/forumSeed'
@@ -13,7 +13,8 @@ import {
   toggleLike,
   type Identity,
 } from '../lib/forum'
-import type { AppState, ForumCategory, ForumPost } from '../types'
+import { MAX_MEDIA_BYTES, getMedia, putMedia } from '../lib/media'
+import type { AppState, ForumCategory, ForumPost, PostMediaRef } from '../types'
 
 const CATEGORY_OPTIONS = (Object.keys(CATEGORY_META) as ForumCategory[]).map((k) => ({
   key: k,
@@ -54,6 +55,43 @@ function CategoryTag({ category }: { category: ForumCategory }) {
   )
 }
 
+/** Resolves a media ref to a displayable source (direct url, or a blob object
+ *  URL loaded from IndexedDB) and renders it. */
+function PostMedia({ media }: { media: PostMediaRef }) {
+  const [src, setSrc] = useState<string | null>(media.url ?? null)
+
+  useEffect(() => {
+    if (media.url || !media.id) return
+    let objUrl: string | null = null
+    let alive = true
+    getMedia(media.id).then((blob) => {
+      if (blob && alive) {
+        objUrl = URL.createObjectURL(blob)
+        setSrc(objUrl)
+      }
+    })
+    return () => {
+      alive = false
+      if (objUrl) URL.revokeObjectURL(objUrl)
+    }
+  }, [media.id, media.url])
+
+  if (!src) return null
+  const style = {
+    width: '100%',
+    borderRadius: 12,
+    marginTop: 10,
+    maxHeight: 340,
+    objectFit: 'cover' as const,
+    background: '#000',
+  }
+  return media.kind === 'video' ? (
+    <video src={src} controls playsInline style={style} />
+  ) : (
+    <img src={src} alt="" style={style} />
+  )
+}
+
 export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: number) => void }) {
   const [feed, setFeed] = useState(() => loadFeed())
   const [liked, setLiked] = useState<Set<string>>(() => feed.liked)
@@ -67,6 +105,11 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
   const [category, setCategory] = useState<ForumCategory>('milestone')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [mediaError, setMediaError] = useState('')
+  const [posting, setPosting] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
 
   const prompts = useMemo(() => achievementPrompts(state), [state])
 
@@ -76,15 +119,50 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
     setLiked(f.liked)
   }
 
-  const submit = () => {
-    if (!title.trim() || !body.trim()) return
-    saveIdentity(identity)
-    addPost({ identity, location: state.plan.location, category, title, body })
-    onEarnXp(15)
-    setTitle('')
-    setBody('')
-    setOpen(false)
-    refresh()
+  const clearMedia = () => {
+    if (preview) URL.revokeObjectURL(preview)
+    setFile(null)
+    setPreview(null)
+    setMediaError('')
+    if (fileInput.current) fileInput.current.value = ''
+  }
+
+  const pickFile = (f: File | undefined) => {
+    if (!f) return
+    if (!/^(image|video)\//.test(f.type)) {
+      setMediaError('Please choose a photo or video.')
+      return
+    }
+    if (f.size > MAX_MEDIA_BYTES) {
+      setMediaError(`That file is too big (max ${Math.round(MAX_MEDIA_BYTES / 1024 / 1024)} MB).`)
+      return
+    }
+    if (preview) URL.revokeObjectURL(preview)
+    setFile(f)
+    setPreview(URL.createObjectURL(f))
+    setMediaError('')
+  }
+
+  const submit = async () => {
+    if (!title.trim() || !body.trim() || posting) return
+    setPosting(true)
+    try {
+      let media: PostMediaRef | undefined
+      if (file) {
+        const id = await putMedia(file)
+        media = { kind: file.type.startsWith('video') ? 'video' : 'image', id }
+      }
+      saveIdentity(identity)
+      addPost({ identity, location: state.plan.location, category, title, body, media })
+      onEarnXp(15)
+      setTitle('')
+      setBody('')
+      clearMedia()
+      setOpen(false)
+      refresh()
+    } finally {
+      setPosting(false)
+    }
   }
 
   const like = (id: string) => {
@@ -92,8 +170,8 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
     setFeed(loadFeed())
   }
 
-  const remove = (id: string) => {
-    deletePost(id)
+  const remove = async (id: string) => {
+    await deletePost(id)
     refresh()
   }
 
@@ -105,7 +183,7 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
         Community
       </h2>
       <p style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.5, margin: '0 0 14px' }}>
-        Share your wins, first-home stories, and advice with other future owners.
+        Share your wins, first-home stories, and advice — with photos or video if you like.
       </p>
 
       <div
@@ -120,12 +198,11 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
           marginBottom: 14,
         }}
       >
-        👋 <strong>Preview.</strong> The posts below are example stories. Anything you post is saved
-        on <em>this device</em> for now — shared posting across everyone turns on when the community
-        server is connected.
+        👋 <strong>Preview.</strong> The posts below are example stories. Anything you post — text,
+        photos, or video — is saved on <em>this device</em> for now. Shared posting across everyone
+        turns on when the community server is connected.
       </div>
 
-      {/* Share prompts from the user's own achievements */}
       {prompts.length > 0 && !open && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, marginBottom: 8 }}>
@@ -161,22 +238,19 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
         </div>
       )}
 
-      {/* Composer */}
       {!open ? (
         <button type="button" onClick={() => setOpen(true)} style={{ ...bigBtn(true, C.sprout), marginBottom: 16 }}>
           ✍️ Write a post
         </button>
       ) : (
         <div style={{ ...card, marginBottom: 16 }}>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-            <input
-              type="text"
-              placeholder="Your name or handle"
-              value={identity.author}
-              onChange={(e) => setIdentity({ ...identity, author: e.target.value })}
-              style={{ ...inputStyle, flex: 1 }}
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Your name or handle"
+            value={identity.author}
+            onChange={(e) => setIdentity({ ...identity, author: e.target.value })}
+            style={{ ...inputStyle, marginBottom: 12 }}
+          />
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
             {AVATARS.map((a) => (
               <button
@@ -217,10 +291,74 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
             style={{ ...inputStyle, resize: 'vertical', marginBottom: 12 }}
           />
 
+          {/* Photo / video attachment */}
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*,video/*"
+            onChange={(e) => pickFile(e.target.files?.[0] ?? undefined)}
+            style={{ display: 'none' }}
+          />
+          {!preview ? (
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: 14,
+                fontWeight: 600,
+                color: C.spruce,
+                background: '#fff',
+                border: `1.5px dashed ${C.sprout}`,
+                borderRadius: 12,
+                cursor: 'pointer',
+                marginBottom: 12,
+                fontFamily: BODY_FONT,
+              }}
+            >
+              📷 Add a photo or video
+            </button>
+          ) : (
+            <div style={{ position: 'relative', marginBottom: 12 }}>
+              {file && file.type.startsWith('video') ? (
+                <video src={preview} controls playsInline style={{ width: '100%', borderRadius: 12, maxHeight: 260, background: '#000' }} />
+              ) : (
+                <img src={preview} alt="" style={{ width: '100%', borderRadius: 12, maxHeight: 260, objectFit: 'cover' }} />
+              )}
+              <button
+                type="button"
+                onClick={clearMedia}
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  width: 30,
+                  height: 30,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: 'rgba(0,0,0,0.6)',
+                  color: '#fff',
+                  fontSize: 15,
+                  cursor: 'pointer',
+                }}
+                aria-label="Remove attachment"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          {mediaError && (
+            <div style={{ fontSize: 12.5, color: C.err, marginBottom: 12 }}>{mediaError}</div>
+          )}
+
           <div style={{ display: 'flex', gap: 10 }}>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                clearMedia()
+                setOpen(false)
+              }}
               style={{
                 flex: 1,
                 padding: '14px',
@@ -238,10 +376,10 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
             <button
               type="button"
               onClick={submit}
-              disabled={!title.trim() || !body.trim()}
-              style={{ ...bigBtn(!!title.trim() && !!body.trim(), C.sprout), flex: 2 }}
+              disabled={!title.trim() || !body.trim() || posting}
+              style={{ ...bigBtn(!!title.trim() && !!body.trim() && !posting, C.sprout), flex: 2 }}
             >
-              Post (+15 XP)
+              {posting ? 'Posting…' : 'Post (+15 XP)'}
             </button>
           </div>
         </div>
@@ -275,7 +413,6 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
         })}
       </div>
 
-      {/* Feed */}
       {posts.map((p) => (
         <PostCard key={p.id} post={p} liked={liked.has(p.id)} onLike={() => like(p.id)} onDelete={() => remove(p.id)} />
       ))}
@@ -333,6 +470,8 @@ function PostCard({
         {post.title}
       </div>
       <div style={{ fontSize: 14, lineHeight: 1.6, color: C.ink, whiteSpace: 'pre-wrap' }}>{post.body}</div>
+
+      {post.media && <PostMedia media={post.media} />}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 12 }}>
         <button

@@ -9,6 +9,21 @@ export const CATEGORY_META: Record<ForumCategory, { label: string; emoji: string
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString()
 
+// A little "SOLD" illustration so the media feature is visible in the feed
+// before a user attaches anything. Encoded inline so there's no asset to fetch.
+const SOLD_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="340">' +
+  '<rect width="600" height="340" fill="#E3F2E9"/>' +
+  '<rect x="170" y="150" width="260" height="150" fill="#F1E8D2" stroke="#17302A" stroke-width="4"/>' +
+  '<polygon points="150,150 300,60 450,150" fill="#3FA672"/>' +
+  '<rect x="270" y="212" width="60" height="88" fill="#1E4D3B"/>' +
+  '<rect x="196" y="176" width="46" height="40" fill="#BFDFF0" stroke="#17302A" stroke-width="3"/>' +
+  '<rect x="358" y="176" width="46" height="40" fill="#BFDFF0" stroke="#17302A" stroke-width="3"/>' +
+  '<rect x="70" y="70" width="150" height="86" rx="10" fill="#ffffff" stroke="#B4452F" stroke-width="6"/>' +
+  '<text x="145" y="126" font-family="Arial,sans-serif" font-size="42" font-weight="bold" fill="#B4452F" text-anchor="middle">SOLD</text>' +
+  '</svg>'
+const SAMPLE_IMG = `data:image/svg+xml,${encodeURIComponent(SOLD_SVG)}`
+
 /* Example community posts. These illustrate the feed and voice; real cross-user
    posting arrives when a backend is wired (see src/lib/forum.ts). */
 export const SEED_POSTS: ForumPost[] = [
@@ -22,6 +37,7 @@ export const SEED_POSTS: ForumPost[] = [
     body: "Two and a half years of saving $700/month and it finally happened — a little townhouse in the northwest. The FHSA refund trick from the lessons genuinely added a whole extra month of savings each year. To anyone in the Save stage: it works. Keep going.",
     createdAt: daysAgo(1),
     likes: 42,
+    media: { kind: 'image', url: SAMPLE_IMG },
   },
   {
     id: 'seed-2',
