@@ -5,6 +5,7 @@ import { Dashboard } from './screens/Dashboard'
 import { Learn } from './screens/Learn'
 import { Forum } from './screens/Forum'
 import { EditPlan } from './screens/EditPlan'
+import { Bank } from './screens/Bank'
 import type { PlanFormValues } from './components/PlanForm'
 import { TYPE_MULT } from './lib/locations'
 import { maxAffordablePrice, savingsGoal } from './lib/math'
@@ -12,7 +13,7 @@ import { clearState, loadState, saveState } from './lib/storage'
 import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
 import type { AppState, Badge, Plan } from './types'
 
-type Screen = 'loading' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan'
+type Screen = 'loading' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan' | 'bank'
 
 /** Derive a target price from the plan inputs (area typical, or exact custom). */
 function targetFrom(
@@ -276,7 +277,7 @@ export default function KeyDateApp() {
           )}
         </div>
 
-        {state && screen !== 'onboard' && screen !== 'editplan' && <NavBar />}
+        {state && screen !== 'onboard' && screen !== 'editplan' && screen !== 'bank' && <NavBar />}
 
         {celebrate && (
           <div
@@ -305,11 +306,19 @@ export default function KeyDateApp() {
             onReset={resetPlan}
             onOpenLesson={openLesson}
             onEdit={() => setScreen('editplan')}
+            onOpenBank={() => setScreen('bank')}
           />
         )}
 
         {screen === 'editplan' && state && (
           <EditPlan plan={state.plan} onSave={savePlanEdits} onCancel={() => setScreen('dashboard')} />
+        )}
+
+        {screen === 'bank' && state && (
+          <Bank
+            onBack={() => setScreen('dashboard')}
+            onSetSavings={(total) => updatePlan({ startingSavings: total }, 0)}
+          />
         )}
 
         {screen === 'learn' && state && (

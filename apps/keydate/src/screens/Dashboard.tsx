@@ -14,6 +14,7 @@ import {
 } from '../lib/math'
 import { CLOSING_RATE } from '../lib/config'
 import { KEYRING, calcStreak, levelInfo } from '../lib/gamification'
+import { bankSummary, refreshedAgo } from '../lib/plaid'
 import { LESSONS, STAGES } from '../data/curriculum'
 import type { AppState, Plan, TargetSource } from '../types'
 
@@ -31,6 +32,7 @@ export function Dashboard({
   onReset,
   onOpenLesson,
   onEdit,
+  onOpenBank,
 }: {
   state: AppState
   onLog: (amount: number) => void
@@ -38,7 +40,9 @@ export function Dashboard({
   onReset: () => void
   onOpenLesson: (id: string) => void
   onEdit: () => void
+  onOpenBank: () => void
 }) {
+  const bank = bankSummary()
   const { plan } = state
   const [logAmount, setLogAmount] = useState(plan.monthly)
   const [boost, setBoost] = useState(0)
@@ -199,6 +203,47 @@ export function Dashboard({
     key: 'target',
     label: 'Plans · your target',
     node: <TargetRoom plan={plan} onUpdatePlan={onUpdatePlan} />,
+  })
+
+  // Vault: live bank balances (Plaid-shaped preview).
+  floors.push({
+    key: 'bank',
+    label: 'Vault · your money',
+    node: bank.linked ? (
+      <button
+        type="button"
+        onClick={onOpenBank}
+        style={{ ...roomCard, width: '100%', textAlign: 'left', cursor: 'pointer', border: `1.5px solid ${C.line}` }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 12, color: C.sub, fontWeight: 600 }}>In your accounts</div>
+            <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 800, fontSize: 22 }}>{fmt(bank.fundTotal)}</div>
+            <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>
+              {bank.accounts} account{bank.accounts === 1 ? '' : 's'} · updated {refreshedAgo(bank.lastRefreshed)}
+            </div>
+          </div>
+          <span style={{ fontSize: 13, fontWeight: 700, color: C.spruce }}>Manage →</span>
+        </div>
+      </button>
+    ) : (
+      <button
+        type="button"
+        onClick={onOpenBank}
+        style={{
+          ...roomCard,
+          width: '100%',
+          textAlign: 'left',
+          cursor: 'pointer',
+          background: C.sproutSoft,
+        }}
+      >
+        <div style={{ fontWeight: 700, fontSize: 14.5, color: C.ink }}>🔗 Connect a bank (view only)</div>
+        <div style={{ fontSize: 12.5, color: C.sub, marginTop: 3, lineHeight: 1.45 }}>
+          Watch your real balance climb toward your keys date. KeyDate can never move your money.
+        </div>
+      </button>
+    ),
   })
 
   // Blueprint: faster paths (only when the date is 4+ years out).

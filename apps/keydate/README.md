@@ -102,6 +102,16 @@ src/
   removed; `lookupPrices()` in `src/lib/locations.ts` is a documented hook for
   your own backend. Until it's wired, unknown locations fall back to **manual
   price entry**, so the app is fully usable standalone.
+- **Bank view is a Plaid-shaped prototype (read-only).** `src/lib/plaid.ts`
+  simulates the Plaid flow with sandbox data (no real bank, no login, no
+  credentials) because a real connection needs a backend to hold the Plaid
+  secret and exchange tokens. Its types mirror Plaid's `/accounts/balance/get`,
+  and the three real-integration points — `createLinkToken`,
+  `exchangePublicToken`, `getBalances` — are stubbed with the exact backend
+  routes to implement. To go live: add a small backend with your Plaid
+  client_id/secret + those three routes, add the Plaid Link SDK on the client,
+  and delete the mocks. Scope stays read-only (products `balance`) — never
+  payments or transfers.
 - **The Community forum is an on-device preview.** Posts and likes are stored in
   `localStorage` (seeded example stories in `src/data/forumSeed.ts`), so it ships
   on static hosting with no accounts. `src/lib/forum.ts` exposes `loadFeed` /

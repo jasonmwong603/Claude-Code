@@ -105,6 +105,37 @@ export interface PostMediaRef {
   url?: string
 }
 
+/* ————— Bank view (Plaid-shaped) —————
+   These mirror Plaid's /accounts/balance/get response so the prototype's mock
+   data and the real API are interchangeable. */
+export interface PlaidBalance {
+  available: number | null
+  current: number
+  iso_currency_code: string
+}
+
+export interface PlaidAccount {
+  account_id: string
+  name: string
+  mask: string
+  type: string
+  subtype: string
+  balances: PlaidBalance
+  /** App-local: whether this account's balance counts toward the home fund. */
+  countTowardGoal?: boolean
+}
+
+/** A linked institution (Plaid "Item") plus its accounts. */
+export interface PlaidItem {
+  item_id: string
+  institution_id: string
+  institution_name: string
+  emoji: string
+  accounts: PlaidAccount[]
+  linkedAt: string
+  lastRefreshed: string
+}
+
 export interface ForumPost {
   id: string
   author: string
