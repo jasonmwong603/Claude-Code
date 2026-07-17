@@ -3,21 +3,21 @@ import { composeAvatar, type AvatarConfig } from '../lib/avatar'
 
 /** Renders a composed pixel avatar as crisp SVG rects.
  *  mode 'head' crops to the face (calling card / header); 'full' shows the
- *  whole body (profile). */
+ *  whole body (profile) with an optional ground shadow. */
 export function PixelAvatar({
   config,
   mode = 'full',
   size = 96,
+  shadow = true,
 }: {
   config: AvatarConfig
   mode?: 'head' | 'full'
   size?: number
+  shadow?: boolean
 }) {
   const grid = useMemo(() => composeAvatar(config), [config])
 
-  // viewBox crops: head = face + a hint of shoulders (neck implied); full =
-  // the whole silhouette (feet now end at row 21).
-  const vb = mode === 'head' ? { x: 3, y: 1, w: 10, h: 9 } : { x: 2, y: 1, w: 12, h: 21 }
+  const vb = mode === 'head' ? { x: 6, y: 0, w: 12, h: 16 } : { x: 3, y: 0, w: 18, h: 32 }
   const width = size
   const height = Math.round((size * vb.h) / vb.w)
 
@@ -39,6 +39,9 @@ export function PixelAvatar({
       role="img"
       aria-label="avatar"
     >
+      {mode === 'full' && shadow && (
+        <ellipse cx={11.5} cy={31.4} rx={6} ry={1.2} fill="#000" opacity={0.16} />
+      )}
       {rects}
     </svg>
   )

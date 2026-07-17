@@ -12,16 +12,23 @@ import {
   unlockCounts,
 } from '../data/cosmetics'
 import {
+  BACKGROUNDS,
   BODIES,
   BOTTOMS,
   BOTTOM_COLORS,
+  EYEWEARS,
   EYE_COLORS,
   EYE_SHAPES,
+  FACIAL_HAIRS,
   HAIRS,
   HAIR_COLORS,
+  HANDHELDS,
+  HEADWEARS,
+  MASKS,
   SKINS,
   TOPS,
   TOP_COLORS,
+  bgOf,
   type AvatarConfig,
   type Style,
   type Swatch,
@@ -87,21 +94,25 @@ export function Profile({
     </div>
   )
 
-  /* ————— Full-body display ————— */
-  const fullBody = (
+  /* ————— Full-body display (background-aware) ————— */
+  const stageBg =
+    shown.avatar.background === 'none'
+      ? `radial-gradient(120% 80% at 50% 100%, ${C.sproutSoft}, #fff)`
+      : bgOf(shown.avatar.background).background
+  const stage = (size: number) => (
     <div
       style={{
-        marginTop: 14,
         borderRadius: 18,
         border: `1.5px solid ${C.line}`,
-        background: `radial-gradient(120% 80% at 50% 100%, ${C.sproutSoft}, #fff)`,
-        padding: '18px 0 8px',
+        background: stageBg,
+        padding: '16px 0 4px',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'flex-end',
+        overflow: 'hidden',
       }}
     >
-      <PixelAvatar config={shown.avatar} mode="full" size={104} />
+      <PixelAvatar config={shown.avatar} mode="full" size={size} />
     </div>
   )
 
@@ -110,8 +121,10 @@ export function Profile({
       <>
         <TopBar label="Character creator" onBack={() => setEditing(false)} />
 
-        {/* Live full-body preview */}
-        {fullBody}
+        {/* Sticky live preview — stays in view while scrolling the options. */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 5, background: C.paper, padding: '4px 0 10px', boxShadow: `0 8px 8px -8px rgba(0,0,0,0.18)` }}>
+          {stage(96)}
+        </div>
 
         <div style={{ marginTop: 16 }}>
           <FieldLabel>Display name</FieldLabel>
@@ -145,10 +158,24 @@ export function Profile({
         <SwatchRow label="Hair colour" items={HAIR_COLORS} level={level} selected={draft.avatar.hairColor} onPick={(id) => setAvatar({ hairColor: id })} />
         <StyleRow label="Eyes" items={EYE_SHAPES} level={level} selected={draft.avatar.eyeShape} onPick={(id) => setAvatar({ eyeShape: id })} preview={(id) => ({ ...draft.avatar, eyeShape: id })} mode="head" />
         <SwatchRow label="Eye colour" items={EYE_COLORS} level={level} selected={draft.avatar.eyeColor} onPick={(id) => setAvatar({ eyeColor: id })} />
+        <StyleRow label="Facial hair" items={FACIAL_HAIRS} level={level} selected={draft.avatar.facialHair} onPick={(id) => setAvatar({ facialHair: id })} preview={(id) => ({ ...draft.avatar, facialHair: id })} mode="head" />
+        <StyleRow label="Eyewear" items={EYEWEARS} level={level} selected={draft.avatar.eyewear} onPick={(id) => setAvatar({ eyewear: id })} preview={(id) => ({ ...draft.avatar, eyewear: id })} mode="head" />
+        <StyleRow label="Mask" items={MASKS} level={level} selected={draft.avatar.mask} onPick={(id) => setAvatar({ mask: id })} preview={(id) => ({ ...draft.avatar, mask: id })} mode="head" />
+        <StyleRow label="Headwear" items={HEADWEARS} level={level} selected={draft.avatar.headwear} onPick={(id) => setAvatar({ headwear: id })} preview={(id) => ({ ...draft.avatar, headwear: id })} mode="head" />
         <StyleRow label="Top" items={TOPS} level={level} selected={draft.avatar.top} onPick={(id) => setAvatar({ top: id })} preview={(id) => ({ ...draft.avatar, top: id })} mode="full" />
         <SwatchRow label="Top colour" items={TOP_COLORS} level={level} selected={draft.avatar.topColor} onPick={(id) => setAvatar({ topColor: id })} />
         <StyleRow label="Bottom" items={BOTTOMS} level={level} selected={draft.avatar.bottom} onPick={(id) => setAvatar({ bottom: id })} preview={(id) => ({ ...draft.avatar, bottom: id })} mode="full" />
         <SwatchRow label="Bottom colour" items={BOTTOM_COLORS} level={level} selected={draft.avatar.bottomColor} onPick={(id) => setAvatar({ bottomColor: id })} />
+        <StyleRow label="In hand" items={HANDHELDS} level={level} selected={draft.avatar.handheld} onPick={(id) => setAvatar({ handheld: id })} preview={(id) => ({ ...draft.avatar, handheld: id })} mode="full" />
+
+        <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Background</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 18 }}>
+          {BACKGROUNDS.map((it) => (
+            <Tile key={it.id} unlockLevel={it.unlockLevel} level={level} active={draft.avatar.background === it.id} onClick={() => setAvatar({ background: it.id })} label={it.label}>
+              <div style={{ width: '100%', height: 34, borderRadius: 8, background: it.id === 'none' ? '#fff' : it.background, border: it.id === 'none' ? `1.5px dashed ${C.line}` : 'none' }} />
+            </Tile>
+          ))}
+        </div>
 
         <SectionHead>Calling card</SectionHead>
         <FrameRow avatar={draft.avatar} level={level} selected={draft.frame} onPick={(id) => setDraft({ ...draft, frame: id })} />
@@ -185,7 +212,7 @@ export function Profile({
     <>
       <TopBar label="Your profile" onBack={onBack} />
       {callingCard}
-      {fullBody}
+      <div style={{ marginTop: 14 }}>{stage(112)}</div>
 
       <div style={{ margin: '14px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: C.sub, marginBottom: 6 }}>

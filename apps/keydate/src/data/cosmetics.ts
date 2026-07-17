@@ -11,6 +11,12 @@ import {
   HAIRS,
   TOPS,
   BOTTOMS,
+  FACIAL_HAIRS,
+  EYEWEARS,
+  MASKS,
+  HEADWEARS,
+  HANDHELDS,
+  BACKGROUNDS,
 } from '../lib/avatar'
 
 /* Calling-card cosmetics (avatar frame, banner, title). The character avatar
@@ -203,6 +209,12 @@ export function unlockCounts(level: number): { unlocked: number; total: number }
     ...HAIRS,
     ...TOPS,
     ...BOTTOMS,
+    ...FACIAL_HAIRS,
+    ...EYEWEARS,
+    ...MASKS,
+    ...HEADWEARS,
+    ...HANDHELDS,
+    ...BACKGROUNDS,
   ]
   return { unlocked: all.filter((i) => level >= i.unlockLevel).length, total: all.length }
 }

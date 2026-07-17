@@ -19,9 +19,15 @@ function migrate(s: Partial<AppState>): AppState {
   if (!s.contributions) s.contributions = []
   if (!s.earnedBadges) s.earnedBadges = []
   if (!s.profile) s.profile = { ...DEFAULT_PROFILE }
-  // Migrate the old emoji avatar (a string) to the new pixel AvatarConfig.
-  if (s.profile && typeof (s.profile as { avatar: unknown }).avatar !== 'object') {
-    s.profile = { ...s.profile, avatar: { ...DEFAULT_AVATAR } }
+  // Normalise the avatar: old emoji avatars were strings; older pixel avatars
+  // may be missing newer layers (facial hair, eyewear, background, …). Merge
+  // over the default so every field is present.
+  if (s.profile) {
+    const av = (s.profile as { avatar: unknown }).avatar
+    s.profile = {
+      ...s.profile,
+      avatar: av && typeof av === 'object' ? { ...DEFAULT_AVATAR, ...av } : { ...DEFAULT_AVATAR },
+    }
   }
   return s as AppState
 }
