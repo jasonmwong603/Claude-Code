@@ -15,8 +15,9 @@ export function PixelAvatar({
 }) {
   const grid = useMemo(() => composeAvatar(config), [config])
 
-  // viewBox crops: head = face region; full = whole silhouette (trim margins).
-  const vb = mode === 'head' ? { x: 3, y: 0, w: 10, h: 11 } : { x: 2, y: 0, w: 12, h: 24 }
+  // viewBox crops: head = face + a hint of shoulders (neck implied); full =
+  // the whole silhouette (feet now end at row 21).
+  const vb = mode === 'head' ? { x: 3, y: 1, w: 10, h: 9 } : { x: 2, y: 1, w: 12, h: 21 }
   const width = size
   const height = Math.round((size * vb.h) / vb.w)
 
