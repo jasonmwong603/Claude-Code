@@ -7,7 +7,7 @@ import { Forum } from './screens/Forum'
 import { EditPlan } from './screens/EditPlan'
 import { Bank } from './screens/Bank'
 import { Profile } from './screens/Profile'
-import { Avatar } from './components/Avatar'
+import { PixelAvatar } from './components/PixelAvatar'
 import { DEFAULT_PROFILE } from './data/cosmetics'
 import type { PlanFormValues } from './components/PlanForm'
 import type { Profile as ProfileT } from './types'
@@ -295,12 +295,20 @@ export default function KeyDateApp() {
                 cursor: 'pointer',
               }}
             >
-              <Avatar
-                avatar={state.profile.avatar}
-                accessory={state.profile.accessory}
-                frame={state.profile.frame}
-                size={28}
-              />
+              <span
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  background: C.sproutSoft,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'center',
+                }}
+              >
+                <PixelAvatar config={state.profile.avatar} mode="head" size={30} />
+              </span>
               <span style={{ fontSize: 12, fontWeight: 700, color: C.spruce }}>Lv {lvl.level} · {state.xp} XP</span>
             </button>
           )}

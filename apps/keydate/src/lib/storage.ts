@@ -1,5 +1,6 @@
 import { STORAGE_KEY } from './config'
 import { DEFAULT_PROFILE } from '../data/cosmetics'
+import { DEFAULT_AVATAR } from './avatar'
 import type { AppState } from '../types'
 
 /* Real persistence for KeyDate.
@@ -18,6 +19,10 @@ function migrate(s: Partial<AppState>): AppState {
   if (!s.contributions) s.contributions = []
   if (!s.earnedBadges) s.earnedBadges = []
   if (!s.profile) s.profile = { ...DEFAULT_PROFILE }
+  // Migrate the old emoji avatar (a string) to the new pixel AvatarConfig.
+  if (s.profile && typeof (s.profile as { avatar: unknown }).avatar !== 'object') {
+    s.profile = { ...s.profile, avatar: { ...DEFAULT_AVATAR } }
+  }
   return s as AppState
 }
 

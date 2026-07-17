@@ -43,13 +43,15 @@ export interface Contribution {
   amount: number
 }
 
-/** Customizable profile / calling card. Each cosmetic id points at an item in
- *  data/cosmetics.ts; items unlock as the user's level rises. */
+import type { AvatarConfig } from './lib/avatar'
+
+/** Customizable profile / calling card. The avatar is a layered pixel character
+ *  (see lib/avatar.ts); frame/banner/title point at items in data/cosmetics.ts.
+ *  Cosmetics and premium avatar options unlock as the user's level rises. */
 export interface Profile {
   displayName: string
   bio: string
-  avatar: string
-  accessory: string
+  avatar: AvatarConfig
   frame: string
   banner: string
   title: string

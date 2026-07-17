@@ -21,10 +21,13 @@ echoing the level-up house that builds itself as you save. The location field
 is **editable any time** ("Edit my plan") without losing your saved progress.
 There's also a **Community** tab: an
 achievement feed where users share milestones, first-home stories, and advice —
-with **photos or video** attached if they like. Every player gets an editable
-**profile / calling card** (avatar, headwear & accessories, avatar frame, banner,
-title, name, bio) whose cosmetics **unlock as they level up** — turning the XP
-bar into a real reward loop.
+with **photos or video** attached if they like. Every player builds a **2D pixel character** in a Mii-style creator (body type,
+skin tone, eye shape & colour, hairstyle & colour, top, bottom, and colours),
+shown **head-only on the calling card** and **full-body on the profile**. Core
+identity is free; hairstyles, clothing, fancy colours, plus the calling-card
+**frame / banner / title** **unlock as they level up** — turning the XP bar into
+a real reward loop. The avatar engine (`src/lib/avatar.ts`) is a layered sprite
+system: adding an option is just another array entry.
 
 > Educational content only — not financial, legal, or tax advice. The financial
 > rules shown (FHSA, HBP, stress test, down-payment tiers) reflect current

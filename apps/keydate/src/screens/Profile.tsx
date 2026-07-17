@@ -1,18 +1,31 @@
 import { useState, type ReactNode } from 'react'
 import { C, DISPLAY_FONT, BODY_FONT } from '../theme'
-import { Avatar } from '../components/Avatar'
+import { PixelAvatar } from '../components/PixelAvatar'
 import { inputStyle } from '../components/atoms'
 import {
-  ACCESSORIES,
-  AVATARS,
   BANNERS,
   FRAMES,
   TITLES,
-  avatarOf,
   bannerOf,
+  frameOf,
   titleOf,
   unlockCounts,
 } from '../data/cosmetics'
+import {
+  BODIES,
+  BOTTOMS,
+  BOTTOM_COLORS,
+  EYE_COLORS,
+  EYE_SHAPES,
+  HAIRS,
+  HAIR_COLORS,
+  SKINS,
+  TOPS,
+  TOP_COLORS,
+  type AvatarConfig,
+  type Style,
+  type Swatch,
+} from '../lib/avatar'
 import { calcStreak, levelInfo } from '../lib/gamification'
 import { keysDate, savingsGoal } from '../lib/math'
 import type { AppState, Profile as ProfileT } from '../types'
@@ -28,13 +41,12 @@ export function Profile({
 }) {
   const profile = state.profile!
   const lvl = levelInfo(state.xp)
+  const level = lvl.level
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<ProfileT>(profile)
 
   const shown = editing ? draft : profile
-  const banner = bannerOf(shown.banner)
   const name = shown.displayName.trim() || 'Future Homeowner'
-  const title = titleOf(shown.title).label
 
   // Stats
   const goal = savingsGoal(state.plan.target, state.plan.homeType)
@@ -43,21 +55,16 @@ export function Profile({
   const baseMonthly = state.plan.monthly * (state.plan.coBuyer ? 2 : 1)
   const remaining = Math.max(0, goal - totalSaved)
   const date = remaining === 0 ? 'Today 🎉' : keysDate(baseMonthly > 0 ? remaining / baseMonthly : Infinity)
-  const wardrobe = unlockCounts(lvl.level)
+  const wardrobe = unlockCounts(level)
 
+  const setAvatar = (patch: Partial<AvatarConfig>) => setDraft({ ...draft, avatar: { ...draft.avatar, ...patch } })
+
+  /* ————— Calling card: head medallion in a frame over the banner ————— */
   const callingCard = (
     <div style={{ borderRadius: 20, overflow: 'hidden', border: `1.5px solid ${C.line}` }}>
-      <div
-        style={{
-          background: banner.background,
-          height: 96,
-          position: 'relative',
-        }}
-      />
-      <div style={{ background: '#fff', padding: '0 18px 18px', textAlign: 'center', marginTop: -44 }}>
-        <div style={{ display: 'inline-block' }}>
-          <Avatar avatar={shown.avatar} accessory={shown.accessory} frame={shown.frame} size={88} />
-        </div>
+      <div style={{ background: bannerOf(shown.banner).background, height: 92 }} />
+      <div style={{ background: '#fff', padding: '0 18px 18px', textAlign: 'center', marginTop: -46 }}>
+        <HeadMedallion avatar={shown.avatar} frame={shown.frame} size={92} />
         <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 800, fontSize: 22, marginTop: 8 }}>{name}</div>
         <div
           style={{
@@ -71,7 +78,7 @@ export function Profile({
             padding: '3px 12px',
           }}
         >
-          {title} · Lv {lvl.level}
+          {titleOf(shown.title).label} · Lv {level}
         </div>
         {shown.bio.trim() && (
           <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.55, marginTop: 10 }}>{shown.bio.trim()}</div>
@@ -80,11 +87,31 @@ export function Profile({
     </div>
   )
 
+  /* ————— Full-body display ————— */
+  const fullBody = (
+    <div
+      style={{
+        marginTop: 14,
+        borderRadius: 18,
+        border: `1.5px solid ${C.line}`,
+        background: `radial-gradient(120% 80% at 50% 100%, ${C.sproutSoft}, #fff)`,
+        padding: '18px 0 8px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+      }}
+    >
+      <PixelAvatar config={shown.avatar} mode="full" size={104} />
+    </div>
+  )
+
   if (editing) {
     return (
       <>
-        <TopBar label="Edit profile" onBack={() => setEditing(false)} />
-        {callingCard}
+        <TopBar label="Character creator" onBack={() => setEditing(false)} />
+
+        {/* Live full-body preview */}
+        {fullBody}
 
         <div style={{ marginTop: 16 }}>
           <FieldLabel>Display name</FieldLabel>
@@ -108,110 +135,46 @@ export function Profile({
         </div>
 
         <div style={{ fontSize: 12, color: C.sub, margin: '8px 0 16px' }}>
-          🎁 {wardrobe.unlocked}/{wardrobe.total} items unlocked · keep earning XP to unlock more.
+          🎁 {wardrobe.unlocked}/{wardrobe.total} options unlocked · keep earning XP to unlock more.
         </div>
 
-        <Wardrobe
-          title="Avatar"
-          level={lvl.level}
-          items={AVATARS}
-          selected={draft.avatar}
-          onPick={(id) => setDraft({ ...draft, avatar: id })}
-          render={(it) => <span style={{ fontSize: 30 }}>{avatarOf(it.id).emoji}</span>}
-        />
-        <Wardrobe
-          title="Headwear & accessories"
-          level={lvl.level}
-          items={ACCESSORIES}
-          selected={draft.accessory}
-          onPick={(id) => setDraft({ ...draft, accessory: id })}
-          render={(it) =>
-            it.id === 'none' ? (
-              <span style={{ fontSize: 12, color: C.sub }}>None</span>
-            ) : (
-              <span style={{ fontSize: 28 }}>{ACCESSORIES.find((a) => a.id === it.id)?.emoji}</span>
-            )
-          }
-        />
-        <Wardrobe
-          title="Avatar frame"
-          level={lvl.level}
-          items={FRAMES}
-          selected={draft.frame}
-          onPick={(id) => setDraft({ ...draft, frame: id })}
-          render={(it) => <Avatar avatar={draft.avatar} accessory="none" frame={it.id} size={42} />}
-        />
-        <Wardrobe
-          title="Calling-card banner"
-          level={lvl.level}
-          items={BANNERS}
-          selected={draft.banner}
-          onPick={(id) => setDraft({ ...draft, banner: id })}
-          render={(it) => (
-            <div
-              style={{
-                width: '100%',
-                height: 34,
-                borderRadius: 8,
-                background: bannerOf(it.id).background,
-              }}
-            />
-          )}
-        />
-        <Wardrobe
-          title="Title"
-          level={lvl.level}
-          items={TITLES}
-          selected={draft.title}
-          onPick={(id) => setDraft({ ...draft, title: id })}
-          render={(it) => (
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: C.ink, textAlign: 'center' }}>
-              {titleOf(it.id).label}
-            </span>
-          )}
-        />
+        <SectionHead>Character</SectionHead>
+        <StyleRow label="Body type" items={BODIES} level={level} selected={draft.avatar.body} onPick={(id) => setAvatar({ body: id })} preview={(id) => ({ ...draft.avatar, body: id })} mode="full" />
+        <SwatchRow label="Skin tone" items={SKINS} level={level} selected={draft.avatar.skin} onPick={(id) => setAvatar({ skin: id })} />
+        <StyleRow label="Hair" items={HAIRS} level={level} selected={draft.avatar.hair} onPick={(id) => setAvatar({ hair: id })} preview={(id) => ({ ...draft.avatar, hair: id })} mode="head" />
+        <SwatchRow label="Hair colour" items={HAIR_COLORS} level={level} selected={draft.avatar.hairColor} onPick={(id) => setAvatar({ hairColor: id })} />
+        <StyleRow label="Eyes" items={EYE_SHAPES} level={level} selected={draft.avatar.eyeShape} onPick={(id) => setAvatar({ eyeShape: id })} preview={(id) => ({ ...draft.avatar, eyeShape: id })} mode="head" />
+        <SwatchRow label="Eye colour" items={EYE_COLORS} level={level} selected={draft.avatar.eyeColor} onPick={(id) => setAvatar({ eyeColor: id })} />
+        <StyleRow label="Top" items={TOPS} level={level} selected={draft.avatar.top} onPick={(id) => setAvatar({ top: id })} preview={(id) => ({ ...draft.avatar, top: id })} mode="full" />
+        <SwatchRow label="Top colour" items={TOP_COLORS} level={level} selected={draft.avatar.topColor} onPick={(id) => setAvatar({ topColor: id })} />
+        <StyleRow label="Bottom" items={BOTTOMS} level={level} selected={draft.avatar.bottom} onPick={(id) => setAvatar({ bottom: id })} preview={(id) => ({ ...draft.avatar, bottom: id })} mode="full" />
+        <SwatchRow label="Bottom colour" items={BOTTOM_COLORS} level={level} selected={draft.avatar.bottomColor} onPick={(id) => setAvatar({ bottomColor: id })} />
+
+        <SectionHead>Calling card</SectionHead>
+        <FrameRow avatar={draft.avatar} level={level} selected={draft.frame} onPick={(id) => setDraft({ ...draft, frame: id })} />
+        <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Banner</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 18 }}>
+          {BANNERS.map((it) => (
+            <Tile key={it.id} unlockLevel={it.unlockLevel} level={level} active={draft.banner === it.id} onClick={() => setDraft({ ...draft, banner: it.id })} label={it.label}>
+              <div style={{ width: '100%', height: 34, borderRadius: 8, background: it.background }} />
+            </Tile>
+          ))}
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Title</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
+          {TITLES.map((it) => (
+            <Tile key={it.id} unlockLevel={it.unlockLevel} level={level} active={draft.title === it.id} onClick={() => setDraft({ ...draft, title: it.id })} label={it.label}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: C.ink, textAlign: 'center', lineHeight: 1.2 }}>{it.label}</span>
+            </Tile>
+          ))}
+        </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(profile)
-              setEditing(false)
-            }}
-            style={{
-              flex: 1,
-              padding: '15px',
-              fontSize: 15,
-              fontWeight: 600,
-              color: C.sub,
-              background: '#fff',
-              border: `1.5px solid ${C.line}`,
-              borderRadius: 14,
-              cursor: 'pointer',
-            }}
-          >
+          <button type="button" onClick={() => { setDraft(profile); setEditing(false) }} style={btnGhost}>
             Cancel
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              onSave(draft)
-              setEditing(false)
-            }}
-            style={{
-              flex: 2,
-              padding: '15px',
-              fontSize: 15,
-              fontWeight: 700,
-              fontFamily: DISPLAY_FONT,
-              color: '#fff',
-              background: C.spruce,
-              border: 'none',
-              borderRadius: 14,
-              cursor: 'pointer',
-            }}
-          >
-            Save profile
+          <button type="button" onClick={() => { onSave(draft); setEditing(false) }} style={btnPrimary}>
+            Save character
           </button>
         </div>
       </>
@@ -222,28 +185,18 @@ export function Profile({
     <>
       <TopBar label="Your profile" onBack={onBack} />
       {callingCard}
+      {fullBody}
 
-      {/* XP progress toward next level */}
       <div style={{ margin: '14px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: C.sub, marginBottom: 6 }}>
-          <span>
-            Lv {lvl.level} {lvl.title} · {state.xp} XP
-          </span>
-          <span>{lvl.max ? 'Max level 🎉' : `${lvl.toNext} XP to Lv ${lvl.level + 1}`}</span>
+          <span>Lv {level} {lvl.title} · {state.xp} XP</span>
+          <span>{lvl.max ? 'Max level 🎉' : `${lvl.toNext} XP to Lv ${level + 1}`}</span>
         </div>
         <div style={{ height: 10, borderRadius: 999, background: C.line, overflow: 'hidden' }}>
-          <div
-            style={{
-              height: '100%',
-              width: `${Math.max(4, lvl.pct * 100)}%`,
-              background: `linear-gradient(90deg, ${C.sprout}, ${C.gold})`,
-              borderRadius: 999,
-            }}
-          />
+          <div style={{ height: '100%', width: `${Math.max(4, lvl.pct * 100)}%`, background: `linear-gradient(90deg, ${C.sprout}, ${C.gold})`, borderRadius: 999 }} />
         </div>
       </div>
 
-      {/* Quick stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
         <Stat label="Keys date" value={date} />
         <Stat label="Saved" value={`${Math.round(progress * 100)}%`} />
@@ -252,54 +205,81 @@ export function Profile({
       </div>
 
       <div style={{ fontSize: 12, color: C.sub, marginBottom: 16, textAlign: 'center' }}>
-        🎁 {wardrobe.unlocked}/{wardrobe.total} cosmetics unlocked
+        🎁 {wardrobe.unlocked}/{wardrobe.total} options unlocked
       </div>
 
-      <button
-        type="button"
-        onClick={() => {
-          setDraft(profile)
-          setEditing(true)
-        }}
-        style={{
-          width: '100%',
-          padding: '15px',
-          fontSize: 15,
-          fontWeight: 700,
-          fontFamily: DISPLAY_FONT,
-          color: '#fff',
-          background: C.spruce,
-          border: 'none',
-          borderRadius: 14,
-          cursor: 'pointer',
-        }}
-      >
-        ✏️ Edit profile & wardrobe
+      <button type="button" onClick={() => { setDraft(profile); setEditing(true) }} style={btnPrimary}>
+        🎨 Customize character
       </button>
     </>
   )
 }
 
+/* ————— Pieces ————— */
+
+function HeadMedallion({ avatar, frame, size }: { avatar: AvatarConfig; frame: string; size: number }) {
+  const f = frameOf(frame)
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        border: f.border,
+        boxShadow: f.boxShadow,
+        background: f.bg,
+        overflow: 'hidden',
+      }}
+    >
+      <PixelAvatar config={avatar} mode="head" size={size - 12} />
+    </div>
+  )
+}
+
+const btnGhost = {
+  flex: 1,
+  padding: '15px',
+  fontSize: 15,
+  fontWeight: 600,
+  color: C.sub,
+  background: '#fff',
+  border: `1.5px solid ${C.line}`,
+  borderRadius: 14,
+  cursor: 'pointer',
+} as const
+
+const btnPrimary = {
+  flex: 2,
+  width: '100%',
+  padding: '15px',
+  fontSize: 15,
+  fontWeight: 700,
+  fontFamily: DISPLAY_FONT,
+  color: '#fff',
+  background: C.spruce,
+  border: 'none',
+  borderRadius: 14,
+  cursor: 'pointer',
+} as const
+
 function TopBar({ label, onBack }: { label: string; onBack: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '2px 0 12px' }}>
-      <button
-        type="button"
-        onClick={onBack}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: C.sub,
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: 'pointer',
-          padding: '8px 0',
-          fontFamily: BODY_FONT,
-        }}
-      >
+      <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', color: C.sub, fontSize: 14, fontWeight: 600, cursor: 'pointer', padding: '8px 0', fontFamily: BODY_FONT }}>
         ← Back
       </button>
       <span style={{ fontFamily: DISPLAY_FONT, fontWeight: 800, fontSize: 18 }}>{label}</span>
+    </div>
+  )
+}
+
+function SectionHead({ children }: { children: ReactNode }) {
+  return (
+    <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 800, fontSize: 17, margin: '6px 0 12px', color: C.spruce }}>
+      {children}
     </div>
   )
 }
@@ -317,82 +297,149 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
-interface CosmeticLike {
-  id: string
-  label: string
+function Tile({
+  unlockLevel,
+  level,
+  active,
+  onClick,
+  label,
+  children,
+}: {
   unlockLevel: number
+  level: number
+  active: boolean
+  onClick: () => void
+  label: string
+  children: ReactNode
+}) {
+  const locked = level < unlockLevel
+  return (
+    <button
+      type="button"
+      disabled={locked}
+      onClick={() => !locked && onClick()}
+      title={locked ? `Unlocks at Lv ${unlockLevel}` : label}
+      style={{
+        position: 'relative',
+        aspectRatio: '1 / 1',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+        padding: 4,
+        borderRadius: 12,
+        cursor: locked ? 'not-allowed' : 'pointer',
+        background: active ? C.sproutSoft : '#fff',
+        border: `1.5px solid ${active ? C.sprout : C.line}`,
+        opacity: locked ? 0.55 : 1,
+        overflow: 'hidden',
+      }}
+    >
+      {children}
+      {locked && (
+        <span
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(247,248,244,0.72)',
+            fontSize: 11,
+            fontWeight: 700,
+            color: C.sub,
+            gap: 2,
+          }}
+        >
+          <span style={{ fontSize: 15 }}>🔒</span>
+          Lv {unlockLevel}
+        </span>
+      )}
+    </button>
+  )
 }
 
-function Wardrobe({
-  title,
-  level,
+function SwatchRow({
+  label,
   items,
+  level,
   selected,
   onPick,
-  render,
 }: {
-  title: string
+  label: string
+  items: Swatch[]
   level: number
-  items: CosmeticLike[]
   selected: string
   onPick: (id: string) => void
-  render: (item: CosmeticLike) => ReactNode
 }) {
   return (
-    <div style={{ marginBottom: 18 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 8 }}>{title}</div>
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 8 }}>{label}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 }}>
+        {items.map((it) => (
+          <Tile key={it.id} unlockLevel={it.unlockLevel} level={level} active={selected === it.id} onClick={() => onPick(it.id)} label={it.label}>
+            <span style={{ width: 26, height: 26, borderRadius: '50%', background: it.color, border: `1.5px solid rgba(0,0,0,0.12)` }} />
+          </Tile>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function StyleRow({
+  label,
+  items,
+  level,
+  selected,
+  onPick,
+  preview,
+  mode,
+}: {
+  label: string
+  items: Style[]
+  level: number
+  selected: string
+  onPick: (id: string) => void
+  preview: (id: string) => AvatarConfig
+  mode: 'head' | 'full'
+}) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 8 }}>{label}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-        {items.map((it) => {
-          const locked = level < it.unlockLevel
-          const active = selected === it.id
-          return (
-            <button
-              key={it.id}
-              type="button"
-              disabled={locked}
-              onClick={() => !locked && onPick(it.id)}
-              title={locked ? `Unlocks at Lv ${it.unlockLevel}` : it.label}
-              style={{
-                position: 'relative',
-                aspectRatio: '1 / 1',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 4,
-                padding: 4,
-                borderRadius: 12,
-                cursor: locked ? 'not-allowed' : 'pointer',
-                background: active ? C.sproutSoft : '#fff',
-                border: `1.5px solid ${active ? C.sprout : C.line}`,
-                opacity: locked ? 0.55 : 1,
-                overflow: 'hidden',
-              }}
-            >
-              {render(it)}
-              {locked && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'rgba(247,248,244,0.72)',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: C.sub,
-                    gap: 2,
-                  }}
-                >
-                  <span style={{ fontSize: 15 }}>🔒</span>
-                  Lv {it.unlockLevel}
-                </span>
-              )}
-            </button>
-          )
-        })}
+        {items.map((it) => (
+          <Tile key={it.id} unlockLevel={it.unlockLevel} level={level} active={selected === it.id} onClick={() => onPick(it.id)} label={it.label}>
+            <PixelAvatar config={preview(it.id)} mode={mode} size={mode === 'head' ? 40 : 30} />
+            <span style={{ fontSize: 9.5, color: C.sub, fontWeight: 600, lineHeight: 1 }}>{it.label}</span>
+          </Tile>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function FrameRow({
+  avatar,
+  level,
+  selected,
+  onPick,
+}: {
+  avatar: AvatarConfig
+  level: number
+  selected: string
+  onPick: (id: string) => void
+}) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Frame</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+        {FRAMES.map((it) => (
+          <Tile key={it.id} unlockLevel={it.unlockLevel} level={level} active={selected === it.id} onClick={() => onPick(it.id)} label={it.label}>
+            <HeadMedallion avatar={avatar} frame={it.id} size={44} />
+          </Tile>
+        ))}
       </div>
     </div>
   )
