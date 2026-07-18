@@ -24,10 +24,11 @@ function migrate(s: Partial<AppState>): AppState {
   // over the default so every field is present.
   if (s.profile) {
     const av = (s.profile as { avatar: unknown }).avatar
-    s.profile = {
-      ...s.profile,
-      avatar: av && typeof av === 'object' ? { ...DEFAULT_AVATAR, ...av } : { ...DEFAULT_AVATAR },
-    }
+    const merged = av && typeof av === 'object' ? { ...DEFAULT_AVATAR, ...av } : { ...DEFAULT_AVATAR }
+    // Body ids were renamed (masc→taper, fem→curvy) when body shapes changed.
+    if (merged.body === 'masc') merged.body = 'taper'
+    if (merged.body === 'fem') merged.body = 'curvy'
+    s.profile = { ...s.profile, avatar: merged }
   }
   return s as AppState
 }

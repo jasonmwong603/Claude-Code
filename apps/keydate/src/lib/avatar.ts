@@ -1,14 +1,14 @@
 /* ============================================================================
    Layered 2D pixel-avatar engine (Mii / MMORPG-style character creator).
 
-   A character is composed from selectable layers on a 24×32 grid — background,
-   body, bottom, top, facial hair, mouth, eyes, eyewear, mask, hair, headwear,
-   and a handheld item — each a small sprite coloured at render time from the
-   user's palette picks, then given an automatic dark outline. Head-only and
-   full-body crops come from the same grid.
+   A character is composed on a 24×32 grid. The BODY defines a skin silhouette
+   (the head is identical across body types so face accessories always align).
+   Clothing is painted directly onto the body's torso / leg pixels, so every
+   top and bottom fits every body shape automatically. Face layers (eyes,
+   facial hair, eyewear, mask, hair, headwear) and a handheld item are stamped
+   on top, then a dark outline is added around the silhouette.
 
-   To add options: append to the arrays / sprite maps below. Core identity
-   (body, skin, eye shape/colour) is free; everything else unlocks by level.
+   To add options: append to the arrays / sprite maps below.
    ========================================================================== */
 
 export interface AvatarConfig {
@@ -110,16 +110,18 @@ export const BOTTOM_COLORS: Swatch[] = [
 
 /* ————— Style catalogs ————— */
 export const BODIES: Style[] = [
-  { id: 'masc', label: 'Type A', unlockLevel: 1 },
-  { id: 'fem', label: 'Type B', unlockLevel: 1 },
+  { id: 'taper', label: 'Athletic', unlockLevel: 1 },
+  { id: 'curvy', label: 'Curvy', unlockLevel: 1 },
+  { id: 'slim', label: 'Slim', unlockLevel: 1 },
+  { id: 'broad', label: 'Broad', unlockLevel: 1 },
 ]
 
 export const EYE_SHAPES: Style[] = [
-  { id: 'round', label: 'Round', unlockLevel: 1 },
+  { id: 'round', label: 'Dot', unlockLevel: 1 },
   { id: 'big', label: 'Big', unlockLevel: 1 },
+  { id: 'narrow', label: 'Dash', unlockLevel: 1 },
   { id: 'sleepy', label: 'Sleepy', unlockLevel: 1 },
   { id: 'wide', label: 'Wide-set', unlockLevel: 1 },
-  { id: 'narrow', label: 'Narrow', unlockLevel: 1 },
 ]
 
 export const HAIRS: Style[] = [
@@ -214,7 +216,7 @@ export const BACKGROUNDS: BackgroundItem[] = [
 ]
 
 export const DEFAULT_AVATAR: AvatarConfig = {
-  body: 'masc',
+  body: 'taper',
   skin: 'warm',
   eyeShape: 'round',
   eyeColor: 'brown',
@@ -232,84 +234,106 @@ export const DEFAULT_AVATAR: AvatarConfig = {
   background: 'none',
 }
 
-/* ————— Sprites: row index → 24-char string. Chars:
-   s skin · k skin-shade · p pupil · w eye-white · m mouth · h hair · H hair-shade
-   c top · C top-shade · b bottom · f shoe · g dark frame · l lens
-   1-9 fixed accessory colours (see FIXED below) · . empty ——————————————————— */
+/* ————— Sprites: row index → 24-char string ————— */
 type Sprite = Record<number, string>
 
+// Shared head (identical for every body so face layers always align).
+const HEAD: Sprite = {
+  4: '........ssssssss........',
+  5: '........ssssssss........',
+  6: '........ssssssss........',
+  7: '........ssssssss........',
+  8: '........ssssssss........',
+  9: '........ssssssss........',
+  10: '........ssssssss........',
+  11: '........ssssssss........',
+  12: '.........ssssss.........',
+  13: '.........ssssss.........',
+  14: '..........ssss..........',
+}
+const FEET: Sprite = { 31: '........fff..fff........' }
+const LEGS: Sprite = {
+  25: '........sss..sss........',
+  26: '........sss..sss........',
+  27: '........sss..sss........',
+  28: '........sss..sss........',
+  29: '........sss..sss........',
+  30: '........sss..sss........',
+}
+
 const BODY_SPRITES: Record<string, Sprite> = {
-  masc: {
-    4: '........ssssssss........',
-    5: '........ssssssss........',
-    6: '........ssssssss........',
-    7: '........ssssssss........',
-    8: '........ssssssss........',
-    9: '........ssssssss........',
-    10: '........ssssssss........',
-    11: '........ssssssss........',
-    12: '.........ssssss.........',
-    13: '.........ssssss.........',
-    14: '..........ssss..........',
-    15: '......ssssssssssss......',
-    16: '....ssssssssssssssss....',
-    17: '....ssssssssssssssss....',
-    18: '....ssssssssssssssss....',
-    19: '....ssssssssssssssss....',
-    20: '....ssssssssssssssss....',
-    21: '....ssssssssssssssss....',
-    22: '.....ssssssssssssss.....',
-    23: '......ssssssssssss......',
-    24: '......ssssssssssss......',
-    25: '........sss..sss........',
-    26: '........sss..sss........',
-    27: '........sss..sss........',
-    28: '........sss..sss........',
-    29: '........sss..sss........',
-    30: '........sss..sss........',
-    31: '........fff..fff........',
-  },
-  fem: {
-    4: '........ssssssss........',
-    5: '........ssssssss........',
-    6: '........ssssssss........',
-    7: '........ssssssss........',
-    8: '........ssssssss........',
-    9: '........ssssssss........',
-    10: '........ssssssss........',
-    11: '........ssssssss........',
-    12: '.........ssssss.........',
-    13: '.........ssssss.........',
-    14: '..........ssss..........',
-    15: '......ssssssssssss......',
+  taper: {
+    ...HEAD,
+    15: '.....ssssssssssssss.....',
     16: '....ssssssssssssssss....',
     17: '....ssssssssssssssss....',
     18: '.....ssssssssssssss.....',
-    19: '.....ssssssssssssss.....',
-    20: '......ssssssssssss......',
+    19: '......ssssssssssss......',
+    20: '.......ssssssssss.......',
+    21: '.......ssssssssss.......',
+    22: '.......ssssssssss.......',
+    23: '.......ssssssssss.......',
+    24: '.......ssssssssss.......',
+    ...LEGS,
+    ...FEET,
+  },
+  curvy: {
+    ...HEAD,
+    15: '......ssssssssssss......',
+    16: '.....ssssssssssssss.....',
+    17: '.....ssssssssssssss.....',
+    18: '......ssssssssssss......',
+    19: '.......ssssssssss.......',
+    20: '.......ssssssssss.......',
     21: '......ssssssssssss......',
     22: '.....ssssssssssssss.....',
     23: '.....ssssssssssssss.....',
     24: '......ssssssssssss......',
-    25: '........sss..sss........',
-    26: '........sss..sss........',
-    27: '........sss..sss........',
-    28: '........sss..sss........',
-    29: '........sss..sss........',
-    30: '........sss..sss........',
-    31: '........fff..fff........',
+    ...LEGS,
+    ...FEET,
+  },
+  slim: {
+    ...HEAD,
+    15: '......ssssssssssss......',
+    16: '......ssssssssssss......',
+    17: '......ssssssssssss......',
+    18: '.......ssssssssss.......',
+    19: '.......ssssssssss.......',
+    20: '.......ssssssssss.......',
+    21: '.......ssssssssss.......',
+    22: '.......ssssssssss.......',
+    23: '.......ssssssssss.......',
+    24: '.......ssssssssss.......',
+    ...LEGS,
+    ...FEET,
+  },
+  broad: {
+    ...HEAD,
+    15: '.....ssssssssssssss.....',
+    16: '...ssssssssssssssssss...',
+    17: '...ssssssssssssssssss...',
+    18: '....ssssssssssssssss....',
+    19: '....ssssssssssssssss....',
+    20: '.....ssssssssssssss.....',
+    21: '.....ssssssssssssss.....',
+    22: '.....ssssssssssssss.....',
+    23: '.....ssssssssssssss.....',
+    24: '.....ssssssssssssss.....',
+    ...LEGS,
+    ...FEET,
   },
 }
 
+// Eyes — dots/dashes; only 'big' uses eye-white.
 const EYE_SPRITES: Record<string, Sprite> = {
-  round: { 8: '.........ww..ww.........', 9: '.........pp..pp.........' },
-  big: { 7: '.........ww..ww.........', 8: '.........pp..pp.........', 9: '.........pp..pp.........' },
-  sleepy: { 9: '.........ww..ww.........', 10: '.........pp..pp.........' },
-  wide: { 8: '........ww....ww........', 9: '........pp....pp........' },
-  narrow: { 9: '.........pp..pp.........' },
+  round: { 8: '..........p..p..........' },
+  big: { 7: '.........ww..ww.........', 8: '.........pp..pp.........' },
+  narrow: { 8: '.........pp..pp.........' },
+  sleepy: { 9: '.........pp..pp.........' },
+  wide: { 8: '.........p....p.........' },
 }
 
-const MOUTH: Sprite = { 12: '..........mmmm..........' }
+const MOUTH: Sprite = { 12: '..........mmm...........' }
 
 const HAIR_SPRITES: Record<string, Sprite> = {
   bald: {},
@@ -415,172 +439,114 @@ const FACIAL_SPRITES: Record<string, Sprite> = {
   },
 }
 
+// Eyewear — note the temple arms ('g' reaching out toward the ears).
 const EYEWEAR_SPRITES: Record<string, Sprite> = {
   none: {},
-  round: { 8: '.........gggggg.........', 9: '.........g.gg.g.........' },
-  square: { 7: '.........gggggg.........', 8: '.........glgglg.........', 9: '.........gggggg.........' },
-  sunglasses: { 8: '.........gggggg.........', 9: '.........gggggg.........' },
-  monocle: { 8: '............ggg.........', 9: '............g.g.........', 10: '............ggg.........' },
-  visor: { 8: '........gllllllg........', 9: '........gggggggg........' },
+  round: { 8: '.......ggllggllgg.......' },
+  square: { 7: '........gg..gg........', 8: '.......ggllggllgg.......', 9: '........gg..gg........' },
+  sunglasses: { 7: '.......gg....gg........', 8: '......gggggggggggg......' },
+  monocle: { 7: '............gg.........', 8: '...........gllgg.......', 9: '............gg.........' },
+  visor: { 7: '......gggggggggggg......', 8: '......llllllllllll......' },
 }
 
 const MASK_SPRITES: Record<string, Sprite> = {
   none: {},
-  surgical: { 10: '.........222222.........', 11: '.........222222.........', 12: '.........222222.........', 13: '.........222222.........', 14: '..........2222..........' },
+  surgical: { 10: '.........222222.........', 11: '........g222222g........', 12: '.........222222.........', 13: '.........222222.........', 14: '..........2222..........' },
   bandana: { 11: '........44444444........', 12: '........44444444........', 13: '.........444444.........', 14: '..........4444..........' },
   ninja: { 9: '........77777777........', 10: '........77777777........', 11: '........77777777........', 12: '........77777777........', 13: '.........777777.........', 14: '..........7777..........' },
 }
 
 const HEADWEAR_SPRITES: Record<string, Sprite> = {
   none: {},
-  cap: { 2: '........55555555........', 3: '.......5555555555......', 4: '.......5555555555.5.....' },
-  beanie: { 1: '........44444444........', 2: '.......4444444444.......', 3: '.......4444444444.......', 4: '.......4444444444.......' },
-  headband: { 5: '.......4444444444.......' },
-  cowboy: { 1: '........99999999........', 2: '........99999999........', 3: '.....999999999999999....', 4: '.....999999999999999....' },
-  hardhat: { 1: '........33333333........', 2: '.......3333333333.......', 3: '......333333333333......' },
-  tophat: { 0: '.......7777777.........', 1: '.......7777777.........', 2: '.......7777777.........', 3: '......99999999999......', 4: '......99999999999......' },
-  party: { 0: '...........8...........', 1: '..........888..........', 2: '.........88888.........', 3: '........8888888........', 4: '........8888888........' },
+  // Ball cap: rounded crown + a brim poking out to the front-right.
+  cap: {
+    1: '.........555555.........',
+    2: '........55555555........',
+    3: '.......5555555555.......',
+    4: '.......55555555555555...',
+  },
+  beanie: {
+    1: '........44444444........',
+    2: '.......4444444444.......',
+    3: '......444444444444......',
+    4: '......444444444444......',
+    5: '......4444444444444.....',
+  },
+  headband: { 6: '.......4444444444.......' },
+  cowboy: {
+    1: '........99999999........',
+    2: '........99999999........',
+    3: '....9999999999999999....',
+    4: '....9999999999999999....',
+  },
+  hardhat: {
+    1: '........33333333........',
+    2: '.......3333333333.......',
+    3: '......333333333333......',
+    4: '......333333333333......',
+  },
+  tophat: {
+    0: '........777777........',
+    1: '........777777........',
+    2: '........777777........',
+    3: '........777777........',
+    4: '......7777777777......',
+  },
+  party: {
+    0: '...........8...........',
+    1: '..........888..........',
+    2: '.........88888.........',
+    3: '........8888888........',
+    4: '........8888888........',
+  },
   crown: { 1: '.......3.3.3.3.3.3......', 2: '.......333333333.......', 3: '.......333333333.......' },
 }
 
-const TOP_SPRITES: Record<string, Sprite> = {
-  tee: {
-    15: '......cccccccccccc......',
-    16: '....cccccccccccccccc....',
-    17: '....cccccccccccccccc....',
-    18: '......cccccccccccc......',
-    19: '......cccccccccccc......',
-    20: '......cccccccccccc......',
-    21: '......cccccccccccc......',
-    22: '......cccccccccccc......',
-  },
-  tank: {
-    15: '.......c......c.......',
-    16: '......cccccccccccc......',
-    17: '......cccccccccccc......',
-    18: '......cccccccccccc......',
-    19: '......cccccccccccc......',
-    20: '......cccccccccccc......',
-    21: '......cccccccccccc......',
-    22: '......cccccccccccc......',
-  },
-  longsleeve: {
-    15: '......cccccccccccc......',
-    16: '....cccccccccccccccc....',
-    17: '....cccccccccccccccc....',
-    18: '....cccccccccccccccc....',
-    19: '....cccccccccccccccc....',
-    20: '....cccccccccccccccc....',
-    21: '....cccccccccccccccc....',
-    22: '......cccccccccccc......',
-  },
-  hoodie: {
-    13: '........cccccccc........',
-    14: '.......c........c.......',
-    15: '......cccccccccccc......',
-    16: '....cccccccccccccccc....',
-    17: '....cccccccccccccccc....',
-    18: '....cccccccccccccccc....',
-    19: '....cccccccccccccccc....',
-    20: '....cccccccccccccccc....',
-    21: '....cccccccccccccccc....',
-    22: '......cccccccccccc......',
-  },
-  jacket: {
-    15: '......cccccccccccc......',
-    16: '....ccccccc..ccccccc....',
-    17: '....ccccccc..ccccccc....',
-    18: '....ccccccc..ccccccc....',
-    19: '....ccccccc..ccccccc....',
-    20: '....ccccccc..ccccccc....',
-    21: '....ccccccc..ccccccc....',
-    22: '......ccccc..ccccc......',
-  },
-  dress: {
-    15: '......cccccccccccc......',
-    16: '....cccccccccccccccc....',
-    17: '....cccccccccccccccc....',
-    18: '......cccccccccccc......',
-    19: '......cccccccccccc......',
-    20: '......cccccccccccc......',
-    21: '......cccccccccccc......',
-    22: '......cccccccccccc......',
-    23: '.....cccccccccccccc.....',
-    24: '....cccccccccccccccc....',
-    25: '...cccccccccccccccccc...',
-    26: '...cccccccccccccccccc...',
-  },
-  sweater: {
-    14: '........cccccccc........',
-    15: '......cccccccccccc......',
-    16: '....cccccccccccccccc....',
-    17: '....cccccccccccccccc....',
-    18: '....cccccccccccccccc....',
-    19: '....cccccccccccccccc....',
-    20: '....cccccccccccccccc....',
-    21: '....cccccccccccccccc....',
-    22: '......cccccccccccc......',
-  },
-  flannel: {
-    15: '......cCcCcCcCcCcC......',
-    16: '....cCcCcCcCcCcCcCcC....',
-    17: '....cCcCcCcCcCcCcCcC....',
-    18: '....cCcCcCcCcCcCcCcC....',
-    19: '....cCcCcCcCcCcCcCcC....',
-    20: '....cCcCcCcCcCcCcCcC....',
-    21: '....cCcCcCcCcCcCcCcC....',
-    22: '......cCcCcCcCcCcC......',
-  },
-}
-
-const BOTTOM_SPRITES: Record<string, Sprite> = {
-  pants: {
-    24: '......bbbbbbbbbbbb......',
-    25: '........bbb..bbb........',
-    26: '........bbb..bbb........',
-    27: '........bbb..bbb........',
-    28: '........bbb..bbb........',
-    29: '........bbb..bbb........',
-    30: '........bbb..bbb........',
-  },
-  jeans: {
-    24: '......bbbbbbbbbbbb......',
-    25: '........bbb..bbb........',
-    26: '........bbb..bbb........',
-    27: '........bbb..bbb........',
-    28: '........bbb..bbb........',
-    29: '........bbb..bbb........',
-    30: '........bbb..bbb........',
-  },
-  joggers: {
-    24: '......bbbbbbbbbbbb......',
-    25: '........bbb..bbb........',
-    26: '........bbb..bbb........',
-    27: '........bbb..bbb........',
-    28: '........bbb..bbb........',
-    29: '........bbbb.bbbb.......',
-    30: '........bbbb.bbbb.......',
-  },
-  shorts: {
-    24: '......bbbbbbbbbbbb......',
-    25: '........bbb..bbb........',
-    26: '........bbb..bbb........',
-  },
-  skirt: {
-    24: '......bbbbbbbbbbbb......',
-    25: '.....bbbbbbbbbbbbbb.....',
-    26: '....bbbbbbbbbbbbbbbb....',
-  },
-}
+const HOOD: Sprite = { 14: '......cc........cc......', 15: '......cccccccccccc......' }
 
 const HANDHELD_SPRITES: Record<string, Sprite> = {
   none: {},
-  coffee: { 19: '..................11....', 20: '..................11....', 21: '.................1111...' },
-  phone: { 19: '..................2.....', 20: '..................7.....', 21: '..................2.....' },
-  key: { 19: '..................3.....', 20: '..................3.....', 21: '.................333....' },
-  plant: { 16: '.................6.6....', 17: '..................6.....', 18: '.................111....', 19: '.................111....' },
-  balloon: { 12: '.................44.....', 13: '................4444....', 14: '................4444....', 15: '.................44.....', 16: '..................4.....', 17: '..................4.....', 18: '..................4.....' },
+  coffee: { 18: '..................11....', 19: '..................11....', 20: '.................1111...' },
+  phone: { 18: '..................2.....', 19: '..................7.....', 20: '..................2.....' },
+  key: { 18: '..................3.....', 19: '..................3.....', 20: '.................333....' },
+  plant: { 15: '.................6.6....', 16: '..................6.....', 17: '.................111....', 18: '.................111....' },
+  balloon: { 10: '.................44.....', 11: '................4444....', 12: '................4444....', 13: '.................44.....', 14: '..................4.....', 15: '..................4.....', 16: '..................4.....', 17: '..................4.....' },
 }
+
+/* ————— Clothing definitions (painted onto the body silhouette) ————— */
+interface TopDef {
+  neck?: number // rows of centre collar left as skin
+  tank?: boolean // bare shoulders (rows 15–17)
+  open?: boolean // open front (centre column skin)
+  dress?: boolean // extend over the hips/thighs
+  dressHem?: number
+  hood?: boolean
+  plaid?: boolean
+}
+const TOP_DEFS: Record<string, TopDef> = {
+  tee: { neck: 1 },
+  tank: { tank: true },
+  longsleeve: { neck: 1 },
+  hoodie: { neck: 1, hood: true },
+  jacket: { neck: 1, open: true },
+  dress: { neck: 1, dress: true, dressHem: 28 },
+  sweater: { neck: 0 },
+  flannel: { neck: 1, plaid: true },
+}
+interface BottomDef {
+  legEnd?: number
+  skirt?: boolean
+}
+const BOTTOM_DEFS: Record<string, BottomDef> = {
+  pants: {},
+  jeans: {},
+  joggers: {},
+  shorts: { legEnd: 26 },
+  skirt: { skirt: true, legEnd: 27 },
+}
+
+const TORSO_TOP = 15
+const TORSO_HEM = 22
 
 /* ————— Colours ————— */
 const OUTLINE = '#2f2a25'
@@ -589,15 +555,15 @@ const SHOE_COLOR = '#3a332e'
 const LENS = '#bfe0f5'
 const FRAME_DARK = '#242424'
 const FIXED: Record<string, string> = {
-  '1': '#6b4423', // coffee cup
-  '2': '#eef4f7', // white/light
-  '3': '#E8B84B', // gold
-  '4': '#C0442F', // red
-  '5': '#3F6FA6', // blue
-  '6': '#3FA672', // green
-  '7': '#33302b', // dark
-  '8': '#E38FB3', // pink
-  '9': '#8a5a2b', // brown (hats/brim)
+  '1': '#6b4423',
+  '2': '#eef4f7',
+  '3': '#E8B84B',
+  '4': '#C0442F',
+  '5': '#3F6FA6',
+  '6': '#3FA672',
+  '7': '#33302b',
+  '8': '#E38FB3',
+  '9': '#8a5a2b',
 }
 const W = 24
 const H = 32
@@ -614,8 +580,6 @@ function colorFor(ch: string, p: Record<string, string>): string | null {
   switch (ch) {
     case 's':
       return p.skin
-    case 'k':
-      return p.skinShade
     case 'p':
       return p.eye
     case 'w':
@@ -628,10 +592,6 @@ function colorFor(ch: string, p: Record<string, string>): string | null {
       return p.hairShade
     case 'c':
       return p.top
-    case 'C':
-      return p.topShade
-    case 'b':
-      return p.bottom
     case 'f':
       return SHOE_COLOR
     case 'g':
@@ -654,10 +614,19 @@ function stamp(grid: (string | null)[][], sprite: Sprite, p: Record<string, stri
   }
 }
 
+function paintRow(grid: (string | null)[][], y: number, skin: string, col: string, shade: string, skip?: (x: number) => boolean) {
+  let lastX = -1
+  for (let x = 0; x < W; x++) {
+    if (grid[y][x] !== skin) continue
+    if (skip && skip(x)) continue
+    grid[y][x] = col
+    lastX = x
+  }
+  if (lastX >= 0) grid[y][lastX] = shade // subtle right-edge shading
+}
+
 const swatchColor = (list: Swatch[], id: string) => (list.find((s) => s.id === id) ?? list[0]).color
 
-/** Compose an AvatarConfig into a 32×24 colour grid (null = transparent),
- *  with an automatic 1px dark outline around the silhouette. */
 export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   const skin = swatchColor(SKINS, cfg.skin)
   const hair = swatchColor(HAIR_COLORS, cfg.hairColor)
@@ -665,19 +634,41 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   const bottom = swatchColor(BOTTOM_COLORS, cfg.bottomColor)
   const p = {
     skin,
-    skinShade: darken(skin, 0.85),
     eye: swatchColor(EYE_COLORS, cfg.eyeColor),
     hair,
     hairShade: darken(hair, 0.72),
     top,
     topShade: darken(top, 0.8),
     bottom,
+    bottomShade: darken(bottom, 0.8),
   }
   const grid: (string | null)[][] = Array.from({ length: H }, () => Array<string | null>(W).fill(null))
 
-  stamp(grid, BODY_SPRITES[cfg.body] ?? BODY_SPRITES.masc, p)
-  stamp(grid, BOTTOM_SPRITES[cfg.bottom] ?? {}, p)
-  stamp(grid, TOP_SPRITES[cfg.top] ?? {}, p)
+  stamp(grid, BODY_SPRITES[cfg.body] ?? BODY_SPRITES.taper, p)
+
+  // Paint clothing onto the body's skin pixels so it fits any silhouette.
+  const td = TOP_DEFS[cfg.top] ?? TOP_DEFS.tee
+  const neck = td.neck ?? 1
+  for (let y = TORSO_TOP; y <= TORSO_HEM; y++) {
+    if (td.tank && y <= 17) continue
+    paintRow(grid, y, skin, p.top, p.topShade, (x) => {
+      if (y < TORSO_TOP + neck && (x === 11 || x === 12)) return true
+      if (td.open && (x === 11 || x === 12) && y >= TORSO_TOP + 1) return true
+      return false
+    })
+  }
+  if (td.hood) stamp(grid, HOOD, p)
+  if (td.plaid) for (let y = TORSO_TOP; y <= TORSO_HEM; y++) for (const x of [8, 11, 14, 17]) if (grid[y][x] === p.top) grid[y][x] = p.topShade
+  if (td.dress) for (let y = 23; y <= (td.dressHem ?? 27); y++) paintRow(grid, y, skin, p.top, p.topShade)
+
+  if (!td.dress) {
+    const bd = BOTTOM_DEFS[cfg.bottom] ?? BOTTOM_DEFS.pants
+    const legEnd = bd.legEnd ?? 30
+    if (bd.skirt) for (let y = 23; y <= (bd.legEnd ?? 27); y++) { grid[y][11] = p.bottom; grid[y][12] = p.bottom }
+    for (let y = 23; y <= legEnd; y++) paintRow(grid, y, skin, p.bottom, p.bottomShade)
+  }
+
+  // Face + accessory layers (head is identical across bodies, so these align).
   stamp(grid, FACIAL_SPRITES[cfg.facialHair] ?? {}, p)
   stamp(grid, MOUTH, p)
   stamp(grid, EYE_SPRITES[cfg.eyeShape] ?? EYE_SPRITES.round, p)
@@ -687,7 +678,7 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   stamp(grid, HEADWEAR_SPRITES[cfg.headwear] ?? {}, p)
   stamp(grid, HANDHELD_SPRITES[cfg.handheld] ?? {}, p)
 
-  // Auto-outline: any empty cell touching a filled cell becomes outline.
+  // Auto-outline.
   const out = grid.map((row) => row.slice())
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
