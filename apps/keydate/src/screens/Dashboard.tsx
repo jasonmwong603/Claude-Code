@@ -395,6 +395,10 @@ export function Dashboard({
           </div>
         )
       })}
+      <div style={{ gridColumn: '1 / -1', fontSize: 10.5, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, marginTop: 2 }}>
+        💡 Savings keys ($ milestones &amp; fully-funded) verify against your connected bank balance —
+        so they can't be faked by changing your goal.
+      </div>
     </div>
   )
 

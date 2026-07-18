@@ -17,9 +17,11 @@ import type { PlaidItem } from '../types'
 export function Bank({
   onBack,
   onSetSavings,
+  onBankChange,
 }: {
   onBack: () => void
   onSetSavings: (total: number) => void
+  onBankChange: () => void
 }) {
   const [items, setItems] = useState<PlaidItem[]>(() => loadItems())
   const [picking, setPicking] = useState(false)
@@ -37,12 +39,22 @@ export function Bank({
       setItems(loadItems())
       setConnecting(null)
       setPicking(false)
+      onBankChange()
     }, 750)
   }
 
-  const refresh = () => setItems(refreshBalances())
-  const toggle = (itemId: string, accountId: string) => setItems(toggleCountToward(itemId, accountId))
-  const remove = (itemId: string) => setItems(disconnect(itemId))
+  const refresh = () => {
+    setItems(refreshBalances())
+    onBankChange()
+  }
+  const toggle = (itemId: string, accountId: string) => {
+    setItems(toggleCountToward(itemId, accountId))
+    onBankChange()
+  }
+  const remove = (itemId: string) => {
+    setItems(disconnect(itemId))
+    onBankChange()
+  }
 
   return (
     <>

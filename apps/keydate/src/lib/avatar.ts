@@ -439,14 +439,14 @@ const FACIAL_SPRITES: Record<string, Sprite> = {
   },
 }
 
-// Eyewear — note the temple arms ('g' reaching out toward the ears).
+// Eyewear — temple arms stay within the face edge (cols 8–15), never protrude.
 const EYEWEAR_SPRITES: Record<string, Sprite> = {
   none: {},
-  round: { 8: '.......ggllggllgg.......' },
-  square: { 7: '........gg..gg........', 8: '.......ggllggllgg.......', 9: '........gg..gg........' },
-  sunglasses: { 7: '.......gg....gg........', 8: '......gggggggggggg......' },
-  monocle: { 7: '............gg.........', 8: '...........gllgg.......', 9: '............gg.........' },
-  visor: { 7: '......gggggggggggg......', 8: '......llllllllllll......' },
+  round: { 8: '........gllggllg........' },
+  square: { 7: '.........gg..gg.........', 8: '........gllggllg........', 9: '.........gg..gg.........' },
+  sunglasses: { 7: '.........gg..gg.........', 8: '........gggggggg........' },
+  monocle: { 7: '.............gg.........', 8: '............gllg........', 9: '.............gg.........' },
+  visor: { 7: '........gggggggg........', 8: '........llllllll........' },
 }
 
 const MASK_SPRITES: Record<string, Sprite> = {
@@ -576,6 +576,14 @@ function darken(hex: string, f = 0.78): string {
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
 }
 
+function lighten(hex: string, f = 1.14): string {
+  const n = parseInt(hex.slice(1), 16)
+  const r = Math.min(255, Math.round(((n >> 16) & 255) * f))
+  const g = Math.min(255, Math.round(((n >> 8) & 255) * f))
+  const b = Math.min(255, Math.round((n & 255) * f))
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+}
+
 function colorFor(ch: string, p: Record<string, string>): string | null {
   switch (ch) {
     case 's':
@@ -677,6 +685,35 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   stamp(grid, HAIR_SPRITES[cfg.hair] ?? {}, p)
   stamp(grid, HEADWEAR_SPRITES[cfg.headwear] ?? {}, p)
   stamp(grid, HANDHELD_SPRITES[cfg.handheld] ?? {}, p)
+
+  // Shading pass: give the big material regions (skin, hair, top, bottom) a
+  // darker transitional tone on the bottom/right edges and a lighter one on the
+  // top/left, for depth. Small features (eyes, glasses, accessories) are left
+  // flat because their colours aren't in these maps.
+  const shadeOf: Record<string, string> = {
+    [skin]: darken(skin, 0.86),
+    [hair]: p.hairShade,
+    [top]: p.topShade,
+    [bottom]: p.bottomShade,
+  }
+  const lightOf: Record<string, string> = {
+    [skin]: lighten(skin),
+    [hair]: lighten(hair),
+    [top]: lighten(top),
+    [bottom]: lighten(bottom),
+  }
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const c = grid[y][x]
+      if (!c || !(c in shadeOf)) continue
+      const rightEdge = x === W - 1 || !grid[y][x + 1]
+      const bottomEdge = y === H - 1 || !grid[y + 1][x]
+      const topEdge = y === 0 || !grid[y - 1][x]
+      const leftEdge = x === 0 || !grid[y][x - 1]
+      if (rightEdge || bottomEdge) grid[y][x] = shadeOf[c]
+      else if (topEdge || leftEdge) grid[y][x] = lightOf[c]
+    }
+  }
 
   // Auto-outline.
   const out = grid.map((row) => row.slice())

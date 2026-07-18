@@ -131,6 +131,12 @@ src/
   the post only stores a short id. When the backend lands, replace
   `putMedia`/`getMedia` with a real upload that returns a URL and set it on the
   post's `media.url` (seeded posts already render via `url`). 30 MB per-file cap.
+- **Achievements are anti-cheat.** Money/goal keys ($ milestones and
+  "fully funded") are evaluated against a *verified* saved amount — the real
+  connected-bank balance when a bank is linked, otherwise the self-reported
+  total — and "fully funded" also requires the goal to clear a floor
+  (`GOAL_FLOOR` in `src/lib/gamification.ts`). So lowering the goal or editing
+  the plan can't fake a savings achievement.
 - **Financial constants are centralized** in `src/lib/config.ts` with a
   `LAST_REVIEWED` date — update them there when programs/rates change.
 - **Built-in market prices** are a hand-maintained illustrative table; the

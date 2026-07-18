@@ -33,7 +33,7 @@ import {
   type Style,
   type Swatch,
 } from '../lib/avatar'
-import { calcStreak, levelInfo } from '../lib/gamification'
+import { KEYRING, calcStreak, levelInfo } from '../lib/gamification'
 import { keysDate, savingsGoal } from '../lib/math'
 import type { AppState, Profile as ProfileT } from '../types'
 
@@ -228,7 +228,10 @@ export function Profile({
         <Stat label="Keys date" value={date} />
         <Stat label="Saved" value={`${Math.round(progress * 100)}%`} />
         <Stat label="Deposit streak" value={`${calcStreak(state.contributions)} mo`} />
-        <Stat label="Keys earned" value={`${state.earnedBadges.length}/12`} />
+        <Stat
+          label="Keys earned"
+          value={`${state.earnedBadges.filter((id) => KEYRING.some((k) => k.id === id)).length}/${KEYRING.length}`}
+        />
       </div>
 
       <div style={{ fontSize: 12, color: C.sub, marginBottom: 16, textAlign: 'center' }}>

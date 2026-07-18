@@ -15,6 +15,7 @@ import { TYPE_MULT } from './lib/locations'
 import { maxAffordablePrice, savingsGoal } from './lib/math'
 import { clearState, loadState, saveState } from './lib/storage'
 import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
+import { bankSummary } from './lib/plaid'
 import type { AppState, Badge, Plan } from './types'
 
 type Screen = 'loading' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan' | 'bank' | 'profile'
@@ -32,19 +33,20 @@ function targetFrom(
     : Math.min(base * TYPE_MULT[homeType], maxAffordablePrice(income, homeType))
 }
 
-function progressOf(state: AppState): number {
-  const totalSaved =
-    state.plan.startingSavings + state.contributions.reduce((a, c) => a + c.amount, 0)
-  return Math.min(1, totalSaved / savingsGoal(state.plan.target, state.plan.homeType))
-}
-
-/** Award any newly-earned badges for the given interim state + progress. */
-function awardBadges(s: AppState, progress: number): { earnedBadges: string[]; newly: Badge[] } {
+/** Award any newly-earned badges. Money/goal badges are cross-referenced
+ *  against the connected bank balance (via bankSummary) so they can't be gamed
+ *  by editing the plan or lowering the goal. */
+function awardBadges(s: AppState): { earnedBadges: string[]; newly: Badge[] } {
+  const savedSelf = s.plan.startingSavings + s.contributions.reduce((a, c) => a + c.amount, 0)
+  const bank = bankSummary()
   const tests = badgeTests({
     contributions: s.contributions,
-    progress,
     streak: calcStreak(s.contributions),
     completedLessons: s.completedLessons,
+    savedSelf,
+    goal: savingsGoal(s.plan.target, s.plan.homeType),
+    bankLinked: bank.linked,
+    bankSaved: bank.fundTotal,
   })
   const newly = KEYRING.filter((k) => !s.earnedBadges.includes(k.id) && tests[k.id])
   return { earnedBadges: [...s.earnedBadges, ...newly.map((k) => k.id)], newly }
@@ -63,8 +65,12 @@ export default function KeyDateApp() {
       const today = new Date().toDateString()
       if (s.lastVisit !== today) {
         s = { ...s, lastVisit: today, xp: s.xp + 10 }
-        saveState(s)
       }
+      // Re-check badges on load (e.g. a bank was linked in a prior session, so
+      // bank-verified money achievements can now be granted).
+      const { earnedBadges, newly } = awardBadges(s)
+      if (newly.length) s = { ...s, earnedBadges, xp: s.xp + newly.length * 50 }
+      saveState(s)
       setState(s)
       setScreen('dashboard')
     } else {
@@ -133,8 +139,7 @@ export default function KeyDateApp() {
     if (!state || amount <= 0) return
     const contributions = [...state.contributions, { date: new Date().toISOString(), amount }]
     const interim: AppState = { ...state, contributions }
-    const progress = progressOf(interim)
-    const { earnedBadges, newly } = awardBadges(interim, progress)
+    const { earnedBadges, newly } = awardBadges(interim)
     persist({ ...interim, earnedBadges, xp: state.xp + 50 + newly.length * 50 })
     celebrateNewly(newly)
   }
@@ -146,7 +151,7 @@ export default function KeyDateApp() {
       ? state.completedLessons
       : [...state.completedLessons, lessonId]
     const interim: AppState = { ...state, completedLessons }
-    const { earnedBadges, newly } = awardBadges(interim, progressOf(interim))
+    const { earnedBadges, newly } = awardBadges(interim)
     const lessonXp = alreadyDone ? 0 : 100 + bonus
     persist({ ...interim, earnedBadges, xp: state.xp + lessonXp + newly.length * 50 })
     setActiveLesson(null)
@@ -155,7 +160,20 @@ export default function KeyDateApp() {
 
   const updatePlan = (patch: Partial<Plan>, xpReward = 40) => {
     if (!state) return
-    persist({ ...state, plan: { ...state.plan, ...patch }, xp: state.xp + xpReward })
+    const interim: AppState = { ...state, plan: { ...state.plan, ...patch } }
+    const { earnedBadges, newly } = awardBadges(interim)
+    persist({ ...interim, earnedBadges, xp: state.xp + xpReward + newly.length * 50 })
+    celebrateNewly(newly)
+  }
+
+  // Re-evaluate badges after a bank change (connect / refresh / mark accounts).
+  const recheckBadges = () => {
+    if (!state) return
+    const { earnedBadges, newly } = awardBadges(state)
+    if (newly.length) {
+      persist({ ...state, earnedBadges, xp: state.xp + newly.length * 50 })
+      celebrateNewly(newly)
+    }
   }
 
   const resetPlan = () => {
@@ -192,7 +210,10 @@ export default function KeyDateApp() {
       targetLabel: targetSource === 'custom' ? targetLabel.trim() || 'My target' : undefined,
       listingUrl: targetSource === 'custom' ? listingUrl.trim() || undefined : undefined,
     }
-    persist({ ...state, plan })
+    const interim: AppState = { ...state, plan }
+    const { earnedBadges, newly } = awardBadges(interim)
+    persist({ ...interim, earnedBadges, xp: state.xp + newly.length * 50 })
+    celebrateNewly(newly)
     setScreen('dashboard')
   }
 
@@ -359,6 +380,7 @@ export default function KeyDateApp() {
           <Bank
             onBack={() => setScreen('dashboard')}
             onSetSavings={(total) => updatePlan({ startingSavings: total }, 0)}
+            onBankChange={recheckBadges}
           />
         )}
 

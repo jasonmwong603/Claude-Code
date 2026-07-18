@@ -4,40 +4,58 @@ import { LESSONS, STAGES } from '../data/curriculum'
 export const KEYRING: Badge[] = [
   { id: 'plan', label: 'Plan started', emoji: '🗝️' },
   { id: 'first', label: 'First deposit', emoji: '🔑' },
-  { id: 'p10', label: '10% saved', emoji: '🥉' },
-  { id: 'p25', label: '25% saved', emoji: '🥈' },
-  { id: 'p50', label: 'Halfway', emoji: '🥇' },
-  { id: 'p75', label: '75% saved', emoji: '💎' },
+  { id: 'firstLesson', label: 'First lesson', emoji: '📖' },
+  { id: 'bank', label: 'Bank linked', emoji: '🔗' },
+  { id: 'save1k', label: 'First $1K', emoji: '💵' },
+  { id: 'save5k', label: '$5K saved', emoji: '💰' },
+  { id: 'save10k', label: '$10K saved', emoji: '🏦' },
+  { id: 'save25k', label: '$25K saved', emoji: '💎' },
+  { id: 'save50k', label: '$50K saved', emoji: '🪙' },
   { id: 'done', label: 'Fully funded', emoji: '🏠' },
   { id: 'streak3', label: '3-month streak', emoji: '🔥' },
   { id: 'streak6', label: '6-month streak', emoji: '🌟' },
+  { id: 'streak12', label: '1-year streak', emoji: '🗓️' },
   { id: 'learn3', label: '3 lessons done', emoji: '📗' },
   { id: 'learnStage', label: 'Stage mastered', emoji: '🎓' },
-  { id: 'learnAll', label: 'Curriculum complete', emoji: '🏆' },
+  { id: 'learnAll', label: 'Curriculum done', emoji: '🏆' },
 ]
 
-/** The slice of state the badge rules read. */
+/** Below this goal, "fully funded" won't count — stops the exploit of lowering
+ *  the goal to a trivial number to claim 100%. */
+export const GOAL_FLOOR = 10000
+
+/** The slice of state the badge rules read. Money achievements use a *verified*
+ *  saved amount: the real bank balance when a bank is connected, else the
+ *  self-reported total — so plan/goal edits can't fake dollar milestones. */
 export interface BadgeSnapshot {
   contributions: Contribution[]
-  progress: number
   streak: number
   completedLessons: string[]
+  savedSelf: number
+  goal: number
+  bankLinked: boolean
+  bankSaved: number
 }
 
 export function badgeTests(s: BadgeSnapshot): Record<string, boolean> {
+  const verified = s.bankLinked ? s.bankSaved : s.savedSelf
   const stageDone = STAGES.some((st) =>
     LESSONS.filter((l) => l.stage === st.id).every((l) => s.completedLessons.includes(l.id)),
   )
   return {
     plan: true,
     first: s.contributions.length >= 1,
-    p10: s.progress >= 0.1,
-    p25: s.progress >= 0.25,
-    p50: s.progress >= 0.5,
-    p75: s.progress >= 0.75,
-    done: s.progress >= 1,
+    firstLesson: s.completedLessons.length >= 1,
+    bank: s.bankLinked,
+    save1k: verified >= 1000,
+    save5k: verified >= 5000,
+    save10k: verified >= 10000,
+    save25k: verified >= 25000,
+    save50k: verified >= 50000,
+    done: verified >= s.goal && s.goal >= GOAL_FLOOR,
     streak3: s.streak >= 3,
     streak6: s.streak >= 6,
+    streak12: s.streak >= 12,
     learn3: s.completedLessons.length >= 3,
     learnStage: stageDone,
     learnAll: s.completedLessons.length === LESSONS.length,
