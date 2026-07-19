@@ -251,74 +251,78 @@ const HEAD: Sprite = {
   13: '.........ssssss.........',
   14: '..........ssss..........',
 }
-const FEET: Sprite = { 31: '........fff..fff........' }
+const FEET: Sprite = { 31: '.........ff..ff.........' }
 const LEGS: Sprite = {
-  25: '........sss..sss........',
-  26: '........sss..sss........',
-  27: '........sss..sss........',
-  28: '........sss..sss........',
-  29: '........sss..sss........',
-  30: '........sss..sss........',
+  25: '.........ss..ss.........',
+  26: '.........ss..ss.........',
+  27: '.........ss..ss.........',
+  28: '.........ss..ss.........',
+  29: '.........ss..ss.........',
+  30: '.........ss..ss.........',
 }
 
+/* Chibi / 8-bit proportions: the head (cols 8–15) is wider than the torso
+   (cols 9–14); arms hang at the sides (cols outside 9–14) down to hands around
+   rows 20–21, then the torso narrows to the waist. Sleeve-aware clothing paint
+   (below) leaves the lower arms as skin so the arms read distinctly. */
 const BODY_SPRITES: Record<string, Sprite> = {
   taper: {
     ...HEAD,
-    15: '.....ssssssssssssss.....',
-    16: '....ssssssssssssssss....',
-    17: '....ssssssssssssssss....',
-    18: '.....ssssssssssssss.....',
-    19: '......ssssssssssss......',
-    20: '.......ssssssssss.......',
-    21: '.......ssssssssss.......',
-    22: '.......ssssssssss.......',
-    23: '.......ssssssssss.......',
-    24: '.......ssssssssss.......',
-    ...LEGS,
-    ...FEET,
-  },
-  curvy: {
-    ...HEAD,
-    15: '......ssssssssssss......',
-    16: '.....ssssssssssssss.....',
-    17: '.....ssssssssssssss.....',
-    18: '......ssssssssssss......',
-    19: '.......ssssssssss.......',
-    20: '.......ssssssssss.......',
-    21: '......ssssssssssss......',
-    22: '.....ssssssssssssss.....',
-    23: '.....ssssssssssssss.....',
-    24: '......ssssssssssss......',
-    ...LEGS,
-    ...FEET,
-  },
-  slim: {
-    ...HEAD,
-    15: '......ssssssssssss......',
+    15: '.......ssssssssss.......',
     16: '......ssssssssssss......',
     17: '......ssssssssssss......',
     18: '.......ssssssssss.......',
     19: '.......ssssssssss.......',
     20: '.......ssssssssss.......',
-    21: '.......ssssssssss.......',
-    22: '.......ssssssssss.......',
-    23: '.......ssssssssss.......',
-    24: '.......ssssssssss.......',
+    21: '........ssssssss........',
+    22: '.........ssssss.........',
+    23: '.........ssssss.........',
+    24: '.........ssssss.........',
+    ...LEGS,
+    ...FEET,
+  },
+  curvy: {
+    ...HEAD,
+    15: '........ssssssss........',
+    16: '.......ssssssssss.......',
+    17: '.......ssssssssss.......',
+    18: '........ssssssss........',
+    19: '.......ssssssssss.......',
+    20: '.......ssssssssss.......',
+    21: '........ssssssss........',
+    22: '.........ssssss.........',
+    23: '........ssssssss........',
+    24: '........ssssssss........',
+    ...LEGS,
+    ...FEET,
+  },
+  slim: {
+    ...HEAD,
+    15: '........ssssssss........',
+    16: '.......ssssssssss.......',
+    17: '.......ssssssssss.......',
+    18: '........ssssssss........',
+    19: '........ssssssss........',
+    20: '........ssssssss........',
+    21: '........ssssssss........',
+    22: '.........ssssss.........',
+    23: '.........ssssss.........',
+    24: '.........ssssss.........',
     ...LEGS,
     ...FEET,
   },
   broad: {
     ...HEAD,
-    15: '.....ssssssssssssss.....',
-    16: '...ssssssssssssssssss...',
-    17: '...ssssssssssssssssss...',
-    18: '....ssssssssssssssss....',
-    19: '....ssssssssssssssss....',
-    20: '.....ssssssssssssss.....',
-    21: '.....ssssssssssssss.....',
-    22: '.....ssssssssssssss.....',
-    23: '.....ssssssssssssss.....',
-    24: '.....ssssssssssssss.....',
+    15: '......ssssssssssss......',
+    16: '.....ssssssssssssss.....',
+    17: '.....ssssssssssssss.....',
+    18: '......ssssssssssss......',
+    19: '......ssssssssssss......',
+    20: '......ssssssssssss......',
+    21: '.......ssssssssss.......',
+    22: '........ssssssss........',
+    23: '........ssssssss........',
+    24: '........ssssssss........',
     ...LEGS,
     ...FEET,
   },
@@ -516,7 +520,7 @@ const HANDHELD_SPRITES: Record<string, Sprite> = {
 /* ————— Clothing definitions (painted onto the body silhouette) ————— */
 interface TopDef {
   neck?: number // rows of centre collar left as skin
-  tank?: boolean // bare shoulders (rows 15–17)
+  sleeve?: 'short' | 'long' | 'none' // how far the sleeves cover the arms
   open?: boolean // open front (centre column skin)
   dress?: boolean // extend over the hips/thighs
   dressHem?: number
@@ -524,14 +528,14 @@ interface TopDef {
   plaid?: boolean
 }
 const TOP_DEFS: Record<string, TopDef> = {
-  tee: { neck: 1 },
-  tank: { tank: true },
-  longsleeve: { neck: 1 },
-  hoodie: { neck: 1, hood: true },
-  jacket: { neck: 1, open: true },
-  dress: { neck: 1, dress: true, dressHem: 28 },
-  sweater: { neck: 0 },
-  flannel: { neck: 1, plaid: true },
+  tee: { neck: 1, sleeve: 'short' },
+  tank: { neck: 1, sleeve: 'none' },
+  longsleeve: { neck: 1, sleeve: 'long' },
+  hoodie: { neck: 1, sleeve: 'long', hood: true },
+  jacket: { neck: 1, sleeve: 'long', open: true },
+  dress: { neck: 1, sleeve: 'short', dress: true, dressHem: 28 },
+  sweater: { neck: 0, sleeve: 'long' },
+  flannel: { neck: 1, sleeve: 'long', plaid: true },
 }
 interface BottomDef {
   legEnd?: number
@@ -657,11 +661,14 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   // Paint clothing onto the body's skin pixels so it fits any silhouette.
   const td = TOP_DEFS[cfg.top] ?? TOP_DEFS.tee
   const neck = td.neck ?? 1
+  // Arm cells are the skin pixels outside the torso columns (9–14). Sleeves
+  // cover them down to armEnd; below that the arm/hand stays skin.
+  const armEnd = td.sleeve === 'none' ? -1 : td.sleeve === 'long' ? 20 : 17
   for (let y = TORSO_TOP; y <= TORSO_HEM; y++) {
-    if (td.tank && y <= 17) continue
     paintRow(grid, y, skin, p.top, p.topShade, (x) => {
-      if (y < TORSO_TOP + neck && (x === 11 || x === 12)) return true
-      if (td.open && (x === 11 || x === 12) && y >= TORSO_TOP + 1) return true
+      if (x < 9 || x > 14) return y > armEnd // arm: skin below the sleeve
+      if (y < TORSO_TOP + neck && (x === 11 || x === 12)) return true // neckline
+      if (td.open && (x === 11 || x === 12) && y >= TORSO_TOP + 1) return true // open front
       return false
     })
   }
