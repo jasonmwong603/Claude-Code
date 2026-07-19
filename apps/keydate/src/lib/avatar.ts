@@ -241,9 +241,9 @@ type Sprite = Record<number, string>
 // slightly wider through the middle (cols 7–16) and tapered at the crown and
 // chin so it reads as a soft circle instead of an elongated oval. Rows stay
 // 4–14 so the body (row 15+) never shifts.
-// Symmetric circle — the bottom rounds off exactly like the top (no tapered
-// chin) and stays wide enough at row 14 to sit straight on the shoulders, so
-// there's no neck gap. Rows stay 4–14 so the body (row 15+) never shifts.
+// Rounded rectangle — straight vertical sides (cols 7–16) with softened top
+// corners and a flat, wide jaw whose bottom corners are just rounded off, so
+// there's no sharp chin. Rows stay 4–14 so the body (row 15+) never shifts.
 const HEAD: Sprite = {
   4: '.........ssssss.........',
   5: '........ssssssss........',
@@ -254,8 +254,8 @@ const HEAD: Sprite = {
   10: '.......ssssssssss.......',
   11: '.......ssssssssss.......',
   12: '.......ssssssssss.......',
-  13: '........ssssssss........',
-  14: '.........ssssss.........',
+  13: '.......ssssssssss.......',
+  14: '........ssssssss........',
 }
 const FEET: Sprite = { 31: '.........ff..ff.........' }
 const LEGS: Sprite = {
