@@ -248,9 +248,9 @@ const HEAD: Sprite = {
   7: '.......ssssssssss.......',
   8: '.......ssssssssss.......',
   9: '.......ssssssssss.......',
-  10: '........ssssssss........',
+  10: '.......ssssssssss.......',
   11: '........ssssssss........',
-  12: '.........ssssss.........',
+  12: '........ssssssss........',
   13: '.........ssssss.........',
   14: '..........ssss..........',
 }
@@ -350,23 +350,27 @@ const MOUTH: Sprite = { 11: '..........m..m..........', 12: '...........mm......
 
 const HAIR_SPRITES: Record<string, Sprite> = {
   bald: {},
+  // Buzz — a thin cropped cap that just traces the crown.
   buzz: {
     3: '........hhhhhhhh........',
     4: '.......hhhhhhhhhh.......',
-    5: '.......hh......hh.......',
+    5: '.......h........h.......',
   },
+  // Short — a full fringe across the forehead with short sideburns.
   short: {
     2: '........hhhhhhhh........',
     3: '.......hhhhhhhhhh.......',
     4: '.......hhhhhhhhhh.......',
     5: '.......hh......hh.......',
   },
+  // Side part — clearly asymmetric, swept over to the left.
   sidepart: {
     2: '........hhhhhhhh........',
-    3: '.......hhhhhhhhhh.......',
-    4: '......hhhhhhhhhh........',
-    5: '......hh.......hh.......',
+    3: '......hhhhhhhhhh........',
+    4: '......hhhhhhhh..........',
+    5: '......hhh...............',
   },
+  // Bob — straight chin-length hair framing the face, tucked at the ends.
   bob: {
     2: '........hhhhhhhh........',
     3: '.......hhhhhhhhhh.......',
@@ -374,25 +378,28 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     5: '......hh........hh......',
     6: '......hh........hh......',
     7: '......hh........hh......',
-    8: '.......h........h.......',
-    9: '.......hh......hh.......',
+    8: '......hh........hh......',
+    9: '......hhh......hhh......',
   },
+  // Spiky — separated spikes standing up over a short base.
   spiky: {
-    0: '.......h.h.h.h.h.h......',
-    1: '.......hhhhhhhhhh.......',
+    0: '.......h..h..h..h......',
+    1: '.......hh.hh.hh.hh......',
     2: '.......hhhhhhhhhh.......',
     3: '.......hh......hh.......',
   },
+  // Ponytail — smooth pulled-back top with a tail hanging off the right.
   ponytail: {
     2: '........hhhhhhhh........',
-    3: '.......hhhhhhhhhh.......',
-    4: '.......hhhhhhhhhh.......',
-    5: '.......hh......hhh......',
+    3: '.......hhhhhhhhh........',
+    4: '.......hhhhhhh..........',
+    5: '..............hhhh......',
     6: '...............hhh......',
     7: '................hhh.....',
     8: '................hhh.....',
     9: '................hh......',
   },
+  // Long — straight hair falling well past the shoulders.
   long: {
     1: '........hhhhhhhh........',
     2: '.......hhhhhhhhhh.......',
@@ -406,6 +413,7 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     10: '......hh........hh......',
     11: '......hhh......hhh......',
   },
+  // Wavy — long hair with an offset, rippling outline.
   wavy: {
     1: '........hhhhhhhh........',
     2: '.......hhhhhhhhhh.......',
@@ -415,25 +423,28 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     6: '......hh........hhh.....',
     7: '.....hhh........hh......',
     8: '......hh........hhh.....',
-    9: '......hh........hh......',
+    9: '.....hh..........h.....',
   },
+  // Top bun — a rounded knot sitting above a smooth cap.
   bun: {
     0: '..........hhhh.........',
-    1: '..........hhhh.........',
-    2: '........hhhhhhhh........',
-    3: '.......hhhhhhhhhh.......',
+    1: '.........hhhhhh........',
+    2: '.........hhhhhh........',
+    3: '........hhhhhhhh........',
     4: '.......hhhhhhhhhh.......',
     5: '.......hh......hh.......',
   },
+  // Afro — the biggest, roundest volume, framing the cheeks.
   afro: {
-    0: '.......hhhhhhhhhh.......',
-    1: '......hhhhhhhhhhhh......',
-    2: '.....hhhhhhhhhhhhhh.....',
-    3: '.....hhhhhhhhhhhhhh.....',
-    4: '.....hhhhhhhhhhhhhh.....',
-    5: '......hh........hh......',
-    6: '......hh........hh......',
+    0: '......hhhhhhhhhhhh......',
+    1: '.....hhhhhhhhhhhhhh.....',
+    2: '....hhhhhhhhhhhhhhhh....',
+    3: '....hhhhhhhhhhhhhhhh....',
+    4: '....hhhhhhhhhhhhhhhh....',
+    5: '.....hh..........hh.....',
+    6: '.....hh..........hh.....',
   },
+  // Mohawk — a tall central strip, shaved sides.
   mohawk: {
     0: '..........hhhh.........',
     1: '..........hhhh.........',
