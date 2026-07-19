@@ -118,15 +118,33 @@ export function Profile({
 
   if (editing) {
     return (
-      <>
-        <TopBar label="Character creator" onBack={() => setEditing(false)} />
-
-        {/* Sticky live preview — stays in view while scrolling the options. */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 5, background: C.paper, padding: '4px 0 10px', boxShadow: `0 8px 8px -8px rgba(0,0,0,0.18)` }}>
-          {stage(96)}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: C.paper, display: 'flex', flexDirection: 'column' }}>
+        {/* Top bar */}
+        <div style={{ flex: '0 0 auto', width: '100%', maxWidth: 480, margin: '0 auto', padding: '8px 20px 0', boxSizing: 'border-box' }}>
+          <TopBar label="Character creator" onBack={() => setEditing(false)} />
         </div>
 
-        <div style={{ marginTop: 16 }}>
+        {/* Live preview — pinned to the top half, always in view. */}
+        <div
+          style={{
+            flex: '1 1 50%',
+            minHeight: 0,
+            background: stageBg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            borderTop: `1px solid ${C.line}`,
+            borderBottom: `1px solid ${C.line}`,
+          }}
+        >
+          <PixelAvatar config={shown.avatar} mode="full" size={150} />
+        </div>
+
+        {/* Options — scroll in the bottom half. */}
+        <div style={{ flex: '1 1 50%', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', padding: '16px 20px 20px', boxSizing: 'border-box' }}>
+        <div>
           <FieldLabel>Display name</FieldLabel>
           <input
             type="text"
@@ -188,15 +206,18 @@ export function Profile({
           ))}
         </div>
         <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Title</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
           {TITLES.map((it) => (
             <Tile key={it.id} unlockLevel={it.unlockLevel} level={level} active={draft.title === it.id} onClick={() => setDraft({ ...draft, title: it.id })} label={it.label}>
               <span style={{ fontSize: 12, fontWeight: 700, color: C.ink, textAlign: 'center', lineHeight: 1.2 }}>{it.label}</span>
             </Tile>
           ))}
         </div>
+          </div>
+        </div>
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+        {/* Footer — always-visible actions. */}
+        <div style={{ flex: '0 0 auto', width: '100%', maxWidth: 480, margin: '0 auto', padding: '10px 20px', boxSizing: 'border-box', borderTop: `1px solid ${C.line}`, display: 'flex', gap: 10, background: C.paper }}>
           <button type="button" onClick={() => { setDraft(profile); setEditing(false) }} style={btnGhost}>
             Cancel
           </button>
@@ -204,7 +225,7 @@ export function Profile({
             Save character
           </button>
         </div>
-      </>
+      </div>
     )
   }
 

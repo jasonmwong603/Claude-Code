@@ -353,57 +353,58 @@ const MOUTH: Sprite = { 11: '..........m..m..........', 12: '...........mm......
 
 const HAIR_SPRITES: Record<string, Sprite> = {
   bald: {},
-  // Buzz — a thin cropped cap tracing the wide crown.
+  // Buzz — a flat-topped crop, wider than the head with hard corners.
   buzz: {
-    4: '......hhhhhhhhhhhh......',
+    4: '.....hhhhhhhhhhhhhh.....',
     5: '.....hhhhhhhhhhhhhh.....',
     6: '.....h............h.....',
   },
-  // Short — a fringe across the forehead with short sideburns.
+  // Short — a square block of hair with a flat top and straight sideburns.
   short: {
-    3: '......hhhhhhhhhhhh......',
+    3: '.....hhhhhhhhhhhhhh.....',
     4: '.....hhhhhhhhhhhhhh.....',
     5: '.....hhhhhhhhhhhhhh.....',
     6: '.....hh..........hh.....',
   },
-  // Side part — clearly asymmetric, swept over to the left.
+  // Side part — a flat top with a hard diagonal sweep to the left.
   sidepart: {
-    3: '......hhhhhhhhhhhh......',
+    3: '.....hhhhhhhhhhhhhh.....',
     4: '....hhhhhhhhhhhhhh......',
-    5: '....hhhhhhhhhhhh........',
-    6: '....hhhh................',
+    5: '....hhhhhhhhhh.........',
+    6: '....hhhh...............',
   },
-  // Bob — straight chin-length hair framing the face, tucked at the ends.
+  // Bob — a rigid flat-top helmet with straight sides and blunt ends.
   bob: {
-    3: '......hhhhhhhhhhhh......',
+    3: '.....hhhhhhhhhhhhhh.....',
     4: '.....hhhhhhhhhhhhhh.....',
     5: '.....hhhhhhhhhhhhhh.....',
     6: '.....hh..........hh.....',
     7: '.....hh..........hh.....',
     8: '.....hh..........hh.....',
     9: '.....hh..........hh.....',
-    10: '.....hhh........hhh.....',
+    10: '.....hh..........hh.....',
+    11: '.....hhh........hhh.....',
   },
-  // Spiky — separated spikes standing up over a short base.
+  // Spiky — sharp separated spikes over a flat base.
   spiky: {
-    2: '.....h.h.h.h.h.h.h.....',
-    3: '.....hhhhhhhhhhhhhh.....',
-    4: '.....hhhhhhhhhhhhhh.....',
-    5: '.....hh..........hh.....',
+    0: '.....h.h.h.h.h.h.h.....',
+    1: '.....hhhhhhhhhhhhhh.....',
+    2: '.....hhhhhhhhhhhhhh.....',
+    3: '.....hh..........hh.....',
   },
-  // Ponytail — smooth pulled-back top with a tail hanging off the side.
+  // Ponytail — flat pulled-back top with a blocky tail off the side.
   ponytail: {
-    3: '......hhhhhhhhhhhh......',
+    3: '.....hhhhhhhhhhhhhh.....',
     4: '.....hhhhhhhhhhhh.......',
     5: '.....hhhhhhhhhh.........',
     6: '...............hhhh.....',
-    7: '................hhh.....',
-    8: '................hhh.....',
-    9: '................hh......',
+    7: '...............hhhh.....',
+    8: '...............hhhh.....',
+    9: '...............hhh......',
   },
-  // Long — straight hair falling well past the shoulders.
+  // Long — a flat top with straight curtains down past the shoulders.
   long: {
-    3: '......hhhhhhhhhhhh......',
+    3: '.....hhhhhhhhhhhhhh.....',
     4: '.....hhhhhhhhhhhhhh.....',
     5: '.....hhhhhhhhhhhhhh.....',
     6: '.....hh..........hh.....',
@@ -412,33 +413,33 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     9: '.....hh..........hh.....',
     10: '.....hh..........hh.....',
     11: '.....hh..........hh.....',
-    12: '.....hhh........hhh.....',
+    12: '.....hh..........hh.....',
   },
-  // Wavy — long hair with an offset, rippling outline.
+  // Wavy — a flat top with a stepped, angular outline down the sides.
   wavy: {
-    3: '......hhhhhhhhhhhh......',
+    3: '.....hhhhhhhhhhhhhh.....',
     4: '.....hhhhhhhhhhhhhh.....',
     5: '.....hhhhhhhhhhhhhh.....',
     6: '.....hh..........hh.....',
-    7: '....hh...........hh.....',
-    8: '.....hh..........hhh....',
-    9: '....hh...........hh.....',
-    10: '.....hh.........hh......',
-    11: '.....hhh......hhh.......',
+    7: '....hhh..........hhh....',
+    8: '....hh............hh....',
+    9: '....hhh..........hhh....',
+    10: '.....hh..........hh.....',
+    11: '.....hhh........hhh.....',
   },
-  // Top bun — a rounded knot sitting above a smooth cap.
+  // Top knot — a square knot sitting on a flat cap.
   bun: {
     1: '..........hhhh.........',
     2: '.........hhhhhh........',
-    3: '.........hhhhhh........',
-    4: '......hhhhhhhhhhhh......',
+    3: '..........hhhh.........',
+    4: '.....hhhhhhhhhhhhhh.....',
     5: '.....hhhhhhhhhhhhhh.....',
     6: '.....hh..........hh.....',
   },
-  // Afro — the biggest, roundest volume, framing the cheeks.
+  // Afro — the biggest, squared-off volume, framing the cheeks.
   afro: {
-    0: '......hhhhhhhhhhhh......',
-    1: '.....hhhhhhhhhhhhhh.....',
+    0: '.....hhhhhhhhhhhhhh.....',
+    1: '....hhhhhhhhhhhhhhhh....',
     2: '....hhhhhhhhhhhhhhhh....',
     3: '....hhhhhhhhhhhhhhhh....',
     4: '....hhhhhhhhhhhhhhhh....',
