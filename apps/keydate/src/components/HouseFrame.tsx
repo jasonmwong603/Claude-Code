@@ -12,7 +12,6 @@ export interface FloorSpec {
   key: string
 }
 
-const FOUNDATION = '#3E322B' // warm stone/brick for the base
 
 function Roof() {
   // Proportional triangle so it scales with the column; chimney on the right.
@@ -121,10 +120,7 @@ export function HouseFrame({
       {/* Foundation — brickwork base holding the keyring. */}
       <div
         style={{
-          background: FOUNDATION,
-          backgroundImage:
-            'repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 22px, transparent 22px 24px),' +
-            'repeating-linear-gradient(90deg, rgba(0,0,0,0.18) 0 60px, transparent 60px 62px)',
+          background: 'linear-gradient(180deg, #48392F, #33291F)',
           color: '#fff',
           padding: '20px 16px 22px',
           borderRadius: '0 0 8px 8px',
