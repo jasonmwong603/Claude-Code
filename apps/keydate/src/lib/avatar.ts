@@ -453,12 +453,21 @@ const FACIAL_SPRITES: Record<string, Sprite> = {
   none: {},
   stubble: { 12: '.........H.HH.H.........', 13: '.........HHHHHH.........', 14: '..........HHHH..........' },
   mustache: { 10: '........hhhhhhhh........', 11: '.........hhhhhh.........' },
-  goatee: { 12: '..........h..h..........', 13: '..........hhhh..........', 14: '..........hhhh..........' },
-  beard: {
+  goatee: {
     11: '.........h....h.........',
     12: '.........h.hh.h.........',
     13: '.........hhhhhh.........',
     14: '..........hhhh..........',
+  },
+  // Full beard — a chin strap running from the sideburns down the jawline and
+  // across the chin, with a moustache, framing the mouth.
+  beard: {
+    9: '......h..........h......',
+    10: '......hh.hhhhhh.hh......',
+    11: '......hh........hh......',
+    12: '......hhh......hhh......',
+    13: '......hhhhhhhhhhhh......',
+    14: '.......hhhhhhhhhh.......',
   },
   fullbeard: {
     10: '.........h....h.........',
@@ -475,7 +484,7 @@ const EYEWEAR_SPRITES: Record<string, Sprite> = {
   none: {},
   round: { 8: '......gggllggllggg......' },
   square: { 7: '........gggggggg........', 8: '......gggllggllggg......', 9: '........gggggggg........' },
-  sunglasses: { 7: '........gggggggg........', 8: '......gggggggggggg......', 9: '........gggggggg........' },
+  sunglasses: { 7: '......gggggggggggg......', 8: '......ggggg..ggggg......', 9: '.......ggg....ggg.......' },
   monocle: { 7: '............gg.........', 8: '...........gllg........', 9: '............gg.........' },
   visor: { 6: '......gggggggggggg......', 7: '......llllllllllll......' },
 }
