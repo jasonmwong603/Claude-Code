@@ -237,14 +237,17 @@ export const DEFAULT_AVATAR: AvatarConfig = {
 /* ————— Sprites: row index → 24-char string ————— */
 type Sprite = Record<number, string>
 
-// Shared head (identical for every body so face layers always align).
+// Shared head (identical for every body so face layers always align). Rounder,
+// slightly wider through the middle (cols 7–16) and tapered at the crown and
+// chin so it reads as a soft circle instead of an elongated oval. Rows stay
+// 4–14 so the body (row 15+) never shifts.
 const HEAD: Sprite = {
-  4: '........ssssssss........',
+  4: '.........ssssss.........',
   5: '........ssssssss........',
-  6: '........ssssssss........',
-  7: '........ssssssss........',
-  8: '........ssssssss........',
-  9: '........ssssssss........',
+  6: '.......ssssssssss.......',
+  7: '.......ssssssssss.......',
+  8: '.......ssssssssss.......',
+  9: '.......ssssssssss.......',
   10: '........ssssssss........',
   11: '........ssssssss........',
   12: '.........ssssss.........',
@@ -329,32 +332,40 @@ const BODY_SPRITES: Record<string, Sprite> = {
   },
 }
 
-// Eyes — dots/dashes; only 'big' uses eye-white.
+// Eyes — big and shiny for a cute look. Each eye is a small block of pupil with
+// a white 'w' sparkle in the top-left; 'narrow'/'sleepy' stay as slim dashes.
 const EYE_SPRITES: Record<string, Sprite> = {
-  round: { 8: '..........p..p..........' },
-  big: { 7: '.........ww..ww.........', 8: '.........pp..pp.........' },
+  round: { 7: '.........wp..wp.........', 8: '.........pp..pp.........' },
+  big: { 6: '.........ww..ww.........', 7: '.........wp..wp.........', 8: '.........pp..pp.........' },
   narrow: { 8: '.........pp..pp.........' },
-  sleepy: { 9: '.........pp..pp.........' },
-  wide: { 8: '.........p....p.........' },
+  sleepy: { 8: '.........p....p.........', 9: '.........pp..pp.........' },
+  wide: { 7: '........wp....wp........', 8: '........pp....pp........' },
 }
 
-const MOUTH: Sprite = { 12: '..........mmm...........' }
+// Rosy blush on the cheeks, just below the eyes.
+const CHEEKS: Sprite = { 10: '........rr....rr........' }
+
+// A small upturned smile.
+const MOUTH: Sprite = { 11: '..........m..m..........', 12: '...........mm...........' }
 
 const HAIR_SPRITES: Record<string, Sprite> = {
   bald: {},
-  buzz: { 2: '........hhhhhhhh........', 3: '.......hhhhhhhhhh.......', 4: '........hhhhhhhh........' },
+  buzz: {
+    3: '........hhhhhhhh........',
+    4: '.......hhhhhhhhhh.......',
+    5: '.......hh......hh.......',
+  },
   short: {
-    1: '........hhhhhhhh........',
-    2: '.......hhhhhhhhhh.......',
-    3: '.......hhHhhhHhh.......',
-    4: '.......hh......hh.......',
+    2: '........hhhhhhhh........',
+    3: '.......hhhhhhhhhh.......',
+    4: '.......hhhhhhhhhh.......',
+    5: '.......hh......hh.......',
   },
   sidepart: {
-    1: '........hhhhhhhh........',
-    2: '.......hhhhhhhhhh.......',
-    3: '.......hHhhhhhhh.......',
-    4: '.......h......hh.......',
-    5: '..............hh.......',
+    2: '........hhhhhhhh........',
+    3: '.......hhhhhhhhhh.......',
+    4: '......hhhhhhhhhh........',
+    5: '......hh.......hh.......',
   },
   bob: {
     2: '........hhhhhhhh........',
@@ -363,14 +374,14 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     5: '......hh........hh......',
     6: '......hh........hh......',
     7: '......hh........hh......',
-    8: '......hh........hh......',
-    9: '.......h........h.......',
+    8: '.......h........h.......',
+    9: '.......hh......hh.......',
   },
   spiky: {
-    1: '......h..h..h..h.h......',
+    0: '.......h.h.h.h.h.h......',
+    1: '.......hhhhhhhhhh.......',
     2: '.......hhhhhhhhhh.......',
-    3: '.......hhhhhhhhhh.......',
-    4: '.......hh......hh.......',
+    3: '.......hh......hh.......',
   },
   ponytail: {
     2: '........hhhhhhhh........',
@@ -380,34 +391,35 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     6: '...............hhh......',
     7: '................hhh.....',
     8: '................hhh.....',
-    9: '.................h......',
+    9: '................hh......',
   },
   long: {
-    2: '........hhhhhhhh........',
-    3: '.......hhhhhhhhhh.......',
-    4: '......hhhhhhhhhhhh......',
+    1: '........hhhhhhhh........',
+    2: '.......hhhhhhhhhh.......',
+    3: '......hhhhhhhhhhhh......',
+    4: '......hh........hh......',
     5: '......hh........hh......',
     6: '......hh........hh......',
     7: '......hh........hh......',
     8: '......hh........hh......',
     9: '......hh........hh......',
     10: '......hh........hh......',
-    11: '......hh........hh......',
-    12: '......hh........hh......',
+    11: '......hhh......hhh......',
   },
   wavy: {
-    2: '.......hhhhhhhhh........',
-    3: '......hhhhhhhhhhh.......',
-    4: '......hhhhhhhhhhhh......',
-    5: '......hh........hh......',
-    6: '.....hh.........hh......',
-    7: '......hh........hh......',
-    8: '.....hh.........hh......',
-    9: '......h..........h.....',
+    1: '........hhhhhhhh........',
+    2: '.......hhhhhhhhhh.......',
+    3: '......hhhhhhhhhhhh......',
+    4: '......hh........hh......',
+    5: '.....hhh........hh......',
+    6: '......hh........hhh.....',
+    7: '.....hhh........hh......',
+    8: '......hh........hhh.....',
+    9: '......hh........hh......',
   },
   bun: {
-    0: '..........hh...........',
-    1: '.........hhhh..........',
+    0: '..........hhhh.........',
+    1: '..........hhhh.........',
     2: '........hhhhhhhh........',
     3: '.......hhhhhhhhhh.......',
     4: '.......hhhhhhhhhh.......',
@@ -418,10 +430,18 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     1: '......hhhhhhhhhhhh......',
     2: '.....hhhhhhhhhhhhhh.....',
     3: '.....hhhhhhhhhhhhhh.....',
-    4: '.....hh..........hh.....',
-    5: '......h..........h......',
+    4: '.....hhhhhhhhhhhhhh.....',
+    5: '......hh........hh......',
+    6: '......hh........hh......',
   },
-  mohawk: { 0: '..........hh...........', 1: '..........hh...........', 2: '..........hh...........', 3: '..........hh...........', 4: '..........hh...........' },
+  mohawk: {
+    0: '..........hhhh.........',
+    1: '..........hhhh.........',
+    2: '..........hhhh.........',
+    3: '..........hhhh.........',
+    4: '..........hhhh.........',
+    5: '..........hhhh.........',
+  },
 }
 
 const FACIAL_SPRITES: Record<string, Sprite> = {
@@ -556,6 +576,7 @@ const TORSO_HEM = 22
 /* ————— Colours ————— */
 const OUTLINE = '#2f2a25'
 const MOUTH_COLOR = '#9c5b4d'
+const BLUSH_COLOR = '#ef9a8e'
 const SHOE_COLOR = '#3a332e'
 const LENS = '#bfe0f5'
 const FRAME_DARK = '#242424'
@@ -599,6 +620,8 @@ function colorFor(ch: string, p: Record<string, string>): string | null {
       return '#ffffff'
     case 'm':
       return MOUTH_COLOR
+    case 'r':
+      return BLUSH_COLOR
     case 'h':
       return p.hair
     case 'H':
@@ -687,6 +710,7 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   // Face + accessory layers (head is identical across bodies, so these align).
   stamp(grid, FACIAL_SPRITES[cfg.facialHair] ?? {}, p)
   stamp(grid, MOUTH, p)
+  if (cfg.facialHair === 'none' || cfg.facialHair === 'stubble' || cfg.facialHair === 'mustache') stamp(grid, CHEEKS, p)
   stamp(grid, EYE_SPRITES[cfg.eyeShape] ?? EYE_SPRITES.round, p)
   stamp(grid, EYEWEAR_SPRITES[cfg.eyewear] ?? {}, p)
   stamp(grid, MASK_SPRITES[cfg.mask] ?? {}, p)
