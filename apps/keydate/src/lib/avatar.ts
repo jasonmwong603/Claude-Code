@@ -254,8 +254,8 @@ const HEAD: Sprite = {
   10: '......ssssssssssss......',
   11: '......ssssssssssss......',
   12: '......ssssssssssss......',
-  13: '.......ssssssssss.......',
-  14: '........ssssssss........',
+  13: '......ssssssssssss......',
+  14: '.......ssssssssss.......',
 }
 const FEET: Sprite = { 25: '........fff..fff........' }
 const LEGS: Sprite = {
