@@ -735,16 +735,15 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
 
   // Paint clothing onto the body's skin pixels so it fits any silhouette.
   const td = TOP_DEFS[cfg.top] ?? TOP_DEFS.tee
-  const neck = td.neck ?? 1
   // Arm cells are the skin pixels outside the torso columns (9–14). Sleeves
   // cover them down to armEnd; below that the arm/hand stays skin.
   const armEnd = td.sleeve === 'none' ? -1 : td.sleeve === 'long' ? 18 : 16
   for (let y = TORSO_TOP; y <= TORSO_HEM; y++) {
     paintRow(grid, y, skin, p.top, p.topShade, (x) => {
       // Shoulders (rows 15–16) are always covered; the arms only split off from
-      // row 16 down, so a sleeveless top still covers the shoulders cleanly.
+      // row 16 down, so a sleeveless top still covers the shoulders cleanly. The
+      // collar comes right up under the chin — no bare-skin neck pixel.
       if (y >= 16 && (x < 9 || x > 14)) return y > armEnd // arm: skin below the sleeve
-      if (y < TORSO_TOP + neck && (x === 11 || x === 12)) return true // neckline
       if (td.open && (x === 11 || x === 12) && y >= TORSO_TOP + 1) return true // open front
       return false
     })
