@@ -145,7 +145,6 @@ export const FACIAL_HAIRS: Style[] = [
   { id: 'mustache', label: 'Mustache', unlockLevel: 2 },
   { id: 'goatee', label: 'Goatee', unlockLevel: 3 },
   { id: 'beard', label: 'Beard', unlockLevel: 4 },
-  { id: 'fullbeard', label: 'Full Beard', unlockLevel: 5 },
 ]
 
 export const EYEWEARS: Style[] = [
@@ -468,13 +467,6 @@ const FACIAL_SPRITES: Record<string, Sprite> = {
     12: '......hhh......hhh......',
     13: '......hhhhhhhhhhhh......',
     14: '.......hhhhhhhhhh.......',
-  },
-  fullbeard: {
-    10: '.........h....h.........',
-    11: '.........hhhhhh.........',
-    12: '.........hhhhhh.........',
-    13: '.........hhhhhh.........',
-    14: '..........hhhh..........',
   },
 }
 
