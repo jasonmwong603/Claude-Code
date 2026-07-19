@@ -625,7 +625,7 @@ const HIP_TOP = 20
 const LEG_END = 24
 
 /* ————— Colours ————— */
-const OUTLINE = '#2f2a25'
+const OUTLINE = '#231f1b'
 const MOUTH_COLOR = '#9c5b4d'
 const BLUSH_COLOR = '#ef9a8e'
 const SHOE_COLOR = '#3a332e'
@@ -777,36 +777,47 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   stamp(grid, HEADWEAR_SPRITES[cfg.headwear] ?? {}, p)
   stamp(grid, HANDHELD_SPRITES[cfg.handheld] ?? {}, p)
 
-  // Shading pass: give the big material regions (skin, hair, top, bottom) a
-  // darker transitional tone on the bottom/right edges and a lighter one on the
-  // top/left, for depth. Small features (eyes, glasses, accessories) are left
-  // flat because their colours aren't in these maps.
-  const shadeOf: Record<string, string> = {
-    [skin]: darken(skin, 0.86),
-    [hair]: p.hairShade,
-    [top]: p.topShade,
-    [bottom]: p.bottomShade,
-  }
-  const lightOf: Record<string, string> = {
-    [skin]: lighten(skin),
-    [hair]: lighten(hair),
-    [top]: lighten(top),
-    [bottom]: lighten(bottom),
+  // GBA-style cel shading. Each big material region (skin, hair, top, bottom)
+  // gets four tones under a consistent top-left light: a highlight on the
+  // top/left rim, the flat base in the interior, a shadow on the bottom/right
+  // rim, and a deeper shadow in the bottom-right corners. Small features (eyes,
+  // glasses, accessories) keep their flat colours.
+  const hi: Record<string, string> = {}
+  const sh: Record<string, string> = {}
+  const deep: Record<string, string> = {}
+  for (const c of [skin, hair, top, bottom]) {
+    hi[c] = lighten(c, 1.13)
+    sh[c] = darken(c, 0.82)
+    deep[c] = darken(c, 0.64)
   }
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const c = grid[y][x]
-      if (!c || !(c in shadeOf)) continue
+      if (!c || !(c in sh)) continue
       const rightEdge = x === W - 1 || !grid[y][x + 1]
       const bottomEdge = y === H - 1 || !grid[y + 1][x]
       const topEdge = y === 0 || !grid[y - 1][x]
       const leftEdge = x === 0 || !grid[y][x - 1]
-      if (rightEdge || bottomEdge) grid[y][x] = shadeOf[c]
-      else if (topEdge || leftEdge) grid[y][x] = lightOf[c]
+      if (bottomEdge && rightEdge) grid[y][x] = deep[c]
+      else if (bottomEdge || rightEdge) grid[y][x] = sh[c]
+      else if (topEdge || leftEdge) grid[y][x] = hi[c]
+    }
+  }
+  // Light dither on the inner edge of the shadow band, for that pixel-art
+  // banding texture (checkerboard so it stays subtle).
+  const snap = grid.map((row) => row.slice())
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const c = grid[y][x]
+      if (!c || !(c in sh) || (x + y) % 2 !== 0) continue
+      const below = y < H - 1 ? snap[y + 1][x] : null
+      const right = x < W - 1 ? snap[y][x + 1] : null
+      const shaded = (v: string | null) => v === sh[c] || v === deep[c]
+      if (shaded(below) || shaded(right)) grid[y][x] = sh[c]
     }
   }
 
-  // Auto-outline.
+  // Auto-outline — a deep, near-black rim all the way around the silhouette.
   const out = grid.map((row) => row.slice())
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
