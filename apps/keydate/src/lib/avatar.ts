@@ -359,17 +359,18 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     5: '.....hhhhhhhhhhhhhh.....',
     6: '.....h............h.....',
   },
-  // Short — a square block of hair with a flat top and straight sideburns.
+  // Short — fuller on the left, tapering off flush with the head's right edge.
   short: {
-    3: '.....hhhhhhhhhhhhhh.....',
-    4: '.....hhhhhhhhhhhhhh.....',
-    5: '.....hhhhhhhhhhhhhh.....',
-    6: '.....hh..........hh.....',
+    3: '.....hhhhhhhhhhhh.......',
+    4: '.....hhhhhhhhhhhhh......',
+    5: '.....hhhhhhhhhhhhh......',
+    6: '.....hh..........h......',
   },
-  // Side part — a flat top with a hard diagonal sweep to the left.
+  // Side part — a flat top with a hard diagonal sweep to the left, right edge
+  // tapering off flush with the head.
   sidepart: {
-    3: '.....hhhhhhhhhhhhhh.....',
-    4: '....hhhhhhhhhhhhhh......',
+    3: '.....hhhhhhhhhhhhh......',
+    4: '....hhhhhhhhhhhhh.......',
     5: '....hhhhhhhhhh.........',
     6: '....hhhh...............',
   },
@@ -402,30 +403,30 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     8: '...............hhhh.....',
     9: '...............hhh......',
   },
-  // Long — a flat top with straight curtains down past the shoulders.
+  // Long — fuller left curtain; the right curtain tapers off flush with the head.
   long: {
-    3: '.....hhhhhhhhhhhhhh.....',
-    4: '.....hhhhhhhhhhhhhh.....',
-    5: '.....hhhhhhhhhhhhhh.....',
-    6: '.....hh..........hh.....',
-    7: '.....hh..........hh.....',
-    8: '.....hh..........hh.....',
-    9: '.....hh..........hh.....',
-    10: '.....hh..........hh.....',
-    11: '.....hh..........hh.....',
-    12: '.....hh..........hh.....',
+    3: '.....hhhhhhhhhhhh.......',
+    4: '.....hhhhhhhhhhhhh......',
+    5: '.....hhhhhhhhhhhhh......',
+    6: '.....hh.........hh......',
+    7: '.....hh.........hh......',
+    8: '.....hh.........hh......',
+    9: '.....hh.........hh......',
+    10: '.....hh.........hh......',
+    11: '.....hh.........hh......',
+    12: '.....hh.........hh......',
   },
-  // Wavy — a flat top with a stepped, angular outline down the sides.
+  // Wavy — stepped waves on the fuller left; right side tapers flush with the head.
   wavy: {
-    3: '.....hhhhhhhhhhhhhh.....',
-    4: '.....hhhhhhhhhhhhhh.....',
-    5: '.....hhhhhhhhhhhhhh.....',
-    6: '.....hh..........hh.....',
-    7: '....hhh..........hhh....',
-    8: '....hh............hh....',
-    9: '....hhh..........hhh....',
-    10: '.....hh..........hh.....',
-    11: '.....hhh........hhh.....',
+    3: '.....hhhhhhhhhhhh.......',
+    4: '.....hhhhhhhhhhhhh......',
+    5: '.....hhhhhhhhhhhhh......',
+    6: '.....hh.........hh......',
+    7: '....hhh.........hh......',
+    8: '....hh..........hh......',
+    9: '....hhh.........hh......',
+    10: '.....hh.........hh......',
+    11: '.....hhh.......hh.......',
   },
   // Top knot — a square knot sitting on a flat cap.
   bun: {
