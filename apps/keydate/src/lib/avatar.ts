@@ -322,14 +322,15 @@ const BODY_SPRITES: Record<string, Sprite> = {
   },
 }
 
-// Eyes — Pokémon-trainer style: a dark lash/lid line ('g') over a coloured eye
-// with a white glint ('w'). 'narrow' is a plain dash, 'sleepy' looks down.
+// Eyes — small GBA-RPG-sprite style: a dark iris ('P' = near-black) with a
+// single white catchlight ('w'), no heavy lash bar. 'big' adds an eye-white
+// row, 'narrow' is a thin dash, 'sleepy' looks down, 'wide' is set apart.
 const EYE_SPRITES: Record<string, Sprite> = {
-  round: { 7: '.........gg..gg.........', 8: '.........wp..wp.........' },
-  big: { 6: '.........gg..gg.........', 7: '.........wp..wp.........', 8: '.........pp..pp.........' },
-  narrow: { 8: '.........gg..gg.........' },
-  sleepy: { 8: '.........gg..gg.........', 9: '.........pp..pp.........' },
-  wide: { 7: '........gg....gg........', 8: '........wp....wp........' },
+  round: { 7: '.........wP..wP.........', 8: '.........PP..PP.........' },
+  big: { 6: '.........ww..ww.........', 7: '.........wP..wP.........', 8: '.........PP..PP.........' },
+  narrow: { 8: '.........PP..PP.........' },
+  sleepy: { 8: '.........P....P.........', 9: '.........PP..PP.........' },
+  wide: { 7: '........wP....wP........', 8: '........PP....PP........' },
 }
 
 // Rosy blush on the cheeks, just below the eyes.
@@ -667,6 +668,8 @@ function colorFor(ch: string, p: Record<string, string>): string | null {
       return p.skin
     case 'p':
       return p.eye
+    case 'P':
+      return p.eyeDark
     case 'w':
       return '#ffffff'
     case 'm':
@@ -719,9 +722,11 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   const hair = swatchColor(HAIR_COLORS, cfg.hairColor)
   const top = swatchColor(TOP_COLORS, cfg.topColor)
   const bottom = swatchColor(BOTTOM_COLORS, cfg.bottomColor)
+  const eye = swatchColor(EYE_COLORS, cfg.eyeColor)
   const p = {
     skin,
-    eye: swatchColor(EYE_COLORS, cfg.eyeColor),
+    eye,
+    eyeDark: darken(eye, 0.55),
     hair,
     hairShade: darken(hair, 0.72),
     top,
