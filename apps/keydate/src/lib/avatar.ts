@@ -341,11 +341,11 @@ const MOUTH: Sprite = { 11: '..........m..m..........', 12: '...........mm......
 
 const HAIR_SPRITES: Record<string, Sprite> = {
   bald: {},
-  // Buzz — a flat-topped crop, wider than the head with hard corners.
+  // Buzz — a thin film of hair hugging the crown exactly (no overhang), so it
+  // reads like a shaved head with a shadow of hair rather than a hairstyle.
   buzz: {
-    4: '.....hhhhhhhhhhhhhh.....',
-    5: '.....hhhhhhhhhhhhhh.....',
-    6: '.....h............h.....',
+    5: '.......hhhhhhhhhh.......',
+    6: '......hhhhhhhhhhhh......',
   },
   // Short — fuller on the left, tapering off flush with the head's right edge.
   short: {
@@ -452,7 +452,7 @@ const HAIR_SPRITES: Record<string, Sprite> = {
 const FACIAL_SPRITES: Record<string, Sprite> = {
   none: {},
   stubble: { 12: '.........H.HH.H.........', 13: '.........HHHHHH.........', 14: '..........HHHH..........' },
-  mustache: { 11: '..........hhhh..........' },
+  mustache: { 10: '........hhhhhhhh........', 11: '.........hhhhhh.........' },
   goatee: { 12: '..........h..h..........', 13: '..........hhhh..........', 14: '..........hhhh..........' },
   beard: {
     11: '.........h....h.........',
@@ -474,15 +474,15 @@ const FACIAL_SPRITES: Record<string, Sprite> = {
 const EYEWEAR_SPRITES: Record<string, Sprite> = {
   none: {},
   round: { 8: '......gggllggllggg......' },
-  square: { 7: '........gg.gg.gg........', 8: '......gggllggllggg......', 9: '.........gg.gg.........' },
-  sunglasses: { 7: '........gg.gg.gg........', 8: '......gggggggggggg......' },
+  square: { 7: '........gggggggg........', 8: '......gggllggllggg......', 9: '........gggggggg........' },
+  sunglasses: { 7: '........gggggggg........', 8: '......gggggggggggg......', 9: '........gggggggg........' },
   monocle: { 7: '............gg.........', 8: '...........gllg........', 9: '............gg.........' },
   visor: { 6: '......gggggggggggg......', 7: '......llllllllllll......' },
 }
 
 const MASK_SPRITES: Record<string, Sprite> = {
   none: {},
-  surgical: { 10: '.........222222.........', 11: '........g222222g........', 12: '.........222222.........', 13: '.........222222.........', 14: '..........2222..........' },
+  surgical: { 9: '......gg........gg......', 10: '.......g22222222g.......', 11: '........22222222........', 12: '........22222222........', 13: '.........222222.........', 14: '..........2222..........' },
   bandana: { 11: '........44444444........', 12: '........44444444........', 13: '.........444444.........', 14: '..........4444..........' },
   ninja: { 9: '........77777777........', 10: '........77777777........', 11: '........77777777........', 12: '........77777777........', 13: '.........777777.........', 14: '..........7777..........' },
 }
@@ -543,12 +543,13 @@ const HANDHELD_SPRITES: Record<string, Sprite> = {
     17: '................2222....',
     18: '.................22.....',
   },
-  // Phone: dark body framing a light screen.
+  // Phone: an upright rectangle — dark body framing a light screen.
   phone: {
-    15: '................777.....',
-    16: '................7ll7....',
-    17: '................7ll7....',
-    18: '................777.....',
+    14: '...............7777....',
+    15: '...............7ll7....',
+    16: '...............7ll7....',
+    17: '...............7ll7....',
+    18: '...............7777....',
   },
   // Golden key: a hollow round bow, a shaft, and two teeth on the bit.
   key: {
@@ -773,7 +774,7 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   // Face + accessory layers (head is identical across bodies, so these align).
   stamp(grid, FACIAL_SPRITES[cfg.facialHair] ?? {}, p)
   stamp(grid, MOUTH, p)
-  if (cfg.facialHair === 'none' || cfg.facialHair === 'stubble' || cfg.facialHair === 'mustache') stamp(grid, CHEEKS, p)
+  if (cfg.facialHair === 'none' || cfg.facialHair === 'stubble') stamp(grid, CHEEKS, p)
   stamp(grid, EYE_SPRITES[cfg.eyeShape] ?? EYE_SPRITES.round, p)
   stamp(grid, EYEWEAR_SPRITES[cfg.eyewear] ?? {}, p)
   stamp(grid, MASK_SPRITES[cfg.mask] ?? {}, p)
