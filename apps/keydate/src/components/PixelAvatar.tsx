@@ -17,7 +17,7 @@ export function PixelAvatar({
 }) {
   const grid = useMemo(() => composeAvatar(config), [config])
 
-  const vb = mode === 'head' ? { x: 4, y: 0, w: 16, h: 16 } : { x: 3, y: 0, w: 18, h: 32 }
+  const vb = mode === 'head' ? { x: 4, y: 0, w: 16, h: 16 } : { x: 3, y: 0, w: 18, h: 27 }
   const width = size
   const height = Math.round((size * vb.h) / vb.w)
 
@@ -40,7 +40,7 @@ export function PixelAvatar({
       aria-label="avatar"
     >
       {mode === 'full' && shadow && (
-        <ellipse cx={11.5} cy={31.4} rx={6} ry={1.2} fill="#000" opacity={0.16} />
+        <ellipse cx={11.5} cy={25.4} rx={6} ry={1.2} fill="#000" opacity={0.16} />
       )}
       {rects}
     </svg>

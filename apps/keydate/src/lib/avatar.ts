@@ -257,14 +257,12 @@ const HEAD: Sprite = {
   13: '.......ssssssssss.......',
   14: '........ssssssss........',
 }
-const FEET: Sprite = { 31: '.........ff..ff.........' }
+const FEET: Sprite = { 25: '........fff..fff........' }
 const LEGS: Sprite = {
-  25: '.........ss..ss.........',
-  26: '.........ss..ss.........',
-  27: '.........ss..ss.........',
-  28: '.........ss..ss.........',
-  29: '.........ss..ss.........',
-  30: '.........ss..ss.........',
+  21: '.........ss..ss.........',
+  22: '.........ss..ss.........',
+  23: '.........ss..ss.........',
+  24: '.........ss..ss.........',
 }
 
 /* Chibi / 8-bit proportions. The head (cols 8–15) is wider than a slim torso
@@ -274,19 +272,15 @@ const LEGS: Sprite = {
    The gap columns get the auto-outline, cleanly separating arm from body. */
 const BODY_SPRITES: Record<string, Sprite> = {
   // Athletic — even shoulders (aligned to the arms so there's no stray nub),
-  // 2px arms, narrow hips.
+  // 2px arms, narrow hips. Compact chibi torso for a ~1:1 head-to-body ratio.
   taper: {
     ...HEAD,
     15: '.......ssssssssss.......',
-    16: '.......ssssssssss.......',
+    16: '.......ss.ssss.ss.......',
     17: '.......ss.ssss.ss.......',
     18: '.......ss.ssss.ss.......',
-    19: '.......ss.ssss.ss.......',
-    20: '.......ss.ssss.ss.......',
-    21: '.......ss.ssss.ss.......',
-    22: '..........ssss..........',
-    23: '.........ssssss.........',
-    24: '.........ssssss.........',
+    19: '..........ssss..........',
+    20: '.........ssssss.........',
     ...LEGS,
     ...FEET,
   },
@@ -294,15 +288,11 @@ const BODY_SPRITES: Record<string, Sprite> = {
   curvy: {
     ...HEAD,
     15: '.......ssssssssss.......',
-    16: '.......ssssssssss.......',
+    16: '.......ss.ssss.ss.......',
     17: '.......ss.ssss.ss.......',
     18: '.......ss.ssss.ss.......',
-    19: '.......ss.ssss.ss.......',
-    20: '.......ss.ssss.ss.......',
-    21: '........ssssss..........',
-    22: '.........ssssss.........',
-    23: '......ssssssssssss......',
-    24: '......ssssssssssss......',
+    19: '.........ssssss.........',
+    20: '.......ssssssssss.......',
     ...LEGS,
     ...FEET,
   },
@@ -310,15 +300,11 @@ const BODY_SPRITES: Record<string, Sprite> = {
   slim: {
     ...HEAD,
     15: '........ssssssss........',
-    16: '........ssssssss........',
+    16: '........s.ssss.s........',
     17: '........s.ssss.s........',
     18: '........s.ssss.s........',
-    19: '........s.ssss.s........',
-    20: '........s.ssss.s........',
-    21: '........s.ssss.s........',
-    22: '..........ssss..........',
-    23: '.........ssssss.........',
-    24: '.........ssssss.........',
+    19: '..........ssss..........',
+    20: '.........ssssss.........',
     ...LEGS,
     ...FEET,
   },
@@ -326,28 +312,24 @@ const BODY_SPRITES: Record<string, Sprite> = {
   broad: {
     ...HEAD,
     15: '......ssssssssssss......',
-    16: '......ssssssssssss......',
+    16: '......sss.ssss.sss......',
     17: '......sss.ssss.sss......',
     18: '......sss.ssss.sss......',
-    19: '......sss.ssss.sss......',
-    20: '......sss.ssss.sss......',
-    21: '......sss.ssss.sss......',
-    22: '.........ssssss.........',
-    23: '........ssssssss........',
-    24: '........ssssssss........',
+    19: '.........ssssss.........',
+    20: '........ssssssss........',
     ...LEGS,
     ...FEET,
   },
 }
 
-// Eyes — big and shiny for a cute look. Each eye is a small block of pupil with
-// a white 'w' sparkle in the top-left; 'narrow'/'sleepy' stay as slim dashes.
+// Eyes — Pokémon-trainer style: a dark lash/lid line ('g') over a coloured eye
+// with a white glint ('w'). 'narrow' is a plain dash, 'sleepy' looks down.
 const EYE_SPRITES: Record<string, Sprite> = {
-  round: { 7: '.........wp..wp.........', 8: '.........pp..pp.........' },
-  big: { 6: '.........ww..ww.........', 7: '.........wp..wp.........', 8: '.........pp..pp.........' },
-  narrow: { 8: '.........pp..pp.........' },
-  sleepy: { 8: '.........p....p.........', 9: '.........pp..pp.........' },
-  wide: { 7: '........wp....wp........', 8: '........pp....pp........' },
+  round: { 7: '.........gg..gg.........', 8: '.........wp..wp.........' },
+  big: { 6: '.........gg..gg.........', 7: '.........wp..wp.........', 8: '.........pp..pp.........' },
+  narrow: { 8: '.........gg..gg.........' },
+  sleepy: { 8: '.........gg..gg.........', 9: '.........pp..pp.........' },
+  wide: { 7: '........gg....gg........', 8: '........wp....wp........' },
 }
 
 // Rosy blush on the cheeks, just below the eyes.
@@ -550,51 +532,56 @@ const HEADWEAR_SPRITES: Record<string, Sprite> = {
 
 const HOOD: Sprite = { 14: '......cc........cc......', 15: '......cccccccccccc......' }
 
-// Held in the right hand (arm around cols 15–16, rows 20–21). Drawn a couple of
-// pixels out so the object reads clearly next to the hand.
+// Held just outside the right hand (arm around cols 15–16, rows 16–18).
 const HANDHELD_SPRITES: Record<string, Sprite> = {
   none: {},
-  // To-go coffee cup: brown lid over a white cup.
+  // To-go coffee cup: brown lid, white cup, tapering to the base.
   coffee: {
-    19: '................1111....',
-    20: '................2222....',
-    21: '................2222....',
-    22: '.................22.....',
+    15: '................1111....',
+    16: '................2222....',
+    17: '................2222....',
+    18: '.................22.....',
   },
-  // Phone: dark body with a light screen.
+  // Phone: dark body framing a light screen.
   phone: {
-    19: '................777.....',
-    20: '................7ll....',
-    21: '................7ll....',
-    22: '................777.....',
+    15: '................777.....',
+    16: '................7ll7....',
+    17: '................7ll7....',
+    18: '................777.....',
   },
-  // Golden key: round bow, shaft, and teeth.
+  // Golden key: a hollow round bow, a shaft, and two teeth on the bit.
   key: {
-    18: '................33......',
-    19: '................33......',
-    20: '.................3......',
-    21: '.................33.....',
-    22: '.................3......',
+    15: '.................333....',
+    16: '.................3.3....',
+    17: '.................333....',
+    18: '..................3.....',
+    19: '..................33....',
+    20: '..................3.....',
+    21: '..................33....',
   },
-  // Potted plant: green leaves in a brown pot.
+  // Potted plant: green sprout leaves in a brown pot with a rim.
   plant: {
-    17: '................6.6.....',
-    18: '................666.....',
-    19: '.................6......',
-    20: '................111.....',
-    21: '................111.....',
+    13: '................6.6.....',
+    14: '................666.....',
+    15: '.................6......',
+    16: '................999.....',
+    17: '................111.....',
+    18: '.................1......',
   },
-  // Balloon on a string.
+  // Balloon on a string floating up beside the hand.
   balloon: {
-    12: '................44......',
-    13: '...............4444.....',
-    14: '...............4444.....',
-    15: '................44......',
+    7: '.................44.....',
+    8: '................4444....',
+    9: '................4444....',
+    10: '.................44.....',
+    11: '.................w......',
+    12: '.................4......',
+    13: '.................4......',
+    14: '.................4......',
+    15: '.................4......',
     16: '.................4......',
     17: '.................4......',
     18: '.................4......',
-    19: '.................4......',
-    20: '.................4......',
   },
 }
 
@@ -614,7 +601,7 @@ const TOP_DEFS: Record<string, TopDef> = {
   longsleeve: { neck: 1, sleeve: 'long' },
   hoodie: { neck: 1, sleeve: 'long', hood: true },
   jacket: { neck: 1, sleeve: 'long', open: true },
-  dress: { neck: 1, sleeve: 'short', dress: true, dressHem: 28 },
+  dress: { neck: 1, sleeve: 'short', dress: true, dressHem: 23 },
   sweater: { neck: 0, sleeve: 'long' },
   flannel: { neck: 1, sleeve: 'long', plaid: true },
 }
@@ -628,12 +615,14 @@ const BOTTOM_DEFS: Record<string, BottomDef> = {
   pants: {},
   jeans: { waistband: true, cuff: true },
   joggers: { cuff: true },
-  shorts: { legEnd: 26 },
-  skirt: { skirt: true, legEnd: 27 },
+  shorts: { legEnd: 22 },
+  skirt: { skirt: true, legEnd: 22 },
 }
 
 const TORSO_TOP = 15
-const TORSO_HEM = 22
+const TORSO_HEM = 19
+const HIP_TOP = 20
+const LEG_END = 24
 
 /* ————— Colours ————— */
 const OUTLINE = '#2f2a25'
@@ -749,12 +738,12 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   const neck = td.neck ?? 1
   // Arm cells are the skin pixels outside the torso columns (9–14). Sleeves
   // cover them down to armEnd; below that the arm/hand stays skin.
-  const armEnd = td.sleeve === 'none' ? -1 : td.sleeve === 'long' ? 20 : 17
+  const armEnd = td.sleeve === 'none' ? -1 : td.sleeve === 'long' ? 18 : 16
   for (let y = TORSO_TOP; y <= TORSO_HEM; y++) {
     paintRow(grid, y, skin, p.top, p.topShade, (x) => {
       // Shoulders (rows 15–16) are always covered; the arms only split off from
-      // row 17 down, so a sleeveless top still covers the shoulders cleanly.
-      if (y >= 17 && (x < 9 || x > 14)) return y > armEnd // arm: skin below the sleeve
+      // row 16 down, so a sleeveless top still covers the shoulders cleanly.
+      if (y >= 16 && (x < 9 || x > 14)) return y > armEnd // arm: skin below the sleeve
       if (y < TORSO_TOP + neck && (x === 11 || x === 12)) return true // neckline
       if (td.open && (x === 11 || x === 12) && y >= TORSO_TOP + 1) return true // open front
       return false
@@ -762,18 +751,18 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   }
   if (td.hood) stamp(grid, HOOD, p)
   if (td.plaid) for (let y = TORSO_TOP; y <= TORSO_HEM; y++) for (const x of [8, 11, 14, 17]) if (grid[y][x] === p.top) grid[y][x] = p.topShade
-  if (td.dress) for (let y = 23; y <= (td.dressHem ?? 27); y++) paintRow(grid, y, skin, p.top, p.topShade)
+  if (td.dress) for (let y = HIP_TOP; y <= (td.dressHem ?? 22); y++) paintRow(grid, y, skin, p.top, p.topShade)
 
   if (!td.dress) {
     const bd = BOTTOM_DEFS[cfg.bottom] ?? BOTTOM_DEFS.pants
-    const legEnd = bd.legEnd ?? 30
-    if (bd.skirt) for (let y = 23; y <= (bd.legEnd ?? 27); y++) { grid[y][11] = p.bottom; grid[y][12] = p.bottom }
-    for (let y = 23; y <= legEnd; y++) paintRow(grid, y, skin, p.bottom, p.bottomShade)
+    const legEnd = bd.legEnd ?? LEG_END
+    if (bd.skirt) for (let y = HIP_TOP; y <= (bd.legEnd ?? 22); y++) { grid[y][11] = p.bottom; grid[y][12] = p.bottom }
+    for (let y = HIP_TOP; y <= legEnd; y++) paintRow(grid, y, skin, p.bottom, p.bottomShade)
     // Jeans / joggers: pick out a lighter waistband and rolled cuffs so denim
     // reads differently from plain pants of the same colour.
     const bandLight = lighten(bottom, 1.22)
     const recolor = (y: number) => { for (let x = 0; x < W; x++) if (grid[y][x] === p.bottom || grid[y][x] === p.bottomShade) grid[y][x] = bandLight }
-    if (bd.waistband) recolor(23)
+    if (bd.waistband) recolor(HIP_TOP)
     if (bd.cuff) { recolor(legEnd - 1); recolor(legEnd) }
   }
 
