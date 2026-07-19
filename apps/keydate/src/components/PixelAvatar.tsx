@@ -17,7 +17,7 @@ export function PixelAvatar({
 }) {
   const grid = useMemo(() => composeAvatar(config), [config])
 
-  const vb = mode === 'head' ? { x: 6, y: 0, w: 12, h: 16 } : { x: 3, y: 0, w: 18, h: 32 }
+  const vb = mode === 'head' ? { x: 4, y: 0, w: 16, h: 16 } : { x: 3, y: 0, w: 18, h: 32 }
   const width = size
   const height = Math.round((size * vb.h) / vb.w)
 

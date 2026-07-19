@@ -241,21 +241,21 @@ type Sprite = Record<number, string>
 // slightly wider through the middle (cols 7–16) and tapered at the crown and
 // chin so it reads as a soft circle instead of an elongated oval. Rows stay
 // 4–14 so the body (row 15+) never shifts.
-// Rounded rectangle — straight vertical sides (cols 7–16) with softened top
-// corners and a flat, wide jaw whose bottom corners are just rounded off, so
-// there's no sharp chin. Rows stay 4–14 so the body (row 15+) never shifts.
+// Sideways rounded rectangle — distinctly wider (cols 5–18, 14px) than it is
+// tall (rows 5–14, 10px), like the chibi bead sprites: a flat, wide face with
+// only the corners rounded, no chin point. The flat bottom (row 14, cols 7–16)
+// sits flush on the shoulders (row 15) with no neck gap.
 const HEAD: Sprite = {
-  4: '.........ssssss.........',
-  5: '........ssssssss........',
-  6: '.......ssssssssss.......',
-  7: '.......ssssssssss.......',
-  8: '.......ssssssssss.......',
-  9: '.......ssssssssss.......',
-  10: '.......ssssssssss.......',
-  11: '.......ssssssssss.......',
-  12: '.......ssssssssss.......',
-  13: '.......ssssssssss.......',
-  14: '........ssssssss........',
+  5: '......ssssssssssss......',
+  6: '.....ssssssssssssss.....',
+  7: '.....ssssssssssssss.....',
+  8: '.....ssssssssssssss.....',
+  9: '.....ssssssssssssss.....',
+  10: '.....ssssssssssssss.....',
+  11: '.....ssssssssssssss.....',
+  12: '.....ssssssssssssss.....',
+  13: '......ssssssssssss......',
+  14: '.......ssssssssss.......',
 }
 const FEET: Sprite = { 31: '.........ff..ff.........' }
 const LEGS: Sprite = {
@@ -346,96 +346,94 @@ const EYE_SPRITES: Record<string, Sprite> = {
 }
 
 // Rosy blush on the cheeks, just below the eyes.
-const CHEEKS: Sprite = { 10: '........rr....rr........' }
+const CHEEKS: Sprite = { 10: '.......rr......rr.......' }
 
 // A small upturned smile.
 const MOUTH: Sprite = { 11: '..........m..m..........', 12: '...........mm...........' }
 
 const HAIR_SPRITES: Record<string, Sprite> = {
   bald: {},
-  // Buzz — a thin cropped cap that just traces the crown.
+  // Buzz — a thin cropped cap tracing the wide crown.
   buzz: {
-    3: '........hhhhhhhh........',
-    4: '.......hhhhhhhhhh.......',
-    5: '.......h........h.......',
+    4: '......hhhhhhhhhhhh......',
+    5: '.....hhhhhhhhhhhhhh.....',
+    6: '.....h............h.....',
   },
-  // Short — a full fringe across the forehead with short sideburns.
+  // Short — a fringe across the forehead with short sideburns.
   short: {
-    2: '........hhhhhhhh........',
-    3: '.......hhhhhhhhhh.......',
-    4: '.......hhhhhhhhhh.......',
-    5: '.......hh......hh.......',
+    3: '......hhhhhhhhhhhh......',
+    4: '.....hhhhhhhhhhhhhh.....',
+    5: '.....hhhhhhhhhhhhhh.....',
+    6: '.....hh..........hh.....',
   },
   // Side part — clearly asymmetric, swept over to the left.
   sidepart: {
-    2: '........hhhhhhhh........',
-    3: '......hhhhhhhhhh........',
-    4: '......hhhhhhhh..........',
-    5: '......hhh...............',
+    3: '......hhhhhhhhhhhh......',
+    4: '....hhhhhhhhhhhhhh......',
+    5: '....hhhhhhhhhhhh........',
+    6: '....hhhh................',
   },
   // Bob — straight chin-length hair framing the face, tucked at the ends.
   bob: {
-    2: '........hhhhhhhh........',
-    3: '.......hhhhhhhhhh.......',
-    4: '......hhhhhhhhhhhh......',
-    5: '......hh........hh......',
-    6: '......hh........hh......',
-    7: '......hh........hh......',
-    8: '......hh........hh......',
-    9: '......hhh......hhh......',
+    3: '......hhhhhhhhhhhh......',
+    4: '.....hhhhhhhhhhhhhh.....',
+    5: '.....hhhhhhhhhhhhhh.....',
+    6: '.....hh..........hh.....',
+    7: '.....hh..........hh.....',
+    8: '.....hh..........hh.....',
+    9: '.....hh..........hh.....',
+    10: '.....hhh........hhh.....',
   },
   // Spiky — separated spikes standing up over a short base.
   spiky: {
-    0: '.......h..h..h..h......',
-    1: '.......hh.hh.hh.hh......',
-    2: '.......hhhhhhhhhh.......',
-    3: '.......hh......hh.......',
+    2: '.....h.h.h.h.h.h.h.....',
+    3: '.....hhhhhhhhhhhhhh.....',
+    4: '.....hhhhhhhhhhhhhh.....',
+    5: '.....hh..........hh.....',
   },
-  // Ponytail — smooth pulled-back top with a tail hanging off the right.
+  // Ponytail — smooth pulled-back top with a tail hanging off the side.
   ponytail: {
-    2: '........hhhhhhhh........',
-    3: '.......hhhhhhhhh........',
-    4: '.......hhhhhhh..........',
-    5: '..............hhhh......',
-    6: '...............hhh......',
+    3: '......hhhhhhhhhhhh......',
+    4: '.....hhhhhhhhhhhh.......',
+    5: '.....hhhhhhhhhh.........',
+    6: '...............hhhh.....',
     7: '................hhh.....',
     8: '................hhh.....',
     9: '................hh......',
   },
   // Long — straight hair falling well past the shoulders.
   long: {
-    1: '........hhhhhhhh........',
-    2: '.......hhhhhhhhhh.......',
     3: '......hhhhhhhhhhhh......',
-    4: '......hh........hh......',
-    5: '......hh........hh......',
-    6: '......hh........hh......',
-    7: '......hh........hh......',
-    8: '......hh........hh......',
-    9: '......hh........hh......',
-    10: '......hh........hh......',
-    11: '......hhh......hhh......',
+    4: '.....hhhhhhhhhhhhhh.....',
+    5: '.....hhhhhhhhhhhhhh.....',
+    6: '.....hh..........hh.....',
+    7: '.....hh..........hh.....',
+    8: '.....hh..........hh.....',
+    9: '.....hh..........hh.....',
+    10: '.....hh..........hh.....',
+    11: '.....hh..........hh.....',
+    12: '.....hhh........hhh.....',
   },
   // Wavy — long hair with an offset, rippling outline.
   wavy: {
-    1: '........hhhhhhhh........',
-    2: '.......hhhhhhhhhh.......',
     3: '......hhhhhhhhhhhh......',
-    4: '......hh........hh......',
-    5: '.....hhh........hh......',
-    6: '......hh........hhh.....',
-    7: '.....hhh........hh......',
-    8: '......hh........hhh.....',
-    9: '.....hh..........h.....',
+    4: '.....hhhhhhhhhhhhhh.....',
+    5: '.....hhhhhhhhhhhhhh.....',
+    6: '.....hh..........hh.....',
+    7: '....hh...........hh.....',
+    8: '.....hh..........hhh....',
+    9: '....hh...........hh.....',
+    10: '.....hh.........hh......',
+    11: '.....hhh......hhh.......',
   },
   // Top bun — a rounded knot sitting above a smooth cap.
   bun: {
-    0: '..........hhhh.........',
-    1: '.........hhhhhh........',
+    1: '..........hhhh.........',
     2: '.........hhhhhh........',
-    3: '........hhhhhhhh........',
-    4: '.......hhhhhhhhhh.......',
-    5: '.......hh......hh.......',
+    3: '.........hhhhhh........',
+    4: '......hhhhhhhhhhhh......',
+    5: '.....hhhhhhhhhhhhhh.....',
+    6: '.....hh..........hh.....',
   },
   // Afro — the biggest, roundest volume, framing the cheeks.
   afro: {
@@ -444,8 +442,9 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     2: '....hhhhhhhhhhhhhhhh....',
     3: '....hhhhhhhhhhhhhhhh....',
     4: '....hhhhhhhhhhhhhhhh....',
-    5: '.....hh..........hh.....',
+    5: '....hhhhhhhhhhhhhhhh....',
     6: '.....hh..........hh.....',
+    7: '.....hh..........hh.....',
   },
   // Mohawk — a tall central strip, shaved sides.
   mohawk: {
@@ -455,6 +454,7 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     3: '..........hhhh.........',
     4: '..........hhhh.........',
     5: '..........hhhh.........',
+    6: '..........hhhh.........',
   },
 }
 
@@ -499,46 +499,44 @@ const HEADWEAR_SPRITES: Record<string, Sprite> = {
   none: {},
   // Ball cap: rounded crown + a brim poking out to the front-right.
   cap: {
-    1: '.........555555.........',
-    2: '........55555555........',
-    3: '.......5555555555.......',
-    4: '.......55555555555555...',
+    3: '......5555555555555.....',
+    4: '.....555555555555555....',
+    5: '.....55555555555555555..',
   },
   beanie: {
-    1: '........44444444........',
-    2: '.......4444444444.......',
-    3: '......444444444444......',
-    4: '......444444444444......',
-    5: '......4444444444444.....',
+    2: '.....44444444444444.....',
+    3: '.....44444444444444.....',
+    4: '.....44444444444444.....',
+    5: '.....44444444444444.....',
+    6: '.....444444444444444....',
   },
-  headband: { 6: '.......4444444444.......' },
+  headband: { 6: '.....44444444444444.....' },
   cowboy: {
-    1: '........99999999........',
-    2: '........99999999........',
-    3: '....9999999999999999....',
-    4: '....9999999999999999....',
+    3: '......9999999999999.....',
+    4: '......9999999999999.....',
+    5: '...999999999999999999...',
+    6: '...999999999999999999...',
   },
   hardhat: {
-    1: '........33333333........',
-    2: '.......3333333333.......',
     3: '......333333333333......',
-    4: '......333333333333......',
+    4: '.....33333333333333.....',
+    5: '.....33333333333333.....',
   },
   tophat: {
-    0: '........777777........',
-    1: '........777777........',
-    2: '........777777........',
-    3: '........777777........',
-    4: '......7777777777......',
+    0: '........77777777........',
+    1: '........77777777........',
+    2: '........77777777........',
+    3: '........77777777........',
+    4: '......777777777777......',
   },
   party: {
-    0: '...........8...........',
-    1: '..........888..........',
-    2: '.........88888.........',
-    3: '........8888888........',
-    4: '........8888888........',
+    0: '...........88..........',
+    1: '..........8888.........',
+    2: '.........888888........',
+    3: '........88888888.......',
+    4: '.......8888888888......',
   },
-  crown: { 1: '.......3.3.3.3.3.3......', 2: '.......333333333.......', 3: '.......333333333.......' },
+  crown: { 3: '......3.3.3.3.3.3.3.....', 4: '......333333333333......', 5: '......333333333333......' },
 }
 
 const HOOD: Sprite = { 14: '......cc........cc......', 15: '......cccccccccccc......' }
