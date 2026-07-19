@@ -273,10 +273,12 @@ const LEGS: Sprite = {
    around rows 20–21. Sleeve-aware clothing paint leaves the lower arms as skin.
    The gap columns get the auto-outline, cleanly separating arm from body. */
 const BODY_SPRITES: Record<string, Sprite> = {
+  // Athletic — even shoulders (aligned to the arms so there's no stray nub),
+  // 2px arms, narrow hips.
   taper: {
     ...HEAD,
     15: '.......ssssssssss.......',
-    16: '......ssssssssssss......',
+    16: '.......ssssssssss.......',
     17: '.......ss.ssss.ss.......',
     18: '.......ss.ssss.ss.......',
     19: '.......ss.ssss.ss.......',
@@ -288,26 +290,28 @@ const BODY_SPRITES: Record<string, Sprite> = {
     ...LEGS,
     ...FEET,
   },
+  // Curvy — a cinched waist and clearly wider hips (hourglass / pear).
   curvy: {
     ...HEAD,
-    15: '........ssssssss........',
+    15: '.......ssssssssss.......',
     16: '.......ssssssssss.......',
     17: '.......ss.ssss.ss.......',
     18: '.......ss.ssss.ss.......',
     19: '.......ss.ssss.ss.......',
     20: '.......ss.ssss.ss.......',
-    21: '.......ss.ssss.ss.......',
-    22: '..........ssss..........',
-    23: '........ssssssss........',
-    24: '........ssssssss........',
+    21: '........ssssss..........',
+    22: '.........ssssss.........',
+    23: '......ssssssssssss......',
+    24: '......ssssssssssss......',
     ...LEGS,
     ...FEET,
   },
+  // Slim — narrow frame with thin 1px arms.
   slim: {
     ...HEAD,
     15: '........ssssssss........',
-    16: '.......ssssssssss.......',
-    17: '.......ss.ssss.ss.......',
+    16: '........ssssssss........',
+    17: '........s.ssss.s........',
     18: '........s.ssss.s........',
     19: '........s.ssss.s........',
     20: '........s.ssss.s........',
@@ -318,18 +322,19 @@ const BODY_SPRITES: Record<string, Sprite> = {
     ...LEGS,
     ...FEET,
   },
+  // Broad — wide shoulders and thick 3px arms (aligned so there's no nub).
   broad: {
     ...HEAD,
     15: '......ssssssssssss......',
-    16: '.....ssssssssssssss.....',
+    16: '......ssssssssssss......',
     17: '......sss.ssss.sss......',
     18: '......sss.ssss.sss......',
     19: '......sss.ssss.sss......',
     20: '......sss.ssss.sss......',
     21: '......sss.ssss.sss......',
     22: '.........ssssss.........',
-    23: '.........ssssss.........',
-    24: '.........ssssss.........',
+    23: '........ssssssss........',
+    24: '........ssssssss........',
     ...LEGS,
     ...FEET,
   },
@@ -386,12 +391,13 @@ const HAIR_SPRITES: Record<string, Sprite> = {
     10: '.....hh..........hh.....',
     11: '.....hhh........hhh.....',
   },
-  // Spiky — sharp separated spikes over a flat base.
+  // Spiky — sharp separated spikes over a solid base that reaches the crown.
   spiky: {
-    0: '.....h.h.h.h.h.h.h.....',
-    1: '.....hhhhhhhhhhhhhh.....',
+    1: '.....h.h.h.h.h.h.h.....',
     2: '.....hhhhhhhhhhhhhh.....',
-    3: '.....hh..........hh.....',
+    3: '.....hhhhhhhhhhhhhh.....',
+    4: '.....hhhhhhhhhhhhhh.....',
+    5: '.....hh..........hh.....',
   },
   // Ponytail — flat pulled-back top with a blocky tail off the side.
   ponytail: {
@@ -480,14 +486,15 @@ const FACIAL_SPRITES: Record<string, Sprite> = {
   },
 }
 
-// Eyewear — temple arms stay within the face edge (cols 8–15), never protrude.
+// Eyewear — lenses sit over the eyes (cols 9–10 / 13–14) and the temple arms
+// run out to the head's edge (cols 6 / 17) but never past it.
 const EYEWEAR_SPRITES: Record<string, Sprite> = {
   none: {},
-  round: { 8: '........gllggllg........' },
-  square: { 7: '.........gg..gg.........', 8: '........gllggllg........', 9: '.........gg..gg.........' },
-  sunglasses: { 7: '.........gg..gg.........', 8: '........gggggggg........' },
-  monocle: { 7: '.............gg.........', 8: '............gllg........', 9: '.............gg.........' },
-  visor: { 7: '........gggggggg........', 8: '........llllllll........' },
+  round: { 8: '......gggllggllggg......' },
+  square: { 7: '........gg.gg.gg........', 8: '......gggllggllggg......', 9: '.........gg.gg.........' },
+  sunglasses: { 7: '........gg.gg.gg........', 8: '......gggggggggggg......' },
+  monocle: { 7: '............gg.........', 8: '...........gllg........', 9: '............gg.........' },
+  visor: { 6: '......gggggggggggg......', 7: '......llllllllllll......' },
 }
 
 const MASK_SPRITES: Record<string, Sprite> = {
@@ -543,13 +550,52 @@ const HEADWEAR_SPRITES: Record<string, Sprite> = {
 
 const HOOD: Sprite = { 14: '......cc........cc......', 15: '......cccccccccccc......' }
 
+// Held in the right hand (arm around cols 15–16, rows 20–21). Drawn a couple of
+// pixels out so the object reads clearly next to the hand.
 const HANDHELD_SPRITES: Record<string, Sprite> = {
   none: {},
-  coffee: { 18: '..................11....', 19: '..................11....', 20: '.................1111...' },
-  phone: { 18: '..................2.....', 19: '..................7.....', 20: '..................2.....' },
-  key: { 18: '..................3.....', 19: '..................3.....', 20: '.................333....' },
-  plant: { 15: '.................6.6....', 16: '..................6.....', 17: '.................111....', 18: '.................111....' },
-  balloon: { 10: '.................44.....', 11: '................4444....', 12: '................4444....', 13: '.................44.....', 14: '..................4.....', 15: '..................4.....', 16: '..................4.....', 17: '..................4.....' },
+  // To-go coffee cup: brown lid over a white cup.
+  coffee: {
+    19: '................1111....',
+    20: '................2222....',
+    21: '................2222....',
+    22: '.................22.....',
+  },
+  // Phone: dark body with a light screen.
+  phone: {
+    19: '................777.....',
+    20: '................7ll....',
+    21: '................7ll....',
+    22: '................777.....',
+  },
+  // Golden key: round bow, shaft, and teeth.
+  key: {
+    18: '................33......',
+    19: '................33......',
+    20: '.................3......',
+    21: '.................33.....',
+    22: '.................3......',
+  },
+  // Potted plant: green leaves in a brown pot.
+  plant: {
+    17: '................6.6.....',
+    18: '................666.....',
+    19: '.................6......',
+    20: '................111.....',
+    21: '................111.....',
+  },
+  // Balloon on a string.
+  balloon: {
+    12: '................44......',
+    13: '...............4444.....',
+    14: '...............4444.....',
+    15: '................44......',
+    16: '.................4......',
+    17: '.................4......',
+    18: '.................4......',
+    19: '.................4......',
+    20: '.................4......',
+  },
 }
 
 /* ————— Clothing definitions (painted onto the body silhouette) ————— */
@@ -575,11 +621,13 @@ const TOP_DEFS: Record<string, TopDef> = {
 interface BottomDef {
   legEnd?: number
   skirt?: boolean
+  waistband?: boolean // lighter band at the top (denim look)
+  cuff?: boolean // lighter rolled hem at the ankles
 }
 const BOTTOM_DEFS: Record<string, BottomDef> = {
   pants: {},
-  jeans: {},
-  joggers: {},
+  jeans: { waistband: true, cuff: true },
+  joggers: { cuff: true },
   shorts: { legEnd: 26 },
   skirt: { skirt: true, legEnd: 27 },
 }
@@ -704,7 +752,9 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
   const armEnd = td.sleeve === 'none' ? -1 : td.sleeve === 'long' ? 20 : 17
   for (let y = TORSO_TOP; y <= TORSO_HEM; y++) {
     paintRow(grid, y, skin, p.top, p.topShade, (x) => {
-      if (x < 9 || x > 14) return y > armEnd // arm: skin below the sleeve
+      // Shoulders (rows 15–16) are always covered; the arms only split off from
+      // row 17 down, so a sleeveless top still covers the shoulders cleanly.
+      if (y >= 17 && (x < 9 || x > 14)) return y > armEnd // arm: skin below the sleeve
       if (y < TORSO_TOP + neck && (x === 11 || x === 12)) return true // neckline
       if (td.open && (x === 11 || x === 12) && y >= TORSO_TOP + 1) return true // open front
       return false
@@ -719,6 +769,12 @@ export function composeAvatar(cfg: AvatarConfig): (string | null)[][] {
     const legEnd = bd.legEnd ?? 30
     if (bd.skirt) for (let y = 23; y <= (bd.legEnd ?? 27); y++) { grid[y][11] = p.bottom; grid[y][12] = p.bottom }
     for (let y = 23; y <= legEnd; y++) paintRow(grid, y, skin, p.bottom, p.bottomShade)
+    // Jeans / joggers: pick out a lighter waistband and rolled cuffs so denim
+    // reads differently from plain pants of the same colour.
+    const bandLight = lighten(bottom, 1.22)
+    const recolor = (y: number) => { for (let x = 0; x < W; x++) if (grid[y][x] === p.bottom || grid[y][x] === p.bottomShade) grid[y][x] = bandLight }
+    if (bd.waistband) recolor(23)
+    if (bd.cuff) { recolor(legEnd - 1); recolor(legEnd) }
   }
 
   // Face + accessory layers (head is identical across bodies, so these align).
