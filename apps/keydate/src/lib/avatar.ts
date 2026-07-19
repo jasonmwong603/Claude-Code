@@ -246,16 +246,16 @@ type Sprite = Record<number, string>
 // only the corners rounded, no chin point. The flat bottom (row 14, cols 7–16)
 // sits flush on the shoulders (row 15) with no neck gap.
 const HEAD: Sprite = {
-  5: '......ssssssssssss......',
-  6: '.....ssssssssssssss.....',
-  7: '.....ssssssssssssss.....',
-  8: '.....ssssssssssssss.....',
-  9: '.....ssssssssssssss.....',
-  10: '.....ssssssssssssss.....',
-  11: '.....ssssssssssssss.....',
-  12: '.....ssssssssssssss.....',
-  13: '......ssssssssssss......',
-  14: '.......ssssssssss.......',
+  5: '.......ssssssssss.......',
+  6: '......ssssssssssss......',
+  7: '......ssssssssssss......',
+  8: '......ssssssssssss......',
+  9: '......ssssssssssss......',
+  10: '......ssssssssssss......',
+  11: '......ssssssssssss......',
+  12: '......ssssssssssss......',
+  13: '.......ssssssssss.......',
+  14: '........ssssssss........',
 }
 const FEET: Sprite = { 31: '.........ff..ff.........' }
 const LEGS: Sprite = {
