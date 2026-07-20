@@ -106,12 +106,46 @@ returns void language sql security definer set search_path = public as $$
     set last_seen = now(), signed_in = keydate_devices.signed_in or excluded.signed_in;
 $$;
 grant execute on function public.track_device(uuid, boolean) to anon, authenticated;
+
+-- Registered-users ledger: one permanent row per account (never expires with
+-- inactivity). count(*) here is your total registered users.
+create table public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text,
+  name text,
+  avatar_url text,
+  created_at timestamptz not null default now(),
+  last_seen  timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+create policy "profiles_own_read"   on public.profiles for select using (auth.uid() = id);
+create policy "profiles_own_insert" on public.profiles for insert with check (auth.uid() = id);
+create policy "profiles_own_update" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
+
+-- Guarantee a row the moment someone signs up (even if the client never runs).
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, email, name, avatar_url)
+  values (new.id, new.email, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url')
+  on conflict (id) do nothing;
+  return new;
+end; $$;
+create trigger on_auth_user_created after insert on auth.users
+  for each row execute function public.handle_new_user();
 ```
 
 ### Reading your user numbers
 
-- **Signed-in accounts** — Supabase shows these for free under *Authentication →
-  Users* (total, and sign-ups over time).
+- **Total registered users** (accounts, active or not) — this is the number you
+  asked for. Either read it under *Authentication → Users*, or run:
+
+  ```sql
+  select count(*) as registered_users from public.profiles;
+  ```
+
+  The `profiles` table (and its list of who signed up + when) never shrinks with
+  inactivity, so `count(*)` is your all-time registered-user total.
 - **Everyone, incl. guests** — query `keydate_devices` in the SQL editor:
 
 ```sql

@@ -17,7 +17,7 @@ import { maxAffordablePrice, savingsGoal } from './lib/math'
 import { clearState, loadState, saveState } from './lib/storage'
 import { authConfigured, getCurrentUser, onAuthChange, signIn, signOut, type AuthUser, type OAuthProvider } from './lib/auth'
 import { pullState, pushState, queueSync } from './lib/sync'
-import { trackVisit } from './lib/analytics'
+import { recordProfile, trackVisit } from './lib/analytics'
 import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
 import { bankSummary } from './lib/plaid'
 import type { AppState, Badge, Plan } from './types'
@@ -119,6 +119,7 @@ export default function KeyDateApp() {
       setUser(u)
       if (!u) return
       trackVisit(true)
+      recordProfile(u)
       // Pull this account's cloud-saved plan. Adopt it if present; otherwise
       // seed the cloud from whatever this device has (e.g. guest progress made
       // right before signing in), so nothing is lost.

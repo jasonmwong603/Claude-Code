@@ -22,7 +22,7 @@
  *   $$;
  *   grant execute on function public.track_device(uuid, boolean) to anon, authenticated;
  */
-import { supabase } from './auth'
+import { supabase, type AuthUser } from './auth'
 
 const DEVICE_KEY = 'keydate-device-id'
 
@@ -43,5 +43,27 @@ export async function trackVisit(signedIn: boolean): Promise<void> {
     await supabase.rpc('track_device', { p_device: deviceId(), p_signed_in: signedIn })
   } catch {
     /* never let a metric ping affect the app */
+  }
+}
+
+/** Register / refresh a signed-in user's profile row — the permanent record of
+ *  who has an account (the total is your registered-user count, active or not).
+ *  A DB trigger also creates this row at signup; this keeps name/avatar current.
+ *  Best-effort; no-op when unconfigured. */
+export async function recordProfile(user: AuthUser): Promise<void> {
+  if (!supabase) return
+  try {
+    await supabase.from('profiles').upsert(
+      {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar_url: user.avatarUrl,
+        last_seen: new Date().toISOString(),
+      },
+      { onConflict: 'id' },
+    )
+  } catch {
+    /* metric only — never block the app */
   }
 }
