@@ -72,10 +72,61 @@ seam. To turn it on:
    Actions **variables** (both are public/safe to expose). The deploy workflow
    already reads them.
 
-Identity only for now (name + avatar from the social profile prefill the
-character). Cloud sync of the saved plan/progress is the natural next step: reuse
-the exported `supabase` client with a per-user `jsonb` row under row-level
-security.
+Signing in also **syncs the saved plan/progress to the cloud** so it follows the
+user across devices (`src/lib/sync.ts`), and the app records a **privacy-light
+usage metric** so the team can see how many people use it (`src/lib/analytics.ts`
+— one anonymous row per device, no names or behaviour tracking).
+
+### One-time database setup (Supabase SQL editor)
+
+```sql
+-- Cloud sync: one private JSON blob per user.
+create table public.keydate_state (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  state jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.keydate_state enable row level security;
+create policy "own_read"   on public.keydate_state for select using (auth.uid() = user_id);
+create policy "own_insert" on public.keydate_state for insert with check (auth.uid() = user_id);
+create policy "own_update" on public.keydate_state for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Anonymous usage metric: one row per device (guests + signed-in).
+create table public.keydate_devices (
+  device_id uuid primary key,
+  first_seen timestamptz not null default now(),
+  last_seen  timestamptz not null default now(),
+  signed_in  boolean not null default false
+);
+alter table public.keydate_devices enable row level security;   -- no policies: table stays locked
+create or replace function public.track_device(p_device uuid, p_signed_in boolean)
+returns void language sql security definer set search_path = public as $$
+  insert into public.keydate_devices (device_id, signed_in) values (p_device, p_signed_in)
+  on conflict (device_id) do update
+    set last_seen = now(), signed_in = keydate_devices.signed_in or excluded.signed_in;
+$$;
+grant execute on function public.track_device(uuid, boolean) to anon, authenticated;
+```
+
+### Reading your user numbers
+
+- **Signed-in accounts** — Supabase shows these for free under *Authentication →
+  Users* (total, and sign-ups over time).
+- **Everyone, incl. guests** — query `keydate_devices` in the SQL editor:
+
+```sql
+select count(*)                                              as total_devices,
+       count(*) filter (where signed_in)                    as signed_in_devices,
+       count(*) filter (where last_seen > now() - interval '7 days')  as active_7d,
+       count(*) filter (where first_seen > now() - interval '7 days') as new_7d
+from public.keydate_devices;
+```
+
+Sync/adopt rule: on sign-in the cloud plan wins if one exists; otherwise this
+device's current progress (e.g. a guest plan made just before signing in) is
+pushed up, so nothing is lost. For richer product analytics later (funnels,
+retention), drop in a tool like PostHog — this metric just answers "how many
+users."
 
 ## Ship it to the App Store / Play Store
 

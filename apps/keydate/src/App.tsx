@@ -16,6 +16,8 @@ import { TYPE_MULT } from './lib/locations'
 import { maxAffordablePrice, savingsGoal } from './lib/math'
 import { clearState, loadState, saveState } from './lib/storage'
 import { authConfigured, getCurrentUser, onAuthChange, signIn, signOut, type AuthUser, type OAuthProvider } from './lib/auth'
+import { pullState, pushState, queueSync } from './lib/sync'
+import { trackVisit } from './lib/analytics'
 import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
 import { bankSummary } from './lib/plaid'
 import type { AppState, Badge, Plan } from './types'
@@ -109,10 +111,29 @@ export default function KeyDateApp() {
   // mode. On first sign-in, seed an empty display name from the social profile.
   useEffect(() => {
     if (!authConfigured) return
-    getCurrentUser().then(setUser)
-    return onAuthChange((u) => {
+    getCurrentUser().then((u) => {
       setUser(u)
-      if (u?.name) {
+      trackVisit(!!u)
+    })
+    return onAuthChange(async (u) => {
+      setUser(u)
+      if (!u) return
+      trackVisit(true)
+      // Pull this account's cloud-saved plan. Adopt it if present; otherwise
+      // seed the cloud from whatever this device has (e.g. guest progress made
+      // right before signing in), so nothing is lost.
+      const cloud = await pullState()
+      if (cloud?.plan) {
+        saveState(cloud)
+        setState(cloud)
+        localStorage.setItem(ENTERED_KEY, '1')
+        setScreen('dashboard')
+      } else {
+        const local = loadState()
+        if (local) void pushState(local)
+      }
+      // Seed an empty display name from the social profile.
+      if (u.name) {
         setState((prev) => {
           if (!prev?.profile || prev.profile.displayName.trim()) return prev
           const next = { ...prev, profile: { ...prev.profile, displayName: u.name as string } }
@@ -133,6 +154,7 @@ export default function KeyDateApp() {
   const persist = (s: AppState) => {
     setState(s)
     saveState(s)
+    if (user) queueSync(s)
   }
 
   const celebrateNewly = (newly: Badge[]) => {
