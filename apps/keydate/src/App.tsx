@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { C, DISPLAY_FONT, BODY_FONT } from './theme'
+import { Welcome } from './screens/Welcome'
 import { Onboarding, type OnboardingResult } from './screens/Onboarding'
 import { Dashboard } from './screens/Dashboard'
 import { Learn } from './screens/Learn'
@@ -19,7 +20,9 @@ import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
 import { bankSummary } from './lib/plaid'
 import type { AppState, Badge, Plan } from './types'
 
-type Screen = 'loading' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan' | 'bank' | 'profile'
+type Screen = 'loading' | 'welcome' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan' | 'bank' | 'profile'
+
+const ENTERED_KEY = 'keydate-entered'
 
 /** Derive a target price from the plan inputs (area typical, or exact custom). */
 function targetFrom(
@@ -75,10 +78,32 @@ export default function KeyDateApp() {
       saveState(s)
       setState(s)
       setScreen('dashboard')
-    } else {
-      setScreen('onboard')
+      return
     }
+    // No saved plan yet — new user. Show the welcome/login front door first,
+    // unless they've already entered (chose guest, or are signed in).
+    if (localStorage.getItem(ENTERED_KEY)) {
+      setScreen('onboard')
+      return
+    }
+    if (!authConfigured) {
+      setScreen('welcome')
+      return
+    }
+    getCurrentUser().then((u) => {
+      if (u) {
+        localStorage.setItem(ENTERED_KEY, '1')
+        setScreen('onboard')
+      } else {
+        setScreen('welcome')
+      }
+    })
   }, [])
+
+  const enterAsGuest = () => {
+    localStorage.setItem(ENTERED_KEY, '1')
+    setScreen('onboard')
+  }
 
   // Track the signed-in user (Google / Facebook). No-op in guest / unconfigured
   // mode. On first sign-in, seed an empty display name from the social profile.
@@ -320,6 +345,10 @@ export default function KeyDateApp() {
       })}
     </div>
   )
+
+  if (screen === 'welcome') {
+    return <Welcome authConfigured={authConfigured} onSignIn={handleSignIn} onGuest={enterAsGuest} />
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: C.paper, fontFamily: BODY_FONT, color: C.ink }}>
