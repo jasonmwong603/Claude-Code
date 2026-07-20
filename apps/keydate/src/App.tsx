@@ -14,6 +14,7 @@ import type { Profile as ProfileT } from './types'
 import { TYPE_MULT } from './lib/locations'
 import { maxAffordablePrice, savingsGoal } from './lib/math'
 import { clearState, loadState, saveState } from './lib/storage'
+import { authConfigured, getCurrentUser, onAuthChange, signIn, signOut, type AuthUser, type OAuthProvider } from './lib/auth'
 import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
 import { bankSummary } from './lib/plaid'
 import type { AppState, Badge, Plan } from './types'
@@ -57,6 +58,7 @@ export default function KeyDateApp() {
   const [state, setState] = useState<AppState | null>(null)
   const [activeLesson, setActiveLesson] = useState<string | null>(null)
   const [celebrate, setCelebrate] = useState<Badge | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
 
   // Load persisted state once, and award the daily check-in XP.
   useEffect(() => {
@@ -77,6 +79,31 @@ export default function KeyDateApp() {
       setScreen('onboard')
     }
   }, [])
+
+  // Track the signed-in user (Google / Facebook). No-op in guest / unconfigured
+  // mode. On first sign-in, seed an empty display name from the social profile.
+  useEffect(() => {
+    if (!authConfigured) return
+    getCurrentUser().then(setUser)
+    return onAuthChange((u) => {
+      setUser(u)
+      if (u?.name) {
+        setState((prev) => {
+          if (!prev?.profile || prev.profile.displayName.trim()) return prev
+          const next = { ...prev, profile: { ...prev.profile, displayName: u.name as string } }
+          saveState(next)
+          return next
+        })
+      }
+    })
+  }, [])
+
+  const handleSignIn = (provider: OAuthProvider) => {
+    signIn(provider).catch((e) => alert(`Couldn't start sign-in: ${e?.message ?? e}`))
+  }
+  const handleSignOut = () => {
+    signOut().finally(() => setUser(null))
+  }
 
   const persist = (s: AppState) => {
     setState(s)
@@ -385,7 +412,15 @@ export default function KeyDateApp() {
         )}
 
         {screen === 'profile' && state && state.profile && (
-          <Profile state={state} onSave={saveProfile} onBack={() => setScreen('dashboard')} />
+          <Profile
+            state={state}
+            onSave={saveProfile}
+            onBack={() => setScreen('dashboard')}
+            authConfigured={authConfigured}
+            user={user}
+            onSignIn={handleSignIn}
+            onSignOut={handleSignOut}
+          />
         )}
 
         {screen === 'learn' && state && (

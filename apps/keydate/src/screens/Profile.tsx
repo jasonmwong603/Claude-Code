@@ -1,7 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { C, DISPLAY_FONT, BODY_FONT } from '../theme'
 import { PixelAvatar } from '../components/PixelAvatar'
+import { AccountPanel } from '../components/AccountPanel'
 import { inputStyle } from '../components/atoms'
+import type { AuthUser, OAuthProvider } from '../lib/auth'
 import {
   BANNERS,
   FRAMES,
@@ -41,10 +43,18 @@ export function Profile({
   state,
   onSave,
   onBack,
+  authConfigured,
+  user,
+  onSignIn,
+  onSignOut,
 }: {
   state: AppState
   onSave: (p: ProfileT) => void
   onBack: () => void
+  authConfigured: boolean
+  user: AuthUser | null
+  onSignIn: (provider: OAuthProvider) => void
+  onSignOut: () => void
 }) {
   const profile = state.profile!
   const lvl = levelInfo(state.xp)
@@ -232,6 +242,7 @@ export function Profile({
   return (
     <>
       <TopBar label="Your profile" onBack={onBack} />
+      <AccountPanel configured={authConfigured} user={user} onSignIn={onSignIn} onSignOut={onSignOut} />
       {callingCard}
       <div style={{ marginTop: 14 }}>{stage(112)}</div>
 

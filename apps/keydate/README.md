@@ -50,6 +50,33 @@ account, no server. (Swap `src/lib/storage.ts` for a backend client when
 accounts/sync arrive; the rest of the app only calls `loadState` / `saveState` /
 `clearState`.)
 
+## Accounts & sign-in (optional, Google / Facebook)
+
+Sign-in is **optional and off by default** — the app is fully usable as a guest.
+When you supply Supabase credentials, a "Save your progress" card appears on the
+profile with **Continue with Google / Facebook**; `src/lib/auth.ts` is the only
+seam. To turn it on:
+
+1. **Create a Supabase project** (free tier) at supabase.com.
+2. **Enable providers** — in *Authentication → Providers*, turn on **Google** and
+   **Facebook** and paste in the OAuth client id/secret from:
+   - Google: *Google Cloud Console → APIs & Services → Credentials → OAuth client*
+   - Facebook: *developers.facebook.com → your app → Facebook Login*
+   In each provider's console, add Supabase's callback
+   (`https://<project>.supabase.co/auth/v1/callback`) as an authorized redirect URI.
+3. **Allow the app URL** — in Supabase *Authentication → URL Configuration*, add the
+   deployed site (e.g. `https://<user>.github.io/<repo>/keydate/`) and your local
+   `http://localhost:5173` to the redirect allow-list.
+4. **Provide the keys** — locally copy `.env.example` to `.env.local`; for the
+   deployed build set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as GitHub
+   Actions **variables** (both are public/safe to expose). The deploy workflow
+   already reads them.
+
+Identity only for now (name + avatar from the social profile prefill the
+character). Cloud sync of the saved plan/progress is the natural next step: reuse
+the exported `supabase` client with a per-user `jsonb` row under row-level
+security.
+
 ## Ship it to the App Store / Play Store
 
 The same web build is wrapped natively with Capacitor. You need macOS + Xcode

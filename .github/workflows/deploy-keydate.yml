@@ -39,6 +39,13 @@ jobs:
 
       - name: Build KeyDate
         working-directory: apps/keydate
+        # Optional Supabase auth. Set these as repository Actions *variables*
+        # (Settings → Secrets and variables → Actions → Variables) — the anon
+        # key is public and safe to expose. Left unset, the app runs in guest
+        # mode with sign-in hidden.
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
         run: |
           npm ci
           npm run build
