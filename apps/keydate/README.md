@@ -146,6 +146,21 @@ create trigger on_auth_user_created after insert on auth.users
 
   The `profiles` table (and its list of who signed up + when) never shrinks with
   inactivity, so `count(*)` is your all-time registered-user total.
+- **Active vs inactive** — `profiles.last_seen` is refreshed every time a
+  signed-in user opens the app, so a 30-day cutoff splits active from dormant
+  accounts. Create this view once, then read it any time:
+
+  ```sql
+  create or replace view public.user_stats as
+  select count(*)                                                        as registered_total,
+         count(*) filter (where last_seen > now() - interval '30 days')  as active_30d,
+         count(*) filter (where last_seen <= now() - interval '30 days') as inactive_30d
+  from public.profiles;
+
+  select * from public.user_stats;                       -- the breakdown
+  select email, name, last_seen from public.profiles      -- who's gone quiet
+    where last_seen <= now() - interval '30 days' order by last_seen;
+  ```
 - **Everyone, incl. guests** — query `keydate_devices` in the SQL editor:
 
 ```sql
