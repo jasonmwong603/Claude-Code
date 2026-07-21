@@ -59,10 +59,8 @@ jobs:
           cp budget.html _site/budgeting/index.html
           # Marketing / waitlist landing page at the site root (keydate.ca/).
           cp landing.html _site/index.html
-          # Custom domain (keydate.ca): kept OUT until DNS is configured, so the
-          # live github.io URL isn't redirected to a domain that can't resolve
-          # yet. Once the DNS records below are added, uncomment to activate:
-          #   echo 'keydate.ca' > _site/CNAME
+          # Custom domain for GitHub Pages — DNS verified, so this is active.
+          echo 'keydate.ca' > _site/CNAME
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
