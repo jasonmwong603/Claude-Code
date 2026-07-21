@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KeyDate — Owning a home isn't impossible. It has a date.</title>
+<meta name="description" content="KeyDate turns a Canadian first-time buyer's income and savings into a real 'keys date', then keeps them saving with a gamified plan, community, and plain-language lessons. Join the waitlist." />
+<style>
+  :root{
+    --spruce:#1E4D3B; --sprout:#2E9A67; --gold:#C8901E; --gold-bright:#E8B84B;
+    --paper:#F5F2E9; --card:#FFFFFF; --ink:#17231C; --muted:#586158; --line:#E3E0D3;
+    --sproutsoft:#E3F0E7;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+  .display{font-family:Georgia,"Times New Roman",serif}
+
+  /* nav */
+  nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.01em}
+  .brand .mark{width:34px;height:34px;border-radius:10px;background:var(--spruce);display:flex;align-items:center;justify-content:center}
+  .brand span{color:var(--sprout)}
+  .navlink{text-decoration:none;font-weight:600;font-size:14.5px;color:var(--spruce);
+    border:1.5px solid var(--line);border-radius:999px;padding:9px 16px;background:var(--card);white-space:nowrap}
+  .navlink:hover{border-color:var(--sprout)}
+
+  /* hero */
+  .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;padding:38px 0 26px}
+  @media(max-width:800px){.hero{grid-template-columns:1fr;gap:26px}}
+  .eyebrow{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--sprout);margin-bottom:14px}
+  h1{font-size:clamp(34px,6vw,54px);line-height:1.05;letter-spacing:-.02em;margin:0 0 16px;font-weight:800;text-wrap:balance}
+  h1 em{font-style:normal;color:var(--sprout)}
+  .lede{font-size:clamp(16px,2.1vw,19px);color:var(--muted);margin:0 0 26px;max-width:52ch}
+
+  form.waitlist{display:flex;gap:10px;flex-wrap:wrap;max-width:460px}
+  form.waitlist input{flex:1;min-width:200px;font:inherit;font-size:15px;padding:14px 16px;border-radius:12px;
+    border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+  form.waitlist input:focus{outline:2px solid var(--sprout);outline-offset:1px;border-color:var(--sprout)}
+  form.waitlist button{font:inherit;font-weight:700;font-size:15px;padding:14px 22px;border-radius:12px;border:none;
+    background:var(--spruce);color:#fff;cursor:pointer;white-space:nowrap}
+  form.waitlist button:hover{background:#173d2f}
+  .formnote{font-size:12.5px;color:var(--muted);margin-top:10px}
+  .success{display:none;margin-top:14px;font-weight:700;color:var(--sprout)}
+  .success.on{display:block}
+
+  /* hero art */
+  .art{background:linear-gradient(165deg,#DCEEE3,#F1E8D2);border-radius:22px;padding:28px;border:1px solid var(--line);
+    box-shadow:0 20px 50px rgba(20,45,30,.12)}
+  .art .phone{background:var(--card);border-radius:18px;padding:18px;border:1px solid var(--line)}
+  .art .kdate{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .art .big{font-family:Georgia,serif;font-size:34px;font-weight:800;color:var(--spruce);margin:2px 0 14px;letter-spacing:-.01em}
+  .bar{height:12px;border-radius:99px;background:var(--sproutsoft);overflow:hidden;margin-bottom:6px}
+  .bar>i{display:block;height:100%;width:64%;background:linear-gradient(90deg,var(--sprout),var(--gold-bright));border-radius:99px}
+  .art .row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:16px}
+  .keys{display:flex;gap:6px}
+  .keys .k{width:26px;height:26px;border-radius:7px;background:var(--sproutsoft);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .keys .k.dim{opacity:.35}
+
+  /* sections */
+  section{padding:44px 0}
+  h2{font-size:clamp(24px,4vw,34px);letter-spacing:-.015em;margin:0 0 8px;font-weight:800;text-wrap:balance}
+  .sub{color:var(--muted);margin:0 0 30px;font-size:16px;max-width:56ch}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:760px){.steps{grid-template-columns:1fr}}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .step .n{width:30px;height:30px;border-radius:8px;background:var(--spruce);color:#fff;display:flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:15px;margin-bottom:12px}
+  .step h3{margin:0 0 6px;font-size:18px}
+  .step p{margin:0;color:var(--muted);font-size:14.5px}
+
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:760px){.pillars{grid-template-columns:1fr}}
+  .pillar{padding:4px}
+  .pillar .ico{font-size:24px}
+  .pillar h3{margin:8px 0 4px;font-size:17px}
+  .pillar p{margin:0;color:var(--muted);font-size:14.5px}
+
+  /* cta band */
+  .band{background:var(--spruce);border-radius:24px;padding:clamp(28px,5vw,44px);color:#fff;text-align:center;margin:20px 0}
+  .band h2{color:#fff}
+  .band .sub{color:rgba(255,255,255,.75);margin:0 auto 24px}
+  .band form.waitlist{margin:0 auto;justify-content:center}
+  .band form.waitlist input{background:rgba(255,255,255,.95)}
+  .band form.waitlist button{background:var(--gold-bright);color:#3a2a00}
+  .band .success{color:var(--gold-bright)}
+
+  footer{border-top:1px solid var(--line);padding:26px 0 46px;color:var(--muted);font-size:13px}
+  footer .disc{max-width:70ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand">
+      <span class="mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="8" cy="9" r="4.4" stroke="#E8B84B" stroke-width="2.2"/><path d="M11 11.5 20 20M17 17l2.5-2.5M15 15l2 2" stroke="#E8B84B" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </span>
+      Key<span>Date</span>
+    </div>
+    <a class="navlink" href="./keydate/">Open the app →</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <span class="eyebrow">For Canadian first-time buyers</span>
+      <h1>Owning a home isn’t impossible. <em>It has a date.</em></h1>
+      <p class="lede">KeyDate turns your income and savings into a real “keys date,” then keeps you moving toward it — a plan that adapts, a home that builds itself as you save, and lessons that make FHSA, HBP and the stress test make sense.</p>
+      <form class="waitlist" data-wl novalidate>
+        <input type="email" name="email" placeholder="you@email.com" aria-label="Email address" required />
+        <button type="submit">Join the waitlist</button>
+      </form>
+      <div class="formnote">Be first in for the beta. No spam — just a launch note.</div>
+      <p class="success" data-success>You’re on the list — we’ll be in touch. 🔑</p>
+    </div>
+
+    <div class="art" aria-hidden="true">
+      <div class="phone">
+        <div class="kdate">Your keys date</div>
+        <div class="big">March 2027</div>
+        <div class="bar"><i></i></div>
+        <div class="row"><span>64% of down payment</span><span>$31,900 / $50,000</span></div>
+        <div class="keys">
+          <span class="k">🔑</span><span class="k">🏅</span><span class="k">📈</span>
+          <span class="k">🎯</span><span class="k dim">🏠</span><span class="k dim">✨</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <h2>How it works</h2>
+    <p class="sub">Three inputs, one clear date, and a savings habit that actually sticks.</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h3>Tell us your numbers</h3><p>Income, what you’ve saved, and where you want to buy. Takes a minute.</p></div>
+      <div class="step"><div class="n">2</div><h3>Get your keys date</h3><p>A concrete month you’ll be ready to buy — plus faster paths if you want it sooner.</p></div>
+      <div class="step"><div class="n">3</div><h3>Watch it build</h3><p>Log deposits, earn keys, level up, and see your home build itself as the date moves closer.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Why it’s different</h2>
+    <p class="sub">Not a calculator you use once — a companion for the whole journey.</p>
+    <div class="pillars">
+      <div class="pillar"><div class="ico">🎮</div><h3>Gamified saving</h3><p>XP, levels, streaks and a keyring of badges turn a multi-year slog into a habit you don’t want to break.</p></div>
+      <div class="pillar"><div class="ico">👋</div><h3>A community that gets it</h3><p>Milestones, first-home stories, and honest advice from people saving right alongside you.</p></div>
+      <div class="pillar"><div class="ico">🍁</div><h3>Built for Canada</h3><p>FHSA, the Home Buyers’ Plan, the stress test and down-payment tiers — explained in plain language, worked into your plan.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="band">
+      <h2>Get in before launch</h2>
+      <p class="sub">Join the waitlist and be first to try the beta.</p>
+      <form class="waitlist" data-wl novalidate>
+        <input type="email" name="email" placeholder="you@email.com" aria-label="Email address" required />
+        <button type="submit">Join the waitlist</button>
+      </form>
+      <p class="success" data-success>You’re on the list — we’ll be in touch. 🔑</p>
+    </div>
+  </section>
+
+  <footer>
+    <p class="disc"><strong>Educational only</strong> — not financial, legal, or tax advice. The programs referenced (FHSA, HBP, stress test) reflect current federal rules and can change. © <span id="yr"></span> KeyDate.</p>
+  </footer>
+</div>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  // Waitlist capture. Paste a free form endpoint below to collect emails for
+  // real (e.g. a Formspree form URL or a Google Apps Script web-app URL — both
+  // have free tiers). Left empty, submissions are stored locally so the page
+  // still works in a demo; swap in the URL when you're ready to collect.
+  var WAITLIST_ENDPOINT = '';
+
+  function saveLocal(email){
+    try{
+      var list = JSON.parse(localStorage.getItem('keydate-waitlist') || '[]');
+      if(list.indexOf(email) === -1){ list.push(email); localStorage.setItem('keydate-waitlist', JSON.stringify(list)); }
+    }catch(e){}
+  }
+
+  document.querySelectorAll('form[data-wl]').forEach(function(form){
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var input = form.querySelector('input[type=email]');
+      var email = (input.value || '').trim();
+      if(!email || email.indexOf('@') < 1){ input.focus(); return; }
+      var done = function(){
+        var s = form.parentElement.querySelector('[data-success]');
+        if(s) s.classList.add('on');
+        form.reset();
+      };
+      if(WAITLIST_ENDPOINT){
+        fetch(WAITLIST_ENDPOINT, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email: email, source: 'landing' })
+        }).then(done).catch(function(){ saveLocal(email); done(); });
+      } else {
+        saveLocal(email); done();
+      }
+    });
+  });
+</script>
+</body>
+</html>

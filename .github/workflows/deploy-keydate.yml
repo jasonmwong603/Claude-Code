@@ -56,8 +56,8 @@ jobs:
           cp -r apps/keydate/dist/* _site/keydate/
           # Keep the existing budgeting app published alongside KeyDate.
           cp budget.html _site/budgeting/index.html
-          # Redirect the bare repo URL to KeyDate.
-          printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./keydate/"><title>KeyDate</title><a href="./keydate/">Open KeyDate →</a>\n' > _site/index.html
+          # Marketing / waitlist landing page at the site root; the app lives at /keydate/.
+          cp landing.html _site/index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
