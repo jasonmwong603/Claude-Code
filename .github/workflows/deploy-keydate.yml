@@ -52,12 +52,15 @@ jobs:
 
       - name: Assemble site
         run: |
-          mkdir -p _site/keydate _site/budgeting
-          cp -r apps/keydate/dist/* _site/keydate/
+          mkdir -p _site/app _site/budgeting
+          # The KeyDate app is served at keydate.ca/app/ (base is relative).
+          cp -r apps/keydate/dist/* _site/app/
           # Keep the existing budgeting app published alongside KeyDate.
           cp budget.html _site/budgeting/index.html
-          # Marketing / waitlist landing page at the site root; the app lives at /keydate/.
+          # Marketing / waitlist landing page at the site root (keydate.ca/).
           cp landing.html _site/index.html
+          # Custom domain for GitHub Pages.
+          echo 'keydate.ca' > _site/CNAME
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
