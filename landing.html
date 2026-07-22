@@ -7,64 +7,65 @@
 <meta name="description" content="KeyDate turns a Canadian first-time buyer's income and savings into a real 'keys date' — with a plan that adapts, gamified saving, and plain-language FHSA/HBP lessons. Join the beta waitlist." />
 <style>
   :root{
-    --spruce:#1E4D3B; --spruce-deep:#102219; --sprout:#3FA672; --gold:#E8B84B; --gold-deep:#C8901E;
+    --spruce:#1E4D3B; --sprout:#3FA672; --gold:#E8B84B; --gold-deep:#C8901E;
     --paper:#F5F2E9; --ink:#17231C; --muted:#5A6459; --line:#E4E1D4;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;
-    background:var(--spruce-deep);-webkit-font-smoothing:antialiased;overflow:hidden}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);
+    background:#fff;-webkit-font-smoothing:antialiased;overflow:hidden}
 
-  /* full-screen stage with a soft, brand-coloured backdrop for the glass to blur over */
+  /* full-screen white stage with soft brand-tinted clouds for the glass to frost over */
   .stage{position:relative;height:100dvh;min-height:560px;display:flex;flex-direction:column;
     align-items:center;justify-content:space-between;padding:clamp(20px,4.5vh,44px) 22px;overflow:hidden;
-    background:radial-gradient(120% 90% at 50% -10%, #245c46, var(--spruce) 45%, var(--spruce-deep) 100%)}
-  .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;pointer-events:none}
-  .b1{width:340px;height:340px;background:var(--sprout);top:-90px;left:-70px}
-  .b2{width:300px;height:300px;background:var(--gold);bottom:-90px;right:-60px;opacity:.35}
-  .b3{width:240px;height:240px;background:#2f8f66;bottom:20%;left:-80px;opacity:.35}
+    background:#fff}
+  .blob{position:absolute;border-radius:50%;filter:blur(72px);pointer-events:none}
+  .b1{width:340px;height:340px;background:var(--sprout);top:-100px;left:-80px;opacity:.20}
+  .b2{width:300px;height:300px;background:var(--gold);bottom:-90px;right:-60px;opacity:.22}
+  .b3{width:240px;height:240px;background:#7fce9f;bottom:18%;left:-90px;opacity:.16}
 
   /* title */
   .brand{position:relative;z-index:2;text-align:center;flex:0 0 auto}
-  .mark{width:46px;height:46px;border-radius:13px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);
-    display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
-  .wordmark{font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1}
-  .wordmark b{color:var(--gold)}
+  .mark{width:46px;height:46px;border-radius:13px;background:var(--spruce);border:none;
+    display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;
+    box-shadow:0 10px 22px rgba(30,77,59,.24)}
+  .wordmark{font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--ink)}
+  .wordmark b{color:var(--sprout)}
   .tagline{font-family:Georgia,serif;font-weight:700;font-size:clamp(15px,3.4vw,19px);
-    color:rgba(255,255,255,.9);margin-top:10px;text-wrap:balance;max-width:22ch;margin-left:auto;margin-right:auto}
+    color:var(--ink);margin-top:10px;text-wrap:balance;max-width:22ch;margin-left:auto;margin-right:auto}
 
-  /* frosted glass panel */
+  /* frosted glass panel on white */
   .glass{position:relative;z-index:2;width:100%;max-width:440px;border-radius:24px;
-    background:linear-gradient(180deg, rgba(233,238,232,.16), rgba(233,238,232,.07));
-    backdrop-filter:blur(20px) saturate(130%);-webkit-backdrop-filter:blur(20px) saturate(130%);
-    border:1px solid rgba(255,255,255,.22);box-shadow:0 24px 60px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.25);
+    background:linear-gradient(180deg, rgba(255,255,255,.60), rgba(255,255,255,.38));
+    backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);
+    border:1px solid rgba(30,77,59,.14);box-shadow:0 24px 60px rgba(30,60,45,.14), inset 0 1px 0 rgba(255,255,255,.6);
     padding:clamp(22px,4vh,30px) clamp(20px,5vw,28px);text-align:center}
-  .glass .desc{font-size:clamp(14.5px,2.4vw,16px);line-height:1.55;color:rgba(255,255,255,.9);margin:0 0 16px}
-  .glass .desc b{color:#fff}
+  .glass .desc{font-size:clamp(14.5px,2.4vw,16px);line-height:1.55;color:var(--ink);margin:0 0 16px}
+  .glass .desc b{color:var(--spruce)}
 
   .offers{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:20px}
   .chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
-    color:#fff;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);
+    color:var(--spruce);background:rgba(46,154,103,.12);border:1px solid rgba(46,154,103,.24);
     border-radius:999px;padding:6px 12px}
 
   form{display:flex;flex-direction:column;gap:10px}
-  form input{font:inherit;font-size:15px;padding:13px 15px;border-radius:12px;border:1px solid rgba(255,255,255,.28);
-    background:rgba(255,255,255,.94);color:var(--ink);text-align:center}
+  form input{font:inherit;font-size:15px;padding:13px 15px;border-radius:12px;border:1px solid rgba(30,60,45,.20);
+    background:#fff;color:var(--ink);text-align:center}
   form input::placeholder{color:#8A948C}
-  form input:focus{outline:2px solid var(--gold);outline-offset:1px}
+  form input:focus{outline:2px solid var(--sprout);outline-offset:1px}
   form button{font:inherit;font-weight:700;font-size:15px;padding:13px 16px;border-radius:12px;border:none;
     background:var(--gold);color:#3a2a00;cursor:pointer}
   form button:hover{background:#f0c766}
-  .note{font-size:12px;color:rgba(255,255,255,.62);margin-top:12px}
-  .success{display:none;margin-top:12px;font-weight:700;color:var(--gold)}
+  .note{font-size:12px;color:var(--muted);margin-top:12px}
+  .success{display:none;margin-top:12px;font-weight:700;color:var(--gold-deep)}
   .success.on{display:block}
 
   /* footer row */
   .foot{position:relative;z-index:2;flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:8px}
-  .applink{color:#fff;text-decoration:none;font-weight:600;font-size:13.5px;border:1px solid rgba(255,255,255,.26);
-    border-radius:999px;padding:8px 16px;background:rgba(255,255,255,.06)}
-  .applink:hover{border-color:rgba(255,255,255,.5)}
-  .disc{font-size:11px;color:rgba(255,255,255,.5);text-align:center;max-width:44ch;line-height:1.5}
+  .applink{color:var(--spruce);text-decoration:none;font-weight:600;font-size:13.5px;border:1px solid var(--line);
+    border-radius:999px;padding:8px 16px;background:#fff}
+  .applink:hover{border-color:var(--sprout)}
+  .disc{font-size:11px;color:var(--muted);text-align:center;max-width:44ch;line-height:1.5}
 </style>
 </head>
 <body>
