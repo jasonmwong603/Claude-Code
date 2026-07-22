@@ -52,9 +52,12 @@ jobs:
 
       - name: Assemble site
         run: |
-          mkdir -p _site/app _site/budgeting
-          # The KeyDate app is served at keydate.ca/app/ (base is relative).
-          cp -r apps/keydate/dist/* _site/app/
+          mkdir -p _site/prelaunchdemo _site/budgeting
+          # The KeyDate app lives at an UNLISTED path (keydate.ca/prelaunchdemo/)
+          # so it isn't discoverable from the public landing page — it's the
+          # private demo build used for investor/beta walkthroughs. The base is
+          # relative, so the app works from any path.
+          cp -r apps/keydate/dist/* _site/prelaunchdemo/
           # Keep the existing budgeting app published alongside KeyDate.
           cp budget.html _site/budgeting/index.html
           # Marketing / waitlist landing page at the site root (keydate.ca/).

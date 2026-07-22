@@ -65,7 +65,7 @@ seam. To turn it on:
    In each provider's console, add Supabase's callback
    (`https://<project>.supabase.co/auth/v1/callback`) as an authorized redirect URI.
 3. **Allow the app URL** — in Supabase *Authentication → URL Configuration*, add the
-   deployed site (`https://keydate.ca/app/`) and your local `http://localhost:5173`
+   deployed site (`https://keydate.ca/prelaunchdemo/`) and your local `http://localhost:5173`
    to the redirect allow-list.
 4. **Provide the keys** — locally copy `.env.example` to `.env.local`; for the
    deployed build set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as GitHub

@@ -25,7 +25,7 @@ active-user counts.
 4. **Enable providers in Supabase** — Authentication → Providers → turn on Google
    and Facebook, paste the ids/secrets from steps 2–3.
 5. **Allow the app URLs** — Authentication → URL Configuration → add the deployed
-   site (`https://keydate.ca/app/`) and `http://localhost:5173`.
+   site (`https://keydate.ca/prelaunchdemo/`) and `http://localhost:5173`.
 6. **Run the SQL** — open the Supabase SQL editor and paste the three blocks from
    `README.md → Accounts & sign-in → One-time database setup` (state sync table,
    device metric + `track_device`, and the `profiles` ledger + signup trigger).
