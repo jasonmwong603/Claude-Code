@@ -21,6 +21,7 @@ import {
   toggleFollow,
   toggleLike,
   toggleSave,
+  uploadForumMedia,
   type Identity,
 } from '../lib/forum'
 import { MAX_MEDIA_BYTES, getMedia, putMedia } from '../lib/media'
@@ -198,12 +199,30 @@ export function Forum({
     setPosting(true)
     try {
       let media: PostMediaRef | undefined
-      if (!remote && file) {
-        const id = await putMedia(file)
-        media = { kind: file.type.startsWith('video') ? 'video' : 'image', id }
+      let mediaUrl: string | undefined
+      let mediaKind: 'image' | 'video' | undefined
+      if (file) {
+        if (remote && user) {
+          const up = await uploadForumMedia(file, user.id)
+          mediaUrl = up.url
+          mediaKind = up.kind
+        } else {
+          const id = await putMedia(file)
+          media = { kind: file.type.startsWith('video') ? 'video' : 'image', id }
+        }
       }
       saveIdentity(identity)
-      await addPost({ identity, userId: user?.id ?? null, location: state.plan.location, category, title, body, media })
+      await addPost({
+        identity,
+        userId: user?.id ?? null,
+        location: state.plan.location,
+        category,
+        title,
+        body,
+        media,
+        mediaUrl,
+        mediaKind,
+      })
       onEarnXp(15)
       setTitle('')
       setBody('')
@@ -407,9 +426,8 @@ export function Forum({
             style={{ ...inputStyle, resize: 'vertical', marginBottom: 12 }}
           />
 
-          {/* Photo / video attachment — device-preview mode only for now.
-              (Shared media via Supabase Storage is the next increment.) */}
-          {!remote && (<>
+          {/* Photo / video attachment. Shared mode uploads to Supabase Storage
+              (visible on every device); preview mode keeps it on-device. */}
           <input
             ref={fileInput}
             type="file"
@@ -469,7 +487,6 @@ export function Forum({
           {mediaError && (
             <div style={{ fontSize: 12.5, color: C.err, marginBottom: 12 }}>{mediaError}</div>
           )}
-          </>)}
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button

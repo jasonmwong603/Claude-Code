@@ -64,6 +64,9 @@ export interface AddPostInput {
   title: string
   body: string
   media?: PostMediaRef
+  /** Shared-mode media (already uploaded to Storage). */
+  mediaUrl?: string
+  mediaKind?: 'image' | 'video'
 }
 
 /* ————————————————————————— shared (Supabase) ————————————————————————— */
@@ -79,6 +82,8 @@ interface PostRow {
   body: string
   like_count: number
   reply_count: number | null
+  media_url: string | null
+  media_kind: string | null
   created_at: string
 }
 
@@ -95,8 +100,26 @@ function rowToPost(row: PostRow, userId: string | null): ForumPost {
     createdAt: row.created_at,
     likes: row.like_count,
     replyCount: row.reply_count ?? 0,
+    media: row.media_url ? { kind: row.media_kind === 'video' ? 'video' : 'image', url: row.media_url } : undefined,
     mine: !!userId && row.author_id === userId,
   }
+}
+
+const MEDIA_BUCKET = 'forum-media'
+
+/** Upload a photo/video to shared Storage and return its public URL + kind.
+ *  Files land in a per-user folder so RLS can scope uploads/deletes. */
+export async function uploadForumMedia(file: File, userId: string): Promise<{ url: string; kind: 'image' | 'video' }> {
+  if (!supabase) throw new Error('Media upload is not available.')
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin'
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, {
+    contentType: file.type,
+    upsert: false,
+  })
+  if (error) throw error
+  const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path)
+  return { url: data.publicUrl, kind: file.type.startsWith('video') ? 'video' : 'image' }
 }
 
 async function loadFeedRemote(userId: string | null): Promise<{ posts: ForumPost[]; liked: Set<string> }> {
@@ -154,6 +177,8 @@ export async function addPost(input: AddPostInput): Promise<ForumPost> {
         category: input.category,
         title: input.title.trim(),
         body: input.body.trim(),
+        media_url: input.mediaUrl ?? null,
+        media_kind: input.mediaKind ?? null,
       })
       .select()
       .single()

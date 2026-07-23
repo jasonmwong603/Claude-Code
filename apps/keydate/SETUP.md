@@ -66,6 +66,13 @@ Following feed and the personal 🔖 Saved list in the Community tab.
 Adds `forum_replies` (public read, sign-in to reply/delete own), a `reply_count` on
 posts, and Realtime so replies appear live in an open thread.
 
+**Shared photos + videos:** run `apps/keydate/supabase/forum_media.sql` (SQL editor).
+Creates a public `forum-media` Storage bucket (50 MB/file, images + video), access
+rules (anyone can view; users upload/delete only their own files), and `media_url` /
+`media_kind` columns on posts. Uploads then show on every device. If the `storage.*`
+lines error on permissions, create the bucket in the dashboard (Storage → New bucket
+→ `forum-media` → Public) and re-run just the `alter table` lines.
+
 ---
 
 ## 2. Waitlist — global & live via Supabase  ·  DONE (free)
