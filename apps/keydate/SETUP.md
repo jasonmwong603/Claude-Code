@@ -43,6 +43,23 @@ signed in there; or query `select * from public.user_stats;` in the SQL editor.
 
 ---
 
+## 1b. Community forum — shared & live  ·  free
+Turns the on-device forum preview into a real cross-user feed.
+
+1. **Run the SQL** — Supabase SQL editor → paste all of
+   `apps/keydate/supabase/forum.sql` → Run. Creates `forum_posts` + `forum_likes`
+   with RLS (public read, signed-in users post/like as themselves), a like-count
+   trigger, Realtime, and a few KeyDate starter posts. Idempotent.
+2. That's it — no extra keys. The app already reads/writes the forum through the
+   same Supabase client from step 1. Once accounts are on (section 1), signed-in
+   users post live and everyone sees new posts appear in real time; guests can read
+   but are prompted to sign in to post.
+
+*Note.* Photo/video attachments stay device-only for now; shared media (via Supabase
+Storage, also free tier) is the next increment.
+
+---
+
 ## 2. Waitlist — global & live via Supabase  ·  DONE (free)
 The waitlist is wired to the Supabase project. Signups from **any** visitor's
 browser land in one shared table (`public.waitlist`), and the passcode-gated admin

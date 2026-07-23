@@ -485,7 +485,9 @@ export default function KeyDateApp() {
           />
         )}
 
-        {screen === 'forum' && state && <Forum state={state} onEarnXp={earnXp} />}
+        {screen === 'forum' && state && (
+          <Forum state={state} onEarnXp={earnXp} user={user} onSignIn={handleSignIn} />
+        )}
       </div>
     </div>
   )

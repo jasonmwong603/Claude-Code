@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { C, DISPLAY_FONT, BODY_FONT } from '../theme'
 import { Pills, bigBtn, card, inputStyle } from '../components/atoms'
 import { CATEGORY_META } from '../data/forumSeed'
@@ -7,13 +7,16 @@ import {
   addPost,
   deletePost,
   getIdentity,
+  isRemoteForum,
   loadFeed,
   saveIdentity,
+  subscribeFeed,
   timeAgo,
   toggleLike,
   type Identity,
 } from '../lib/forum'
 import { MAX_MEDIA_BYTES, getMedia, putMedia } from '../lib/media'
+import type { AuthUser, OAuthProvider } from '../lib/auth'
 import type { AppState, ForumCategory, ForumPost, PostMediaRef } from '../types'
 
 const CATEGORY_OPTIONS = (Object.keys(CATEGORY_META) as ForumCategory[]).map((k) => ({
@@ -92,15 +95,29 @@ function PostMedia({ media }: { media: PostMediaRef }) {
   )
 }
 
-export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: number) => void }) {
-  const [feed, setFeed] = useState(() => loadFeed())
-  const [liked, setLiked] = useState<Set<string>>(() => feed.liked)
+export function Forum({
+  state,
+  onEarnXp,
+  user,
+  onSignIn,
+}: {
+  state: AppState
+  onEarnXp: (n: number) => void
+  user: AuthUser | null
+  onSignIn: (provider: OAuthProvider) => void
+}) {
+  const remote = isRemoteForum()
+  const canPost = !remote || !!user // preview mode posts locally; shared mode needs sign-in
+
+  const [feed, setFeed] = useState<{ posts: ForumPost[]; liked: Set<string> }>({ posts: [], liked: new Set() })
+  const [liked, setLiked] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<ForumCategory | 'all'>('all')
   const [open, setOpen] = useState(false)
 
   const [identity, setIdentity] = useState<Identity>(() => {
     const saved = getIdentity()
-    return { author: saved.author, avatar: saved.avatar || AVATARS[0] }
+    return { author: saved.author || state.profile?.displayName || user?.name || '', avatar: saved.avatar || AVATARS[0] }
   })
   const [category, setCategory] = useState<ForumCategory>('milestone')
   const [title, setTitle] = useState('')
@@ -113,11 +130,21 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
 
   const prompts = useMemo(() => achievementPrompts(state), [state])
 
-  const refresh = () => {
-    const f = loadFeed()
+  const refresh = useCallback(async () => {
+    const f = await loadFeed(user?.id ?? null)
     setFeed(f)
     setLiked(f.liked)
-  }
+    setLoading(false)
+  }, [user?.id])
+
+  // Initial load + reload when the signed-in user changes.
+  useEffect(() => {
+    setLoading(true)
+    void refresh()
+  }, [refresh])
+
+  // Shared mode: new posts / like changes from anyone push in live.
+  useEffect(() => subscribeFeed(() => void refresh()), [refresh])
 
   const clearMedia = () => {
     if (preview) URL.revokeObjectURL(preview)
@@ -148,31 +175,46 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
     setPosting(true)
     try {
       let media: PostMediaRef | undefined
-      if (file) {
+      if (!remote && file) {
         const id = await putMedia(file)
         media = { kind: file.type.startsWith('video') ? 'video' : 'image', id }
       }
       saveIdentity(identity)
-      addPost({ identity, location: state.plan.location, category, title, body, media })
+      await addPost({ identity, userId: user?.id ?? null, location: state.plan.location, category, title, body, media })
       onEarnXp(15)
       setTitle('')
       setBody('')
       clearMedia()
       setOpen(false)
-      refresh()
+      await refresh()
+    } catch (e) {
+      alert(`Couldn't post: ${(e as Error)?.message ?? e}`)
     } finally {
       setPosting(false)
     }
   }
 
+  // Optimistic like toggle (works in both modes); reverts by reloading on error.
   const like = (id: string) => {
-    setLiked(toggleLike(id))
-    setFeed(loadFeed())
+    const wasLiked = liked.has(id)
+    setLiked((prev) => {
+      const n = new Set(prev)
+      if (wasLiked) n.delete(id)
+      else n.add(id)
+      return n
+    })
+    setFeed((prev) => ({
+      ...prev,
+      posts: prev.posts.map((p) =>
+        p.id === id ? { ...p, likes: Math.max(0, p.likes + (wasLiked ? -1 : 1)) } : p,
+      ),
+    }))
+    void toggleLike(id, wasLiked, user?.id ?? null).catch(() => void refresh())
   }
 
   const remove = async (id: string) => {
     await deletePost(id)
-    refresh()
+    await refresh()
   }
 
   const posts = feed.posts.filter((p) => filter === 'all' || p.category === filter)
@@ -183,27 +225,51 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
         Community
       </h2>
       <p style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.5, margin: '0 0 14px' }}>
-        Share your wins, first-home stories, and advice — with photos or video if you like.
+        {remote
+          ? 'Share your wins, first-home stories, and advice with first-time buyers across Canada.'
+          : 'Share your wins, first-home stories, and advice — with photos or video if you like.'}
       </p>
 
-      <div
-        style={{
-          fontSize: 12,
-          color: C.sub,
-          background: C.goldSoft,
-          border: `1px solid ${C.gold}`,
-          borderRadius: 12,
-          padding: '10px 12px',
-          lineHeight: 1.5,
-          marginBottom: 14,
-        }}
-      >
-        👋 <strong>Preview.</strong> The posts below are example stories. Anything you post — text,
-        photos, or video — is saved on <em>this device</em> for now. Shared posting across everyone
-        turns on when the community server is connected.
-      </div>
+      {!remote && (
+        <div
+          style={{
+            fontSize: 12,
+            color: C.sub,
+            background: C.goldSoft,
+            border: `1px solid ${C.gold}`,
+            borderRadius: 12,
+            padding: '10px 12px',
+            lineHeight: 1.5,
+            marginBottom: 14,
+          }}
+        >
+          👋 <strong>Preview.</strong> The posts below are example stories. Anything you post — text,
+          photos, or video — is saved on <em>this device</em> for now. Shared posting across everyone
+          turns on when the community server is connected.
+        </div>
+      )}
 
-      {prompts.length > 0 && !open && (
+      {/* Shared mode, not signed in: reading is open, posting needs an account. */}
+      {remote && !user && (
+        <div style={{ ...card, marginBottom: 16, textAlign: 'center' }}>
+          <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 16, marginBottom: 4 }}>
+            Join the conversation
+          </div>
+          <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.5, margin: '0 0 12px' }}>
+            Sign in to post your own milestones and reply to others. You can read everything without an account.
+          </p>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => onSignIn('google')} style={{ ...bigBtn(true, C.spruce), width: 'auto', padding: '12px 18px' }}>
+              Continue with Google
+            </button>
+            <button type="button" onClick={() => onSignIn('facebook')} style={{ ...bigBtn(true, '#1877F2'), width: 'auto', padding: '12px 18px' }}>
+              Continue with Facebook
+            </button>
+          </div>
+        </div>
+      )}
+
+      {prompts.length > 0 && !open && canPost && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, marginBottom: 8 }}>
             🎉 Share one of your wins:
@@ -238,7 +304,7 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
         </div>
       )}
 
-      {!open ? (
+      {canPost && (!open ? (
         <button type="button" onClick={() => setOpen(true)} style={{ ...bigBtn(true, C.sprout), marginBottom: 16 }}>
           ✍️ Write a post
         </button>
@@ -291,7 +357,9 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
             style={{ ...inputStyle, resize: 'vertical', marginBottom: 12 }}
           />
 
-          {/* Photo / video attachment */}
+          {/* Photo / video attachment — device-preview mode only for now.
+              (Shared media via Supabase Storage is the next increment.) */}
+          {!remote && (<>
           <input
             ref={fileInput}
             type="file"
@@ -351,6 +419,7 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
           {mediaError && (
             <div style={{ fontSize: 12.5, color: C.err, marginBottom: 12 }}>{mediaError}</div>
           )}
+          </>)}
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button
@@ -383,7 +452,7 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
             </button>
           </div>
         </div>
-      )}
+      ))}
 
       {/* Category filter */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -413,9 +482,17 @@ export function Forum({ state, onEarnXp }: { state: AppState; onEarnXp: (n: numb
         })}
       </div>
 
-      {posts.map((p) => (
-        <PostCard key={p.id} post={p} liked={liked.has(p.id)} onLike={() => like(p.id)} onDelete={() => remove(p.id)} />
-      ))}
+      {loading ? (
+        <p style={{ fontSize: 13, color: C.sub, textAlign: 'center', padding: '20px 0' }}>Loading the feed…</p>
+      ) : posts.length === 0 ? (
+        <p style={{ fontSize: 13, color: C.sub, textAlign: 'center', padding: '20px 0' }}>
+          No posts here yet — be the first to share.
+        </p>
+      ) : (
+        posts.map((p) => (
+          <PostCard key={p.id} post={p} liked={liked.has(p.id)} onLike={() => like(p.id)} onDelete={() => remove(p.id)} />
+        ))
+      )}
 
       <p style={{ fontSize: 11.5, color: C.sub, lineHeight: 1.55, marginTop: 6 }}>
         Be kind and keep it real. Posts are personal stories, not financial advice.

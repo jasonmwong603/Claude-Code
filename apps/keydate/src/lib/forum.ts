@@ -1,18 +1,19 @@
 import type { ForumCategory, ForumPost, PostMediaRef } from '../types'
 import { SEED_POSTS } from '../data/forumSeed'
 import { delMedia } from './media'
+import { supabase } from './auth'
 
-/* Community forum persistence — ON-DEVICE PREVIEW.
-
-   Posts and likes are stored in localStorage on this device only. The seeded
-   posts (data/forumSeed.ts) illustrate the feed; a visitor's own posts are real
-   but visible only to them. This is deliberately a self-contained preview so the
-   app ships on static hosting with no accounts.
-
-   To make it a truly shared, cross-user forum, replace the four functions below with
-   calls to a backend (e.g. Supabase: a `posts` table + `likes`, anon auth, and
-   row-level security). The Forum screen only calls loadFeed / addPost /
-   toggleLike / deletePost, so nothing else has to change. */
+/* Community forum persistence.
+ *
+ * TWO MODES, chosen automatically:
+ *  • SHARED (Supabase configured) — posts + likes live in Postgres and are shared
+ *    across everyone, live. See supabase/forum.sql for the schema/RLS. Posting
+ *    requires being signed in; reading is public.
+ *  • ON-DEVICE PREVIEW (no Supabase) — the original behaviour: seed posts plus the
+ *    visitor's own posts in localStorage, so the app still works with no backend.
+ *
+ * The Forum screen calls loadFeed / addPost / toggleLike / deletePost (all async)
+ * and passes the current user id; everything else is internal. */
 
 const POSTS_KEY = 'keydate-forum-posts-v1'
 const LIKES_KEY = 'keydate-forum-likes-v1'
@@ -24,6 +25,11 @@ export interface Identity {
 }
 
 export const AVATARS = ['🔑', '🌷', '🧭', '🛠️', '🌻', '🦫', '🍁', '🏡', '⭐', '🌱', '🐿️', '🎈']
+
+/** True when the shared (Supabase) forum is active. */
+export function isRemoteForum(): boolean {
+  return !!supabase
+}
 
 function readJSON<T>(key: string, fallback: T): T {
   try {
@@ -50,17 +56,72 @@ export function saveIdentity(identity: Identity): void {
   writeJSON(IDENTITY_KEY, identity)
 }
 
+export interface AddPostInput {
+  identity: Identity
+  userId?: string | null
+  location?: string
+  category: ForumCategory
+  title: string
+  body: string
+  media?: PostMediaRef
+}
+
+/* ————————————————————————— shared (Supabase) ————————————————————————— */
+
+interface PostRow {
+  id: string
+  author_id: string | null
+  author_name: string
+  avatar: string
+  location: string | null
+  category: ForumCategory
+  title: string
+  body: string
+  like_count: number
+  created_at: string
+}
+
+function rowToPost(row: PostRow, userId: string | null): ForumPost {
+  return {
+    id: row.id,
+    author: row.author_name,
+    avatar: row.avatar,
+    location: row.location ?? undefined,
+    category: row.category,
+    title: row.title,
+    body: row.body,
+    createdAt: row.created_at,
+    likes: row.like_count,
+    mine: !!userId && row.author_id === userId,
+  }
+}
+
+async function loadFeedRemote(userId: string | null): Promise<{ posts: ForumPost[]; liked: Set<string> }> {
+  const { data: rows } = await supabase!
+    .from('forum_posts')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(200)
+  const posts = ((rows as PostRow[] | null) ?? []).map((r) => rowToPost(r, userId))
+
+  const liked = new Set<string>()
+  if (userId) {
+    const { data: likes } = await supabase!.from('forum_likes').select('post_id')
+    for (const l of (likes as { post_id: string }[] | null) ?? []) liked.add(l.post_id)
+  }
+  return { posts, liked }
+}
+
+/* ————————————————————————— on-device preview ————————————————————————— */
+
 function getMyPosts(): ForumPost[] {
   return readJSON<ForumPost[]>(POSTS_KEY, [])
 }
-
 function getLikes(): string[] {
   return readJSON<string[]>(LIKES_KEY, [])
 }
 
-/** The merged feed: the user's posts + seed posts, newest first, with the
- *  device's like state folded in. */
-export function loadFeed(): { posts: ForumPost[]; liked: Set<string> } {
+function loadFeedLocal(): { posts: ForumPost[]; liked: Set<string> } {
   const liked = new Set(getLikes())
   const posts = [...getMyPosts(), ...SEED_POSTS]
     .map((p) => ({ ...p, likes: p.likes + (liked.has(p.id) && !p.mine ? 1 : 0) }))
@@ -68,17 +129,39 @@ export function loadFeed(): { posts: ForumPost[]; liked: Set<string> } {
   return { posts, liked }
 }
 
-export function addPost(input: {
-  identity: Identity
-  location?: string
-  category: ForumCategory
-  title: string
-  body: string
-  media?: PostMediaRef
-}): ForumPost {
+/* ————————————————————————— unified API ————————————————————————— */
+
+/** The feed + this user's liked set. Shared when configured, else on-device. */
+export async function loadFeed(userId: string | null): Promise<{ posts: ForumPost[]; liked: Set<string> }> {
+  if (supabase) return loadFeedRemote(userId)
+  return loadFeedLocal()
+}
+
+/** Create a post. In shared mode requires a signed-in userId. */
+export async function addPost(input: AddPostInput): Promise<ForumPost> {
+  const author = input.identity.author.trim() || 'Anonymous'
+  if (supabase && input.userId) {
+    const { data, error } = await supabase
+      .from('forum_posts')
+      .insert({
+        author_id: input.userId,
+        author_name: author,
+        avatar: input.identity.avatar,
+        location: input.location?.trim() || null,
+        category: input.category,
+        title: input.title.trim(),
+        body: input.body.trim(),
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return rowToPost(data as PostRow, input.userId)
+  }
+
+  // local preview
   const post: ForumPost = {
     id: `me-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    author: input.identity.author.trim() || 'Anonymous',
+    author,
     avatar: input.identity.avatar,
     location: input.location?.trim() || undefined,
     category: input.category,
@@ -94,20 +177,27 @@ export function addPost(input: {
 }
 
 export async function deletePost(id: string): Promise<void> {
+  if (supabase && !id.startsWith('me-')) {
+    await supabase.from('forum_posts').delete().eq('id', id)
+    return
+  }
   const posts = getMyPosts()
   const gone = posts.find((p) => p.id === id)
   writeJSON(POSTS_KEY, posts.filter((p) => p.id !== id))
-  // Reclaim the attachment blob, if any.
   if (gone?.media?.id) await delMedia(gone.media.id)
 }
 
-/** Toggle a like on a post (device-local). Returns the new liked set. */
-export function toggleLike(id: string): Set<string> {
+/** Toggle a like. Pass whether it was already liked so we know the direction. */
+export async function toggleLike(id: string, wasLiked: boolean, userId: string | null): Promise<void> {
+  if (supabase && userId) {
+    if (wasLiked) await supabase.from('forum_likes').delete().eq('post_id', id).eq('user_id', userId)
+    else await supabase.from('forum_likes').insert({ post_id: id, user_id: userId })
+    return
+  }
   const likes = new Set(getLikes())
-  if (likes.has(id)) likes.delete(id)
+  if (wasLiked) likes.delete(id)
   else likes.add(id)
   writeJSON(LIKES_KEY, [...likes])
-  return likes
 }
 
 export function timeAgo(iso: string): string {
@@ -122,4 +212,17 @@ export function timeAgo(iso: string): string {
   const w = Math.floor(d / 7)
   if (w < 5) return `${w}w ago`
   return new Date(iso).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
+}
+
+/** Subscribe to live post inserts/updates (shared mode only). Returns an
+ *  unsubscribe function; a no-op in preview mode. */
+export function subscribeFeed(onChange: () => void): () => void {
+  if (!supabase) return () => {}
+  const chan = supabase
+    .channel('forum-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'forum_posts' }, () => onChange())
+    .subscribe()
+  return () => {
+    void supabase!.removeChannel(chan)
+  }
 }
