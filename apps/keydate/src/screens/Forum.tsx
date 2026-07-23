@@ -5,14 +5,18 @@ import { CATEGORY_META } from '../data/forumSeed'
 import {
   AVATARS,
   addPost,
+  addReply,
   deletePost,
+  deleteReply,
   getIdentity,
   isRemoteForum,
   loadFeed,
+  loadReplies,
   loadSavedPosts,
   loadSocial,
   saveIdentity,
   subscribeFeed,
+  subscribeReplies,
   timeAgo,
   toggleFollow,
   toggleLike,
@@ -21,7 +25,7 @@ import {
 } from '../lib/forum'
 import { MAX_MEDIA_BYTES, getMedia, putMedia } from '../lib/media'
 import type { AuthUser, OAuthProvider } from '../lib/auth'
-import type { AppState, ForumCategory, ForumPost, PostMediaRef } from '../types'
+import type { AppState, ForumCategory, ForumPost, ForumReply, PostMediaRef } from '../types'
 
 const CATEGORY_OPTIONS = (Object.keys(CATEGORY_META) as ForumCategory[]).map((k) => ({
   key: k,
@@ -584,6 +588,9 @@ export function Forum({
             onFollow={canFollow && p.authorId && !p.mine ? () => follow(p.authorId as string) : undefined}
             isSaved={saved.has(p.id)}
             onSave={canSave ? () => save(p.id) : undefined}
+            userId={user?.id ?? null}
+            canReply={canPost}
+            replyIdentity={identity}
           />
         ))
       )}
@@ -604,6 +611,9 @@ function PostCard({
   onFollow,
   isSaved,
   onSave,
+  userId,
+  canReply,
+  replyIdentity,
 }: {
   post: ForumPost
   liked: boolean
@@ -613,7 +623,11 @@ function PostCard({
   onFollow?: () => void
   isSaved: boolean
   onSave?: () => void
+  userId: string | null
+  canReply: boolean
+  replyIdentity: Identity
 }) {
+  const [showReplies, setShowReplies] = useState(false)
   return (
     <div style={card}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -696,6 +710,26 @@ function PostCard({
           </button>
         )}
 
+        <button
+          type="button"
+          onClick={() => setShowReplies((v) => !v)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: BODY_FONT,
+            color: showReplies ? C.spruce : C.sub,
+            padding: 0,
+          }}
+        >
+          <span style={{ fontSize: 15 }}>💬</span> {post.replyCount ? post.replyCount : 'Reply'}
+        </button>
+
         <span style={{ flex: 1 }} />
 
         {onFollow && (
@@ -736,6 +770,143 @@ function PostCard({
           </button>
         )}
       </div>
+
+      {showReplies && (
+        <PostThread postId={post.id} userId={userId} canReply={canReply} identity={replyIdentity} />
+      )}
+    </div>
+  )
+}
+
+function PostThread({
+  postId,
+  userId,
+  canReply,
+  identity,
+}: {
+  postId: string
+  userId: string | null
+  canReply: boolean
+  identity: Identity
+}) {
+  const [replies, setReplies] = useState<ForumReply[]>([])
+  const [loading, setLoading] = useState(true)
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+
+  const load = useCallback(async () => {
+    setReplies(await loadReplies(postId, userId))
+    setLoading(false)
+  }, [postId, userId])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+  // Live: new replies from anyone appear in the open thread.
+  useEffect(() => subscribeReplies(postId, () => void load()), [postId, load])
+
+  const send = async () => {
+    const body = text.trim()
+    if (!body || sending) return
+    setSending(true)
+    try {
+      await addReply({ postId, userId, identity, body })
+      setText('')
+      await load()
+    } catch (e) {
+      alert(`Couldn't reply: ${(e as Error)?.message ?? e}`)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const del = async (r: ForumReply) => {
+    await deleteReply(r)
+    await load()
+  }
+
+  return (
+    <div style={{ marginTop: 12, borderTop: `1px solid ${C.line}`, paddingTop: 12 }}>
+      {loading ? (
+        <div style={{ fontSize: 12.5, color: C.sub }}>Loading replies…</div>
+      ) : replies.length === 0 ? (
+        <div style={{ fontSize: 12.5, color: C.sub, marginBottom: canReply ? 10 : 0 }}>
+          No replies yet{canReply ? ' — start the conversation.' : '.'}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: canReply ? 12 : 0 }}>
+          {replies.map((r) => (
+            <div key={r.id} style={{ display: 'flex', gap: 8 }}>
+              <div
+                style={{
+                  fontSize: 15,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 999,
+                  background: C.sproutSoft,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {r.avatar}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12.5 }}>
+                  <span style={{ fontWeight: 700 }}>{r.author}</span>
+                  {r.mine && <span style={{ color: C.sub, fontWeight: 500 }}> · you</span>}
+                  <span style={{ color: C.sub }}> · {timeAgo(r.createdAt)}</span>
+                </div>
+                <div style={{ fontSize: 13.5, lineHeight: 1.5, color: C.ink, whiteSpace: 'pre-wrap' }}>{r.body}</div>
+                {r.mine && (
+                  <button
+                    type="button"
+                    onClick={() => del(r)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      color: C.sub,
+                      fontFamily: BODY_FONT,
+                      padding: '2px 0 0',
+                    }}
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {canReply && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+          <textarea
+            placeholder="Write a reply…"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={1}
+            style={{ ...inputStyle, resize: 'vertical', minHeight: 40, flex: 1 }}
+          />
+          <button
+            type="button"
+            onClick={send}
+            disabled={!text.trim() || sending}
+            style={{
+              ...bigBtn(!!text.trim() && !sending, C.sprout),
+              width: 'auto',
+              padding: '10px 16px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {sending ? '…' : 'Reply'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

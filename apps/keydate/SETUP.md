@@ -62,6 +62,10 @@ Storage, also free tier) is the next increment.
 one paste). Adds `forum_follows` + `forum_saves` with private RLS, powering the
 Following feed and the personal 🔖 Saved list in the Community tab.
 
+**Reply threads:** run `apps/keydate/supabase/forum_replies.sql` (SQL editor, one paste).
+Adds `forum_replies` (public read, sign-in to reply/delete own), a `reply_count` on
+posts, and Realtime so replies appear live in an open thread.
+
 ---
 
 ## 2. Waitlist — global & live via Supabase  ·  DONE (free)

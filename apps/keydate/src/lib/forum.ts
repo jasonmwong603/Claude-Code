@@ -1,4 +1,4 @@
-import type { ForumCategory, ForumPost, PostMediaRef } from '../types'
+import type { ForumCategory, ForumPost, ForumReply, PostMediaRef } from '../types'
 import { SEED_POSTS } from '../data/forumSeed'
 import { delMedia } from './media'
 import { supabase } from './auth'
@@ -78,6 +78,7 @@ interface PostRow {
   title: string
   body: string
   like_count: number
+  reply_count: number | null
   created_at: string
 }
 
@@ -93,6 +94,7 @@ function rowToPost(row: PostRow, userId: string | null): ForumPost {
     body: row.body,
     createdAt: row.created_at,
     likes: row.like_count,
+    replyCount: row.reply_count ?? 0,
     mine: !!userId && row.author_id === userId,
   }
 }
@@ -274,6 +276,114 @@ export async function loadSavedPosts(userId: string | null, savedIds: string[]):
   const local = loadFeedLocal().posts
   const idset = new Set(savedIds)
   return local.filter((p) => idset.has(p.id))
+}
+
+/* ————————————————————————— reply threads ————————————————————————— */
+
+const REPLIES_KEY = 'keydate-forum-replies-v1'
+
+interface ReplyRow {
+  id: string
+  post_id: string
+  author_id: string | null
+  author_name: string
+  avatar: string
+  body: string
+  created_at: string
+}
+
+function rowToReply(row: ReplyRow, userId: string | null): ForumReply {
+  return {
+    id: row.id,
+    postId: row.post_id,
+    authorId: row.author_id,
+    author: row.author_name,
+    avatar: row.avatar,
+    body: row.body,
+    createdAt: row.created_at,
+    mine: !!userId && row.author_id === userId,
+  }
+}
+
+function getLocalReplies(): Record<string, ForumReply[]> {
+  return readJSON<Record<string, ForumReply[]>>(REPLIES_KEY, {})
+}
+
+/** Replies for a post, oldest first. */
+export async function loadReplies(postId: string, userId: string | null): Promise<ForumReply[]> {
+  if (supabase && !postId.startsWith('me-')) {
+    const { data } = await supabase
+      .from('forum_replies')
+      .select('*')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true })
+    return ((data as ReplyRow[] | null) ?? []).map((r) => rowToReply(r, userId))
+  }
+  return getLocalReplies()[postId] ?? []
+}
+
+export async function addReply(input: {
+  postId: string
+  userId?: string | null
+  identity: Identity
+  body: string
+}): Promise<ForumReply> {
+  const author = input.identity.author.trim() || 'Anonymous'
+  if (supabase && input.userId && !input.postId.startsWith('me-')) {
+    const { data, error } = await supabase
+      .from('forum_replies')
+      .insert({
+        post_id: input.postId,
+        author_id: input.userId,
+        author_name: author,
+        avatar: input.identity.avatar,
+        body: input.body.trim(),
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return rowToReply(data as ReplyRow, input.userId)
+  }
+  // local preview
+  const reply: ForumReply = {
+    id: `re-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    postId: input.postId,
+    author,
+    avatar: input.identity.avatar,
+    body: input.body.trim(),
+    createdAt: new Date().toISOString(),
+    mine: true,
+  }
+  const map = getLocalReplies()
+  map[input.postId] = [...(map[input.postId] ?? []), reply]
+  writeJSON(REPLIES_KEY, map)
+  return reply
+}
+
+export async function deleteReply(reply: ForumReply): Promise<void> {
+  if (supabase && !reply.id.startsWith('re-')) {
+    await supabase.from('forum_replies').delete().eq('id', reply.id)
+    return
+  }
+  const map = getLocalReplies()
+  map[reply.postId] = (map[reply.postId] ?? []).filter((r) => r.id !== reply.id)
+  writeJSON(REPLIES_KEY, map)
+}
+
+/** Live updates for a single post's replies (shared mode only). */
+export function subscribeReplies(postId: string, onChange: () => void): () => void {
+  if (!supabase || postId.startsWith('me-')) return () => {}
+  const chan = supabase
+    .channel(`replies-${postId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'forum_replies', filter: `post_id=eq.${postId}` },
+      () => onChange(),
+    )
+    .subscribe()
+  return () => {
+    void supabase!.removeChannel(chan)
+  }
 }
 
 /** Subscribe to live post inserts/updates (shared mode only). Returns an

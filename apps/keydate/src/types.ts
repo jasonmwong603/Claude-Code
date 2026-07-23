@@ -151,6 +151,18 @@ export interface PlaidItem {
   lastRefreshed: string
 }
 
+export interface ForumReply {
+  id: string
+  postId: string
+  authorId?: string | null
+  author: string
+  avatar: string
+  body: string
+  createdAt: string
+  /** True for replies written by the current user (deletable). */
+  mine?: boolean
+}
+
 export interface ForumPost {
   id: string
   /** The post author's account id (shared mode), or undefined for local/seed posts. */
@@ -158,6 +170,8 @@ export interface ForumPost {
   author: string
   avatar: string
   location?: string
+  /** Number of replies on this post (shared mode). */
+  replyCount?: number
   category: ForumCategory
   title: string
   body: string
