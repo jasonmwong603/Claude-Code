@@ -127,6 +127,7 @@ export function Forum({
   const [saved, setSaved] = useState<Set<string>>(new Set())
   const [savedPosts, setSavedPosts] = useState<ForumPost[]>([])
   const [scope, setScope] = useState<'all' | 'following' | 'saved'>('all')
+  const [authorView, setAuthorView] = useState<{ id: string; name: string; avatar: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<ForumCategory | 'all'>('all')
   const [open, setOpen] = useState(false)
@@ -281,18 +282,36 @@ export function Forum({
     void toggleSave(postId, was, user?.id ?? null).catch(() => void refresh())
   }
 
+  const openAuthor = (p: ForumPost) => {
+    if (p.authorId) setAuthorView({ id: p.authorId, name: p.author, avatar: p.avatar })
+  }
+
+  // In a profile view, show that author's posts; otherwise the scoped/filtered feed.
+  const authorPosts = authorView ? feed.posts.filter((p) => p.authorId === authorView.id) : []
   const base = scope === 'saved' ? savedPosts : feed.posts
-  const posts = base.filter(
-    (p) =>
-      (scope !== 'following' || (!!p.authorId && following.has(p.authorId))) &&
-      (filter === 'all' || p.category === filter),
-  )
+  const posts = authorView
+    ? authorPosts
+    : base.filter(
+        (p) =>
+          (scope !== 'following' || (!!p.authorId && following.has(p.authorId))) &&
+          (filter === 'all' || p.category === filter),
+      )
 
   return (
     <>
       <h2 style={{ fontFamily: DISPLAY_FONT, fontSize: 26, fontWeight: 700, margin: '16px 0 4px' }}>
         Community
       </h2>
+      {authorView ? (
+        <AuthorHeader
+          author={authorView}
+          postCount={authorPosts.length}
+          isFollowing={following.has(authorView.id)}
+          onFollow={canFollow && authorView.id !== (user?.id ?? '') ? () => follow(authorView.id) : undefined}
+          onBack={() => setAuthorView(null)}
+        />
+      ) : (
+      <>
       <p style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.5, margin: '0 0 14px' }}>
         {remote
           ? 'Share your wins, first-home stories, and advice with first-time buyers across Canada.'
@@ -582,16 +601,20 @@ export function Forum({
           )
         })}
       </div>
+      </>
+      )}
 
       {loading ? (
         <p style={{ fontSize: 13, color: C.sub, textAlign: 'center', padding: '20px 0' }}>Loading the feed…</p>
       ) : posts.length === 0 ? (
         <p style={{ fontSize: 13, color: C.sub, textAlign: 'center', padding: '20px 0' }}>
-          {scope === 'following'
-            ? 'Follow people to see their posts here.'
-            : scope === 'saved'
-              ? 'No saved posts yet — tap 🔖 Save on any post to keep it here.'
-              : 'No posts here yet — be the first to share.'}
+          {authorView
+            ? 'No posts from this member yet.'
+            : scope === 'following'
+              ? 'Follow people to see their posts here.'
+              : scope === 'saved'
+                ? 'No saved posts yet — tap 🔖 Save on any post to keep it here.'
+                : 'No posts here yet — be the first to share.'}
         </p>
       ) : (
         posts.map((p) => (
@@ -608,6 +631,7 @@ export function Forum({
             userId={user?.id ?? null}
             canReply={canPost}
             replyIdentity={identity}
+            onOpenAuthor={p.authorId ? () => openAuthor(p) : undefined}
           />
         ))
       )}
@@ -616,6 +640,84 @@ export function Forum({
         Be kind and keep it real. Posts are personal stories, not financial advice.
       </p>
     </>
+  )
+}
+
+function AuthorHeader({
+  author,
+  postCount,
+  isFollowing,
+  onFollow,
+  onBack,
+}: {
+  author: { id: string; name: string; avatar: string }
+  postCount: number
+  isFollowing: boolean
+  onFollow?: () => void
+  onBack: () => void
+}) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <button
+        type="button"
+        onClick={onBack}
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: 13.5,
+          fontWeight: 600,
+          fontFamily: BODY_FONT,
+          color: C.spruce,
+          padding: '4px 0 12px',
+        }}
+      >
+        ← Back to community
+      </button>
+      <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div
+          style={{
+            fontSize: 30,
+            width: 60,
+            height: 60,
+            borderRadius: 999,
+            background: C.sproutSoft,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {author.avatar}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 800, fontSize: 19 }}>{author.name}</div>
+          <div style={{ fontSize: 12.5, color: C.sub, marginTop: 2 }}>
+            {postCount} {postCount === 1 ? 'post' : 'posts'}
+          </div>
+        </div>
+        {onFollow && (
+          <button
+            type="button"
+            onClick={onFollow}
+            style={{
+              background: isFollowing ? '#fff' : C.sprout,
+              border: `1.5px solid ${isFollowing ? C.line : C.sprout}`,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 700,
+              color: isFollowing ? C.sub : '#fff',
+              fontFamily: BODY_FONT,
+              borderRadius: 999,
+              padding: '9px 16px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isFollowing ? '✓ Following' : '+ Follow'}
+          </button>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -631,6 +733,7 @@ function PostCard({
   userId,
   canReply,
   replyIdentity,
+  onOpenAuthor,
 }: {
   post: ForumPost
   liked: boolean
@@ -643,29 +746,55 @@ function PostCard({
   userId: string | null
   canReply: boolean
   replyIdentity: Identity
+  onOpenAuthor?: () => void
 }) {
   const [showReplies, setShowReplies] = useState(false)
   return (
     <div style={card}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-        <div
+        <button
+          type="button"
+          onClick={onOpenAuthor}
+          disabled={!onOpenAuthor}
           style={{
             fontSize: 20,
             width: 38,
             height: 38,
             borderRadius: 999,
             background: C.sproutSoft,
+            border: 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            cursor: onOpenAuthor ? 'pointer' : 'default',
+            padding: 0,
           }}
+          aria-label={onOpenAuthor ? `View ${post.author}'s profile` : undefined}
         >
           {post.avatar}
-        </div>
+        </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 700, fontSize: 14 }}>
-            {post.author}
+            {onOpenAuthor ? (
+              <button
+                type="button"
+                onClick={onOpenAuthor}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  font: 'inherit',
+                  fontWeight: 700,
+                  color: C.ink,
+                }}
+              >
+                {post.author}
+              </button>
+            ) : (
+              post.author
+            )}
             {post.mine && <span style={{ color: C.sub, fontWeight: 500 }}> · you</span>}
           </div>
           <div style={{ fontSize: 11.5, color: C.sub }}>
