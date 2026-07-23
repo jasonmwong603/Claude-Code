@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>KeyDate — Admin</title>
+<style>
+  :root{
+    --spruce:#1E4D3B; --sprout:#3FA672; --gold:#E8B84B; --gold-deep:#C8901E;
+    --paper:#F7F8F4; --ink:#17302A; --muted:#5C6F66; --line:#DDE4DC; --err:#B4452F;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);
+    background:var(--paper);-webkit-font-smoothing:antialiased}
+
+  /* ---- passcode gate ---- */
+  .gate{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;padding:40px 22px;
+    background:radial-gradient(120% 90% at 50% 0%, #E3F2E9, var(--paper) 60%)}
+  .gate.hide{display:none}
+  .gate-card{width:100%;max-width:360px;text-align:center}
+  .mark{width:64px;height:64px;margin:0 auto 20px;border-radius:18px;background:var(--spruce);
+    display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(30,77,59,.28)}
+  .wordmark{font-weight:800;font-size:28px;letter-spacing:-.02em}
+  .wordmark b{color:var(--sprout)}
+  .gate h1{font-weight:800;font-size:19px;margin:14px 0 6px}
+  .gate p{font-size:14px;color:var(--muted);line-height:1.55;margin:0 auto 22px;max-width:300px}
+  .gate form{display:flex;flex-direction:column;gap:10px}
+  .gate input{font:inherit;font-size:15px;text-align:center;padding:14px 16px;border-radius:14px;
+    border:1.5px solid var(--line);background:#fff;color:var(--ink);outline:none}
+  .gate input.bad{border-color:var(--err)}
+  .gate button{font:inherit;font-weight:700;font-size:15px;padding:14px 16px;border-radius:14px;border:none;
+    color:#fff;background:var(--spruce);cursor:pointer}
+  .gate .badpass{font-size:13px;color:var(--err);margin-top:12px;font-weight:600;display:none}
+  .gate .badpass.on{display:block}
+  .gate .fine{font-size:11.5px;color:var(--muted);margin-top:24px;line-height:1.5}
+
+  /* ---- dashboard ---- */
+  .wrap{max-width:960px;margin:0 auto;padding:22px 18px 60px;display:none}
+  .wrap.show{display:block}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    margin-bottom:18px}
+  .brandline{display:flex;align-items:center;gap:12px}
+  .brandline .mk{width:38px;height:38px;border-radius:11px;background:var(--spruce);display:flex;
+    align-items:center;justify-content:center}
+  .brandline .t{font-weight:800;font-size:19px;letter-spacing:-.01em}
+  .brandline .t b{color:var(--sprout)}
+  .brandline .tag{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-top:1px}
+  .controls{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted)}
+  .refresh{font:inherit;font-size:12.5px;font-weight:600;color:var(--spruce);background:#fff;
+    border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer}
+  .refresh:hover{border-color:var(--sprout)}
+
+  .status{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;border-radius:12px;
+    padding:11px 14px;margin-bottom:18px;border:1px solid var(--line)}
+  .status .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .status.live{background:rgba(63,166,114,.10);border-color:rgba(63,166,114,.30);color:var(--spruce)}
+  .status.live .dot{background:var(--sprout);box-shadow:0 0 0 4px rgba(63,166,114,.18)}
+  .status.local{background:rgba(232,184,75,.12);border-color:rgba(200,144,30,.32);color:var(--gold-deep)}
+  .status.local .dot{background:var(--gold)}
+  .status .sub{font-weight:500;color:var(--muted)}
+
+  .section-label{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--muted);margin:24px 2px 12px}
+
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;
+    box-shadow:0 1px 2px rgba(30,60,45,.04)}
+  .card .k{font-size:12.5px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:7px}
+  .card .v{font-weight:800;font-size:34px;letter-spacing:-.02em;margin-top:8px;line-height:1;
+    font-variant-numeric:tabular-nums}
+  .card .v.small{font-size:19px}
+  .card .note{font-size:11.5px;color:var(--muted);margin-top:7px}
+  .card.hero{background:linear-gradient(160deg,var(--spruce),#17402F);border-color:var(--spruce)}
+  .card.hero .k{color:#Bfe6cf}
+  .card.hero .v{color:#fff;font-size:44px}
+  .card.hero .note{color:#9fc7ac}
+  .pending .v{color:var(--line)}
+
+  .foot{margin-top:30px;font-size:11.5px;color:var(--muted);line-height:1.6;
+    border-top:1px solid var(--line);padding-top:16px}
+  .foot code{background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:11px}
+  a{color:var(--spruce)}
+</style>
+</head>
+<body>
+
+  <!-- Passcode gate -->
+  <div class="gate" id="gate">
+    <div class="gate-card">
+      <div class="mark">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="8" cy="9" r="4.4" stroke="#E8B84B" stroke-width="2.2"/><path d="M11 11.5 20 20M17 17l2.5-2.5M15 15l2 2" stroke="#E8B84B" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </div>
+      <div class="wordmark">Key<b>Date</b></div>
+      <h1>Admin console</h1>
+      <p>Private metrics dashboard. Enter the admin passcode to continue.</p>
+      <form id="gateForm" novalidate>
+        <input type="password" id="pass" placeholder="Admin passcode" aria-label="Admin passcode" autocomplete="off" autofocus />
+        <button type="submit">Unlock console</button>
+      </form>
+      <div class="badpass" id="badpass">Incorrect passcode. Try again.</div>
+      <p class="fine">Internal · not for public distribution.</p>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <main class="wrap" id="wrap">
+    <header class="top">
+      <div class="brandline">
+        <span class="mk">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="8" cy="9" r="4.4" stroke="#E8B84B" stroke-width="2.2"/><path d="M11 11.5 20 20M17 17l2.5-2.5M15 15l2 2" stroke="#E8B84B" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </span>
+        <div><span class="t">Key<b>Date</b></span><span class="tag">Admin metrics console</span></div>
+      </div>
+      <div class="controls">
+        <span id="updated">—</span>
+        <button class="refresh" id="refresh" type="button">↻ Refresh</button>
+      </div>
+    </header>
+
+    <div class="status local" id="status">
+      <span class="dot"></span>
+      <span><span id="statusMsg">Checking data source…</span> <span class="sub" id="statusSub"></span></span>
+    </div>
+
+    <!-- Waitlist -->
+    <div class="section-label">Beta waitlist</div>
+    <div class="grid">
+      <div class="card hero">
+        <div class="k">🔑 Total signups</div>
+        <div class="v" id="wlTotal">—</div>
+        <div class="note" id="wlTotalNote">people on the waitlist</div>
+      </div>
+      <div class="card">
+        <div class="k">📈 New this week</div>
+        <div class="v" id="wl7">—</div>
+        <div class="note">last 7 days</div>
+      </div>
+      <div class="card">
+        <div class="k">🌅 New today</div>
+        <div class="v" id="wlToday">—</div>
+        <div class="note">since midnight</div>
+      </div>
+      <div class="card">
+        <div class="k">🕑 Latest signup</div>
+        <div class="v small" id="wlLatest">—</div>
+        <div class="note" id="wlLatestNote">most recent join</div>
+      </div>
+    </div>
+
+    <!-- Registered users (lights up once cloud auth is on) -->
+    <div class="section-label">Registered users <span style="font-weight:500;text-transform:none;letter-spacing:0">· lights up when cloud sign-in is enabled</span></div>
+    <div class="grid">
+      <div class="card pending" id="cardRegistered">
+        <div class="k">👤 Registered</div>
+        <div class="v" id="uRegistered">—</div>
+        <div class="note">total accounts</div>
+      </div>
+      <div class="card pending" id="cardActive">
+        <div class="k">🟢 Active (30d)</div>
+        <div class="v" id="uActive">—</div>
+        <div class="note">used in last 30 days</div>
+      </div>
+      <div class="card pending" id="cardInactive">
+        <div class="k">💤 Inactive</div>
+        <div class="v" id="uInactive">—</div>
+        <div class="note">no use in 30+ days</div>
+      </div>
+      <div class="card pending" id="cardGuests">
+        <div class="k">👥 Guest devices</div>
+        <div class="v" id="uGuests">—</div>
+        <div class="note">anonymous sessions</div>
+      </div>
+    </div>
+
+    <div class="foot" id="foot"></div>
+  </main>
+
+<script>
+  /* ---------------------------------------------------------------------------
+   * KeyDate admin console (static, client-side).
+   *
+   * PASSCODE GATE — obfuscation, not real auth. A static page can't enforce
+   * access without a backend; we store only the SHA-256 hash of the passcode
+   * (never the plaintext) and remember a good unlock per browser. Keeps the
+   * console out of casual hands; a determined person can bypass any client gate.
+   *
+   * DATA SOURCE — set METRICS_ENDPOINT to a URL that returns the JSON shape
+   * below and the whole console goes live (auto-refreshing). Until then it
+   * reads this browser's local waitlist capture so the layout is demo-able.
+   *
+   *   {
+   *     "waitlist": { "total": 128, "last7": 34, "today": 6,
+   *                   "latest": "2026-07-22T14:03:00Z" },
+   *     "users":    { "registered": 0, "active30": 0, "inactive": 0, "guests": 0 },
+   *     "updatedAt": "2026-07-22T14:05:00Z"
+   *   }
+   *
+   * Any missing field renders as "—". A free way to produce this JSON (Google
+   * Apps Script + Sheet, or a Supabase view) is in apps/keydate/SETUP.md.
+   * ------------------------------------------------------------------------- */
+  var METRICS_ENDPOINT = '';           // <-- paste your live metrics URL here
+  var ADMIN_HASH = '47e99f62019cc9ac02dc1861b5ff5684098519f0bf966e5fafc3e40011f75874';
+  var UNLOCK_KEY = 'keydate-admin-unlocked';
+  var REFRESH_MS = 15000;
+
+  /* ---- crypto helper ---- */
+  async function sha256Hex(text){
+    var data = new TextEncoder().encode(text);
+    var buf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  }
+
+  /* ---- gate ---- */
+  var gate = document.getElementById('gate');
+  var wrap = document.getElementById('wrap');
+  function reveal(){ gate.classList.add('hide'); wrap.classList.add('show'); startDashboard(); }
+
+  (function initGate(){
+    // Fail open if crypto isn't available (never lock ourselves out).
+    if(!(window.crypto && crypto.subtle)){ reveal(); return; }
+    try{ if(localStorage.getItem(UNLOCK_KEY) === ADMIN_HASH){ reveal(); return; } }catch(e){}
+    var form = document.getElementById('gateForm');
+    var input = document.getElementById('pass');
+    var bad = document.getElementById('badpass');
+    form.addEventListener('submit', async function(e){
+      e.preventDefault();
+      var h = await sha256Hex((input.value||'').trim());
+      if(h === ADMIN_HASH){
+        try{ localStorage.setItem(UNLOCK_KEY, ADMIN_HASH); }catch(e){}
+        reveal();
+      } else {
+        bad.classList.add('on'); input.classList.add('bad'); input.value=''; input.focus();
+      }
+    });
+    input.addEventListener('input', function(){ bad.classList.remove('on'); input.classList.remove('bad'); });
+  })();
+
+  /* ---- dashboard ---- */
+  var pollTimer = null;
+  function startDashboard(){
+    load();
+    document.getElementById('refresh').addEventListener('click', load);
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(load, REFRESH_MS);
+  }
+
+  function fmtInt(n){ return (typeof n==='number' && isFinite(n)) ? n.toLocaleString() : '—'; }
+  function set(id,val){ document.getElementById(id).textContent = val; }
+  function timeAgo(iso){
+    if(!iso) return '—';
+    var t = new Date(iso).getTime(); if(isNaN(t)) return '—';
+    var s = Math.max(0,(Date.now()-t)/1000);
+    if(s<60) return 'just now';
+    if(s<3600) return Math.floor(s/60)+' min ago';
+    if(s<86400) return Math.floor(s/3600)+' hr ago';
+    return Math.floor(s/86400)+' d ago';
+  }
+
+  // Local fallback: read this browser's waitlist capture from the landing page.
+  function localMetrics(){
+    var total=0, last7=0, today=0, latest=null;
+    try{
+      var log = JSON.parse(localStorage.getItem('keydate-waitlist-log')||'null');
+      if(Array.isArray(log) && log.length){
+        total = log.length;
+        var now=Date.now(), midnight=new Date(); midnight.setHours(0,0,0,0);
+        log.forEach(function(e){
+          var t = new Date(e && e.ts).getTime();
+          if(!isNaN(t)){
+            if(now-t <= 7*86400000) last7++;
+            if(t >= midnight.getTime()) today++;
+            if(!latest || t > new Date(latest).getTime()) latest = e.ts;
+          }
+        });
+      } else {
+        // older capture without timestamps
+        var arr = JSON.parse(localStorage.getItem('keydate-waitlist')||'[]');
+        if(Array.isArray(arr)) total = arr.length;
+      }
+    }catch(e){}
+    return { waitlist:{ total:total, last7:last7, today:today, latest:latest }, users:{}, updatedAt:new Date().toISOString() };
+  }
+
+  function render(data, live){
+    var wl = (data && data.waitlist) || {};
+    var us = (data && data.users) || {};
+
+    set('wlTotal', fmtInt(wl.total));
+    set('wl7', fmtInt(wl.last7));
+    set('wlToday', fmtInt(wl.today));
+    set('wlLatest', wl.latest ? timeAgo(wl.latest) : '—');
+    document.getElementById('wlLatestNote').textContent =
+      wl.latest ? new Date(wl.latest).toLocaleString() : 'no signups yet';
+
+    var userCards = [['registered','uRegistered','cardRegistered'],
+                     ['active30','uActive','cardActive'],
+                     ['inactive','uInactive','cardInactive'],
+                     ['guests','uGuests','cardGuests']];
+    userCards.forEach(function(row){
+      var val = us[row[0]];
+      var has = (typeof val === 'number');
+      set(row[1], has ? fmtInt(val) : '—');
+      document.getElementById(row[2]).classList.toggle('pending', !has);
+    });
+
+    // Status banner
+    var status = document.getElementById('status');
+    if(live){
+      status.className = 'status live';
+      set('statusMsg', 'Live source connected');
+      set('statusSub', '· auto-refreshing every ' + (REFRESH_MS/1000) + 's');
+    } else {
+      status.className = 'status local';
+      set('statusMsg', 'No live source connected');
+      set('statusSub', '· showing local demo data from this browser only');
+    }
+    document.getElementById('updated').textContent =
+      'Updated ' + new Date(data && data.updatedAt || Date.now()).toLocaleTimeString();
+
+    document.getElementById('foot').innerHTML = live
+      ? 'Live metrics from your configured source. Total registered users and active/inactive counts populate automatically once cloud sign-in (Supabase) is enabled — see <code>apps/keydate/SETUP.md</code>.'
+      : '<b>Not yet connected to a live source.</b> Waitlist signups currently save to each visitor’s own browser, so this shows only signups captured on <i>this</i> device. To see a real global count in real time, point <code>METRICS_ENDPOINT</code> in this page at a shared data source (free Google Apps Script + Sheet, or a Supabase view) — the recipe is in <code>apps/keydate/SETUP.md</code>. This console is built to go live the moment that URL is set.';
+  }
+
+  function load(){
+    if(METRICS_ENDPOINT){
+      fetch(METRICS_ENDPOINT, {cache:'no-store'})
+        .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function(json){ render(json, true); })
+        .catch(function(){ render(localMetrics(), false); });   // fall back, flag as local
+    } else {
+      render(localMetrics(), false);
+    }
+  }
+</script>
+</body>
+</html>

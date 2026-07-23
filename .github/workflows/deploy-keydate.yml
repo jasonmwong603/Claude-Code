@@ -62,6 +62,9 @@ jobs:
           cp budget.html _site/budgeting/index.html
           # Marketing / waitlist landing page at the site root (keydate.ca/).
           cp landing.html _site/index.html
+          # Private, passcode-gated admin metrics console (keydate.ca/admin/).
+          mkdir -p _site/admin
+          cp admin.html _site/admin/index.html
           # Custom domain for GitHub Pages — DNS verified, so this is active.
           echo 'keydate.ca' > _site/CNAME
 
