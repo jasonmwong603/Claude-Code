@@ -84,6 +84,7 @@ interface PostRow {
 function rowToPost(row: PostRow, userId: string | null): ForumPost {
   return {
     id: row.id,
+    authorId: row.author_id,
     author: row.author_name,
     avatar: row.avatar,
     location: row.location ?? undefined,
@@ -212,6 +213,67 @@ export function timeAgo(iso: string): string {
   const w = Math.floor(d / 7)
   if (w < 5) return `${w}w ago`
   return new Date(iso).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
+}
+
+/* ————————————————————————— follows & saved posts ————————————————————————— */
+
+const SAVES_KEY = 'keydate-forum-saves-v1'
+
+/** This user's follow set (author ids) and saved-post set (post ids). */
+export async function loadSocial(userId: string | null): Promise<{ following: Set<string>; saved: Set<string> }> {
+  if (supabase && userId) {
+    const [follows, saves] = await Promise.all([
+      supabase.from('forum_follows').select('following_id'),
+      supabase.from('forum_saves').select('post_id'),
+    ])
+    const following = new Set<string>()
+    for (const f of (follows.data as { following_id: string }[] | null) ?? []) following.add(f.following_id)
+    const saved = new Set<string>()
+    for (const s of (saves.data as { post_id: string }[] | null) ?? []) saved.add(s.post_id)
+    return { following, saved }
+  }
+  // preview: saves persist locally, follows aren't meaningful without real authors
+  return { following: new Set(), saved: new Set(readJSON<string[]>(SAVES_KEY, [])) }
+}
+
+/** Follow / unfollow an author (shared mode only). */
+export async function toggleFollow(authorId: string, wasFollowing: boolean, userId: string | null): Promise<void> {
+  if (!supabase || !userId) return
+  if (wasFollowing) {
+    await supabase.from('forum_follows').delete().eq('follower_id', userId).eq('following_id', authorId)
+  } else {
+    await supabase.from('forum_follows').insert({ follower_id: userId, following_id: authorId })
+  }
+}
+
+/** Save / unsave a post. Falls back to localStorage in preview mode. */
+export async function toggleSave(postId: string, wasSaved: boolean, userId: string | null): Promise<void> {
+  if (supabase && userId && !postId.startsWith('me-')) {
+    if (wasSaved) await supabase.from('forum_saves').delete().eq('user_id', userId).eq('post_id', postId)
+    else await supabase.from('forum_saves').insert({ user_id: userId, post_id: postId })
+    return
+  }
+  const set = new Set(readJSON<string[]>(SAVES_KEY, []))
+  if (wasSaved) set.delete(postId)
+  else set.add(postId)
+  writeJSON(SAVES_KEY, [...set])
+}
+
+/** Fetch the user's saved posts in full (they may be older than the loaded feed). */
+export async function loadSavedPosts(userId: string | null, savedIds: string[]): Promise<ForumPost[]> {
+  if (!savedIds.length) return []
+  if (supabase && userId) {
+    const { data } = await supabase
+      .from('forum_posts')
+      .select('*')
+      .in('id', savedIds)
+      .order('created_at', { ascending: false })
+    return ((data as PostRow[] | null) ?? []).map((r) => rowToPost(r, userId))
+  }
+  // preview: pull from the local seed + own posts
+  const local = loadFeedLocal().posts
+  const idset = new Set(savedIds)
+  return local.filter((p) => idset.has(p.id))
 }
 
 /** Subscribe to live post inserts/updates (shared mode only). Returns an

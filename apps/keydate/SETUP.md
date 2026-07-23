@@ -58,6 +58,10 @@ Turns the on-device forum preview into a real cross-user feed.
 *Note.* Photo/video attachments stay device-only for now; shared media (via Supabase
 Storage, also free tier) is the next increment.
 
+**Follows + saved posts:** run `apps/keydate/supabase/forum_social.sql` too (SQL editor,
+one paste). Adds `forum_follows` + `forum_saves` with private RLS, powering the
+Following feed and the personal 🔖 Saved list in the Community tab.
+
 ---
 
 ## 2. Waitlist — global & live via Supabase  ·  DONE (free)

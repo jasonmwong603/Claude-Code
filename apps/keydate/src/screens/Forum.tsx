@@ -9,10 +9,14 @@ import {
   getIdentity,
   isRemoteForum,
   loadFeed,
+  loadSavedPosts,
+  loadSocial,
   saveIdentity,
   subscribeFeed,
   timeAgo,
+  toggleFollow,
   toggleLike,
+  toggleSave,
   type Identity,
 } from '../lib/forum'
 import { MAX_MEDIA_BYTES, getMedia, putMedia } from '../lib/media'
@@ -109,8 +113,15 @@ export function Forum({
   const remote = isRemoteForum()
   const canPost = !remote || !!user // preview mode posts locally; shared mode needs sign-in
 
+  const canFollow = remote && !!user
+  const canSave = !remote || !!user
+
   const [feed, setFeed] = useState<{ posts: ForumPost[]; liked: Set<string> }>({ posts: [], liked: new Set() })
   const [liked, setLiked] = useState<Set<string>>(new Set())
+  const [following, setFollowing] = useState<Set<string>>(new Set())
+  const [saved, setSaved] = useState<Set<string>>(new Set())
+  const [savedPosts, setSavedPosts] = useState<ForumPost[]>([])
+  const [scope, setScope] = useState<'all' | 'following' | 'saved'>('all')
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<ForumCategory | 'all'>('all')
   const [open, setOpen] = useState(false)
@@ -131,9 +142,11 @@ export function Forum({
   const prompts = useMemo(() => achievementPrompts(state), [state])
 
   const refresh = useCallback(async () => {
-    const f = await loadFeed(user?.id ?? null)
+    const [f, soc] = await Promise.all([loadFeed(user?.id ?? null), loadSocial(user?.id ?? null)])
     setFeed(f)
     setLiked(f.liked)
+    setFollowing(soc.following)
+    setSaved(soc.saved)
     setLoading(false)
   }, [user?.id])
 
@@ -145,6 +158,12 @@ export function Forum({
 
   // Shared mode: new posts / like changes from anyone push in live.
   useEffect(() => subscribeFeed(() => void refresh()), [refresh])
+
+  // Saved posts can be older than the loaded feed, so fetch them in full.
+  useEffect(() => {
+    if (scope !== 'saved') return
+    void loadSavedPosts(user?.id ?? null, [...saved]).then(setSavedPosts)
+  }, [scope, saved, user?.id])
 
   const clearMedia = () => {
     if (preview) URL.revokeObjectURL(preview)
@@ -217,7 +236,34 @@ export function Forum({
     await refresh()
   }
 
-  const posts = feed.posts.filter((p) => filter === 'all' || p.category === filter)
+  const follow = (authorId: string) => {
+    const was = following.has(authorId)
+    setFollowing((prev) => {
+      const n = new Set(prev)
+      if (was) n.delete(authorId)
+      else n.add(authorId)
+      return n
+    })
+    void toggleFollow(authorId, was, user?.id ?? null).catch(() => void refresh())
+  }
+
+  const save = (postId: string) => {
+    const was = saved.has(postId)
+    setSaved((prev) => {
+      const n = new Set(prev)
+      if (was) n.delete(postId)
+      else n.add(postId)
+      return n
+    })
+    void toggleSave(postId, was, user?.id ?? null).catch(() => void refresh())
+  }
+
+  const base = scope === 'saved' ? savedPosts : feed.posts
+  const posts = base.filter(
+    (p) =>
+      (scope !== 'following' || (!!p.authorId && following.has(p.authorId))) &&
+      (filter === 'all' || p.category === filter),
+  )
 
   return (
     <>
@@ -454,6 +500,40 @@ export function Forum({
         </div>
       ))}
 
+      {/* Feed scope: All / Following / Saved */}
+      {(canFollow || canSave) && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          {([
+            ['all', '🌐 All'],
+            ...(canFollow ? [['following', '👤 Following'] as const] : []),
+            ...(canSave ? [['saved', '🔖 Saved'] as const] : []),
+          ] as [typeof scope, string][]).map(([k, label]) => {
+            const active = scope === k
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setScope(k)}
+                style={{
+                  flex: 1,
+                  padding: '9px 8px',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  fontFamily: BODY_FONT,
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  border: `1.5px solid ${active ? C.sprout : C.line}`,
+                  background: active ? C.sproutSoft : '#fff',
+                  color: active ? C.spruce : C.sub,
+                }}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {/* Category filter */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
         {(['all', ...(Object.keys(CATEGORY_META) as ForumCategory[])] as const).map((k) => {
@@ -486,11 +566,25 @@ export function Forum({
         <p style={{ fontSize: 13, color: C.sub, textAlign: 'center', padding: '20px 0' }}>Loading the feed…</p>
       ) : posts.length === 0 ? (
         <p style={{ fontSize: 13, color: C.sub, textAlign: 'center', padding: '20px 0' }}>
-          No posts here yet — be the first to share.
+          {scope === 'following'
+            ? 'Follow people to see their posts here.'
+            : scope === 'saved'
+              ? 'No saved posts yet — tap 🔖 Save on any post to keep it here.'
+              : 'No posts here yet — be the first to share.'}
         </p>
       ) : (
         posts.map((p) => (
-          <PostCard key={p.id} post={p} liked={liked.has(p.id)} onLike={() => like(p.id)} onDelete={() => remove(p.id)} />
+          <PostCard
+            key={p.id}
+            post={p}
+            liked={liked.has(p.id)}
+            onLike={() => like(p.id)}
+            onDelete={() => remove(p.id)}
+            isFollowing={!!p.authorId && following.has(p.authorId)}
+            onFollow={canFollow && p.authorId && !p.mine ? () => follow(p.authorId as string) : undefined}
+            isSaved={saved.has(p.id)}
+            onSave={canSave ? () => save(p.id) : undefined}
+          />
         ))
       )}
 
@@ -506,11 +600,19 @@ function PostCard({
   liked,
   onLike,
   onDelete,
+  isFollowing,
+  onFollow,
+  isSaved,
+  onSave,
 }: {
   post: ForumPost
   liked: boolean
   onLike: () => void
   onDelete: () => void
+  isFollowing: boolean
+  onFollow?: () => void
+  isSaved: boolean
+  onSave?: () => void
 }) {
   return (
     <div style={card}>
@@ -570,12 +672,56 @@ function PostCard({
         >
           <span style={{ fontSize: 16 }}>{liked ? '❤️' : '🤍'}</span> {post.likes}
         </button>
+
+        {onSave && (
+          <button
+            type="button"
+            onClick={onSave}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: BODY_FONT,
+              color: isSaved ? C.spruce : C.sub,
+              padding: 0,
+            }}
+            aria-label={isSaved ? 'Unsave post' : 'Save post'}
+          >
+            <span style={{ fontSize: 15 }}>{isSaved ? '🔖' : '📑'}</span> {isSaved ? 'Saved' : 'Save'}
+          </button>
+        )}
+
+        <span style={{ flex: 1 }} />
+
+        {onFollow && (
+          <button
+            type="button"
+            onClick={onFollow}
+            style={{
+              background: isFollowing ? '#fff' : C.sproutSoft,
+              border: `1.5px solid ${isFollowing ? C.line : C.sprout}`,
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 700,
+              color: isFollowing ? C.sub : C.spruce,
+              fontFamily: BODY_FONT,
+              borderRadius: 999,
+              padding: '5px 11px',
+            }}
+          >
+            {isFollowing ? '✓ Following' : '+ Follow'}
+          </button>
+        )}
         {post.mine && (
           <button
             type="button"
             onClick={onDelete}
             style={{
-              marginLeft: 'auto',
               background: 'none',
               border: 'none',
               cursor: 'pointer',

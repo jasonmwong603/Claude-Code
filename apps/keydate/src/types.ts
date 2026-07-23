@@ -153,6 +153,8 @@ export interface PlaidItem {
 
 export interface ForumPost {
   id: string
+  /** The post author's account id (shared mode), or undefined for local/seed posts. */
+  authorId?: string | null
   author: string
   avatar: string
   location?: string
