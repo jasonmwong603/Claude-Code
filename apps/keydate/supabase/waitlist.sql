@@ -37,6 +37,13 @@ create policy "admin can read waitlist"
   to authenticated
   using ( auth.jwt() ->> 'email' = 'jasonmwong603@gmail.com' );
 
+-- Only YOU may delete rows (e.g. clear test signups from the admin console).
+drop policy if exists "admin can delete waitlist" on public.waitlist;
+create policy "admin can delete waitlist"
+  on public.waitlist for delete
+  to authenticated
+  using ( auth.jwt() ->> 'email' = 'jasonmwong603@gmail.com' );
+
 -- 3. Public live COUNT (no emails exposed) -------------------------------------
 -- Lets the admin console (and the landing page, if you want a "join N others"
 -- line) show the running total in real time without leaking anyone's email.

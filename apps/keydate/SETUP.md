@@ -38,47 +38,37 @@ numbers` — total registered, active (30-day), inactive, and reach incl. guests
 
 ---
 
-## 2. Waitlist emails + live admin metrics — free
-The landing page (`landing.html`, served at the site root) already captures emails;
-by default it just stores them in the *visitor's own browser* so demos work — which
-means there is no shared, global list yet. To collect signups for real **and** power
-the live admin console:
+## 2. Waitlist — global & live via Supabase  ·  DONE (free)
+The waitlist is wired to the Supabase project. Signups from **any** visitor's
+browser land in one shared table (`public.waitlist`), and the passcode-gated admin
+console (`keydate.ca/admin`) shows the running total to anyone who unlocks it, plus
+the full roster of *who joined* (email + time, live) to you after you sign in.
 
-**a. Capture signups centrally**
-1. Create a free endpoint — e.g. a **Formspree** form (free tier) or a **Google Apps
-   Script** web app that appends to a Google Sheet (free). A Sheet is recommended
-   because it doubles as the metrics source in step (b).
-2. Paste its URL into `WAITLIST_ENDPOINT` near the bottom of `landing.html`, commit.
-   Submissions now flow to your sheet/inbox instead of only localStorage.
+**What's already set up**
+- `apps/keydate/supabase/waitlist.sql` was run in the Supabase SQL editor: it creates
+  the table, locks it with Row-Level Security (public may **insert only**; only the
+  admin email may **read**/delete), adds `waitlist_count()` for the public total, and
+  enables Realtime so new signups push to the roster instantly.
+- `landing.html` inserts each signup into Supabase (public key, insert-only) with a
+  localStorage mirror as a safety net.
+- `admin.html` holds the Supabase URL + **publishable** key (both public/safe) and the
+  `ADMIN_EMAIL` allowed to read the roster.
 
-**b. Feed the admin console (`keydate.ca/admin`, passcode-gated)**
-The admin dashboard (`admin.html`) auto-refreshes from a `METRICS_ENDPOINT` you set
-near the bottom of that file. Point it at any URL that returns this JSON:
+**One setting to finish the roster login** — so the magic-link sign-in redirects back
+to your console:
+1. Supabase Dashboard → **Authentication → URL Configuration**.
+2. Set **Site URL** to `https://keydate.ca` and add these to **Redirect URLs**:
+   `https://keydate.ca/admin/` and `https://keydate.ca/prelaunchdemo/`.
+3. Save. Now open `keydate.ca/admin`, enter the passcode, click **Email me a magic
+   link**, open the link on the same device — the live roster appears.
 
-```json
-{
-  "waitlist": { "total": 128, "last7": 34, "today": 6, "latest": "2026-07-22T14:03:00Z" },
-  "users":    { "registered": 0, "active30": 0, "inactive": 0, "guests": 0 },
-  "updatedAt": "2026-07-22T14:05:00Z"
-}
-```
-
-Any field left out simply shows "—". Two free ways to produce it:
-
-- **Google Apps Script (same Sheet as 2a):** add a `doGet(e)` that counts the rows
-  (and rows within 7 days / today, and the max timestamp) and returns the JSON above
-  with `ContentService`. Deploy as a web app ("execute as me", "anyone with the
-  link"), then paste that `/exec` URL into `METRICS_ENDPOINT`. One Sheet now both
-  stores emails and serves the live count.
-- **Supabase (once step 1 is on):** create a SQL view/RPC that returns the same
-  shape — waitlist count from a `waitlist` table plus the `registered / active30 /
-  inactive / guests` numbers from the `user_stats` view (see `README.md`). Expose it
-  via PostgREST or an Edge Function and use that URL.
-
-Until `METRICS_ENDPOINT` is set the console clearly flags "no live source" and shows
-only the signups captured on the current browser — it goes live the moment the URL
-is filled in. (To change the admin passcode, replace `ADMIN_HASH` in `admin.html`
-with `printf '%s' 'NEWCODE' | sha256sum`.)
+*Notes.* The built-in Supabase email sender is rate-limited on the free tier (a few
+per hour) — fine for your own admin login; add a custom SMTP later if you enable user
+sign-in at scale. To change the **admin email** who can read the roster, edit the two
+policies in `waitlist.sql`, re-run it, and update `ADMIN_EMAIL` in `admin.html`. To
+change the **admin passcode**, replace `ADMIN_HASH` in `admin.html` with the output of
+`printf '%s' 'NEWCODE' | sha256sum`. Registered / active / inactive user tiles stay
+blank until cloud sign-in (section 1) is enabled.
 
 ---
 

@@ -65,6 +65,8 @@ jobs:
           # Private, passcode-gated admin metrics console (keydate.ca/admin/).
           mkdir -p _site/admin
           cp admin.html _site/admin/index.html
+          # Vendored libraries served from our own domain (no external CDN).
+          cp -r vendor _site/vendor
           # Custom domain for GitHub Pages — DNS verified, so this is active.
           echo 'keydate.ca' > _site/CNAME
 

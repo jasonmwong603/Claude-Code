@@ -79,6 +79,38 @@
   .card.hero .note{color:#9fc7ac}
   .pending .v{color:var(--line)}
 
+  /* ---- roster ---- */
+  .roster{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;
+    box-shadow:0 1px 2px rgba(30,60,45,.04)}
+  .signin p{font-size:13.5px;color:var(--muted);margin:0 0 12px;line-height:1.55}
+  .signin form{display:flex;gap:8px;flex-wrap:wrap}
+  .signin input{font:inherit;font-size:14px;padding:11px 13px;border-radius:11px;border:1.5px solid var(--line);
+    background:#fff;color:var(--ink);flex:1;min-width:200px;outline:none}
+  .signin button{font:inherit;font-weight:700;font-size:14px;padding:11px 16px;border-radius:11px;border:none;
+    color:#fff;background:var(--spruce);cursor:pointer}
+  .signin .msg{font-size:13px;margin-top:12px;font-weight:600}
+  .signin .msg.ok{color:var(--sprout)} .signin .msg.err{color:var(--err)}
+
+  .rhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .rhead .who{font-size:13px;color:var(--muted)}
+  .livedot{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--sprout)}
+  .livedot i{width:8px;height:8px;border-radius:50%;background:var(--sprout);
+    box-shadow:0 0 0 3px rgba(63,166,114,.2);animation:pulse 1.8s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .linkbtn{font:inherit;font-size:12px;font-weight:600;color:var(--muted);background:none;border:none;
+    cursor:pointer;text-decoration:underline;padding:0}
+  .rtable{width:100%;border-collapse:collapse;font-size:13.5px}
+  .rtable th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+    color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+  .rtable td{padding:10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .rtable tr:last-child td{border-bottom:none}
+  .rtable .em{font-weight:600}
+  .rtable .ago{color:var(--muted);white-space:nowrap}
+  .rtable tr.flash td{animation:flash 2s ease-out}
+  @keyframes flash{0%{background:rgba(63,166,114,.18)}100%{background:transparent}}
+  .rempty{font-size:13px;color:var(--muted);padding:18px 4px;text-align:center}
+  .rscroll{max-height:420px;overflow:auto}
+
   .foot{margin-top:30px;font-size:11.5px;color:var(--muted);line-height:1.6;
     border-top:1px solid var(--line);padding-top:16px}
   .foot code{background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:11px}
@@ -150,7 +182,36 @@
       </div>
     </div>
 
-    <!-- Registered users (lights up once cloud auth is on) -->
+    <!-- Roster: who signed up (admin sign-in required) -->
+    <div class="section-label">Waitlist roster · who’s signing up (live)</div>
+    <div class="roster">
+      <div class="signin" id="signinBox">
+        <p>Sign in with your admin email to see the live list of who’s joined. We’ll email you a one-time magic link — no password. (Only <b id="adminWho">the admin email</b> can read the roster.)</p>
+        <form id="signinForm">
+          <input type="email" id="adminEmail" placeholder="admin@email.com" aria-label="Admin email" />
+          <button type="submit" id="signinBtn">Email me a magic link</button>
+        </form>
+        <div class="msg" id="signinMsg"></div>
+      </div>
+
+      <div id="rosterBox" style="display:none">
+        <div class="rhead">
+          <span class="who" id="rosterWho"></span>
+          <span class="livedot"><i></i> live</span>
+          <span style="flex:1"></span>
+          <button class="linkbtn" id="signout">Sign out</button>
+        </div>
+        <div class="rscroll">
+          <table class="rtable">
+            <thead><tr><th>Email</th><th>Source</th><th>Joined</th></tr></thead>
+            <tbody id="rosterBody"></tbody>
+          </table>
+        </div>
+        <div class="rempty" id="rosterEmpty" style="display:none">No signups yet — you’ll see them appear here the moment someone joins.</div>
+      </div>
+    </div>
+
+    <!-- Registered users (lights up once cloud sign-in is on) -->
     <div class="section-label">Registered users <span style="font-weight:500;text-transform:none;letter-spacing:0">· lights up when cloud sign-in is enabled</span></div>
     <div class="grid">
       <div class="card pending" id="cardRegistered">
@@ -178,33 +239,31 @@
     <div class="foot" id="foot"></div>
   </main>
 
+<script src="/vendor/supabase.js"></script>
 <script>
   /* ---------------------------------------------------------------------------
    * KeyDate admin console (static, client-side).
    *
-   * PASSCODE GATE — obfuscation, not real auth. A static page can't enforce
-   * access without a backend; we store only the SHA-256 hash of the passcode
-   * (never the plaintext) and remember a good unlock per browser. Keeps the
-   * console out of casual hands; a determined person can bypass any client gate.
+   * PASSCODE GATE — obfuscation, not real auth. Stores only the SHA-256 hash of
+   * the passcode and remembers a good unlock per browser.
    *
-   * DATA SOURCE — set METRICS_ENDPOINT to a URL that returns the JSON shape
-   * below and the whole console goes live (auto-refreshing). Until then it
-   * reads this browser's local waitlist capture so the layout is demo-able.
-   *
-   *   {
-   *     "waitlist": { "total": 128, "last7": 34, "today": 6,
-   *                   "latest": "2026-07-22T14:03:00Z" },
-   *     "users":    { "registered": 0, "active30": 0, "inactive": 0, "guests": 0 },
-   *     "updatedAt": "2026-07-22T14:05:00Z"
-   *   }
-   *
-   * Any missing field renders as "—". A free way to produce this JSON (Google
-   * Apps Script + Sheet, or a Supabase view) is in apps/keydate/SETUP.md.
+   * DATA — reads the global waitlist from Supabase:
+   *   • Live TOTAL via the public waitlist_count() RPC (no login needed).
+   *   • The ROSTER (who joined: email + time) requires an admin magic-link login;
+   *     Row-Level Security only lets ADMIN_EMAIL read the rows, so PII is real-
+   *     protected, not just hidden behind the passcode.
    * ------------------------------------------------------------------------- */
-  var METRICS_ENDPOINT = '';           // <-- paste your live metrics URL here
+  var SUPABASE_URL = 'https://ksnlqrcbdumhvqdgjlqs.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_u1BR8r6AJvGt5YXi-OfOqw_L5ewiDpS';
+  var ADMIN_EMAIL  = 'jasonmwong603@gmail.com';
+
   var ADMIN_HASH = '47e99f62019cc9ac02dc1861b5ff5684098519f0bf966e5fafc3e40011f75874';
   var UNLOCK_KEY = 'keydate-admin-unlocked';
   var REFRESH_MS = 15000;
+
+  var sb = (window.supabase && SUPABASE_URL)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ persistSession:true, detectSessionInUrl:true } })
+    : null;
 
   /* ---- crypto helper ---- */
   async function sha256Hex(text){
@@ -219,8 +278,7 @@
   function reveal(){ gate.classList.add('hide'); wrap.classList.add('show'); startDashboard(); }
 
   (function initGate(){
-    // Fail open if crypto isn't available (never lock ourselves out).
-    if(!(window.crypto && crypto.subtle)){ reveal(); return; }
+    if(!(window.crypto && crypto.subtle)){ reveal(); return; }   // fail open
     try{ if(localStorage.getItem(UNLOCK_KEY) === ADMIN_HASH){ reveal(); return; } }catch(e){}
     var form = document.getElementById('gateForm');
     var input = document.getElementById('pass');
@@ -231,24 +289,16 @@
       if(h === ADMIN_HASH){
         try{ localStorage.setItem(UNLOCK_KEY, ADMIN_HASH); }catch(e){}
         reveal();
-      } else {
-        bad.classList.add('on'); input.classList.add('bad'); input.value=''; input.focus();
-      }
+      } else { bad.classList.add('on'); input.classList.add('bad'); input.value=''; input.focus(); }
     });
     input.addEventListener('input', function(){ bad.classList.remove('on'); input.classList.remove('bad'); });
   })();
 
-  /* ---- dashboard ---- */
-  var pollTimer = null;
-  function startDashboard(){
-    load();
-    document.getElementById('refresh').addEventListener('click', load);
-    if(pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(load, REFRESH_MS);
-  }
-
+  /* ---- helpers ---- */
   function fmtInt(n){ return (typeof n==='number' && isFinite(n)) ? n.toLocaleString() : '—'; }
-  function set(id,val){ document.getElementById(id).textContent = val; }
+  function set(id,val){ var el=document.getElementById(id); if(el) el.textContent = val; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
   function timeAgo(iso){
     if(!iso) return '—';
     var t = new Date(iso).getTime(); if(isNaN(t)) return '—';
@@ -259,81 +309,156 @@
     return Math.floor(s/86400)+' d ago';
   }
 
-  // Local fallback: read this browser's waitlist capture from the landing page.
-  function localMetrics(){
-    var total=0, last7=0, today=0, latest=null;
-    try{
-      var log = JSON.parse(localStorage.getItem('keydate-waitlist-log')||'null');
-      if(Array.isArray(log) && log.length){
-        total = log.length;
-        var now=Date.now(), midnight=new Date(); midnight.setHours(0,0,0,0);
-        log.forEach(function(e){
-          var t = new Date(e && e.ts).getTime();
-          if(!isNaN(t)){
-            if(now-t <= 7*86400000) last7++;
-            if(t >= midnight.getTime()) today++;
-            if(!latest || t > new Date(latest).getTime()) latest = e.ts;
-          }
-        });
-      } else {
-        // older capture without timestamps
-        var arr = JSON.parse(localStorage.getItem('keydate-waitlist')||'[]');
-        if(Array.isArray(arr)) total = arr.length;
+  /* ---- dashboard ---- */
+  var pollTimer = null, rosterRows = [], realtimeChan = null;
+  function startDashboard(){
+    document.getElementById('adminWho').textContent = ADMIN_EMAIL;
+    document.getElementById('adminEmail').value = ADMIN_EMAIL;
+    document.getElementById('refresh').addEventListener('click', refreshAll);
+    document.getElementById('signinForm').addEventListener('submit', onSignIn);
+    document.getElementById('signout').addEventListener('click', onSignOut);
+
+    if(!sb){ renderNoBackend(); return; }
+    refreshAll();
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(refreshCount, REFRESH_MS);
+
+    // React to auth state (magic-link return, sign-out).
+    sb.auth.onAuthStateChange(function(_e, session){ applySession(session); });
+    sb.auth.getSession().then(function(res){ applySession(res.data.session); });
+  }
+
+  function stamp(){ document.getElementById('updated').textContent = 'Updated ' + new Date().toLocaleTimeString(); }
+
+  function refreshAll(){ refreshCount(); if(currentAdmin()) loadRoster(); }
+
+  // Public live total (no login required). Uses a plain fetch to the public RPC
+  // so it never waits on the auth client to initialize — the count is decoupled
+  // from sign-in and stays fast/robust.
+  function refreshCount(){
+    var ctl = ('AbortController' in window) ? new AbortController() : null;
+    var killer = ctl ? setTimeout(function(){ ctl.abort(); }, 10000) : null;
+    fetch(SUPABASE_URL + '/rest/v1/rpc/waitlist_count', {
+      method:'POST', cache:'no-store', signal: ctl && ctl.signal,
+      headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Content-Type':'application/json' },
+      body:'{}'
+    })
+    .then(function(r){ if(killer) clearTimeout(killer); if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(n){
+      // When the admin is signed in, the roster is the source of truth for the total.
+      if(!currentAdmin()) set('wlTotal', fmtInt(n));
+      var s = document.getElementById('status');
+      s.className = 'status live';
+      set('statusMsg','Live source connected');
+      set('statusSub','· Supabase · total auto-refreshing every '+(REFRESH_MS/1000)+'s');
+      document.getElementById('foot').innerHTML =
+        'Live from Supabase. The <b>total</b> updates for anyone with the console; the <b>roster</b> of who joined is readable only by <code>'+esc(ADMIN_EMAIL)+'</code> after magic-link sign-in (Row-Level Security). Registered / active / inactive user counts light up once cloud sign-in is enabled — see <code>apps/keydate/SETUP.md</code>.';
+      stamp();
+    })
+    .catch(function(){ if(killer) clearTimeout(killer); renderNoBackend(); });
+  }
+
+  function renderNoBackend(){
+    var s = document.getElementById('status');
+    s.className = 'status local';
+    set('statusMsg','Can’t reach the live source');
+    set('statusSub','· check the Supabase URL/key in this page');
+    stamp();
+  }
+
+  /* ---- auth / roster ---- */
+  function currentAdmin(){ return currentAdmin._email === ADMIN_EMAIL ? currentAdmin._email : null; }
+  function applySession(session){
+    var email = session && session.user && session.user.email;
+    currentAdmin._email = email || null;
+    var isAdmin = email === ADMIN_EMAIL;
+    document.getElementById('signinBox').style.display = isAdmin ? 'none' : 'block';
+    document.getElementById('rosterBox').style.display = isAdmin ? 'block' : 'none';
+    if(isAdmin){
+      document.getElementById('rosterWho').textContent = 'Signed in as ' + email;
+      loadRoster();
+      subscribeRealtime();
+    } else {
+      unsubscribeRealtime();
+      if(email){ // signed in but not the admin address
+        var m=document.getElementById('signinMsg'); m.className='msg err';
+        m.textContent = 'That account ('+email+') isn’t the admin address. Sign in as '+ADMIN_EMAIL+'.';
       }
-    }catch(e){}
-    return { waitlist:{ total:total, last7:last7, today:today, latest:latest }, users:{}, updatedAt:new Date().toISOString() };
+    }
   }
 
-  function render(data, live){
-    var wl = (data && data.waitlist) || {};
-    var us = (data && data.users) || {};
+  function onSignIn(e){
+    e.preventDefault();
+    var email = (document.getElementById('adminEmail').value||'').trim();
+    var m = document.getElementById('signinMsg');
+    if(!email){ m.className='msg err'; m.textContent='Enter your admin email.'; return; }
+    document.getElementById('signinBtn').disabled = true;
+    sb.auth.signInWithOtp({ email:email, options:{ emailRedirectTo: location.origin + location.pathname } })
+      .then(function(res){
+        document.getElementById('signinBtn').disabled = false;
+        if(res.error){ m.className='msg err'; m.textContent = res.error.message; }
+        else { m.className='msg ok'; m.textContent = 'Magic link sent to '+email+' — open it on this device to view the roster.'; }
+      });
+  }
 
-    set('wlTotal', fmtInt(wl.total));
-    set('wl7', fmtInt(wl.last7));
-    set('wlToday', fmtInt(wl.today));
-    set('wlLatest', wl.latest ? timeAgo(wl.latest) : '—');
-    document.getElementById('wlLatestNote').textContent =
-      wl.latest ? new Date(wl.latest).toLocaleString() : 'no signups yet';
+  function onSignOut(){ if(sb) sb.auth.signOut(); }
 
-    var userCards = [['registered','uRegistered','cardRegistered'],
-                     ['active30','uActive','cardActive'],
-                     ['inactive','uInactive','cardInactive'],
-                     ['guests','uGuests','cardGuests']];
-    userCards.forEach(function(row){
-      var val = us[row[0]];
-      var has = (typeof val === 'number');
-      set(row[1], has ? fmtInt(val) : '—');
-      document.getElementById(row[2]).classList.toggle('pending', !has);
+  function loadRoster(){
+    if(!sb) return;
+    sb.from('waitlist').select('email,source,created_at').order('created_at',{ascending:false})
+      .then(function(res){
+        if(res.error){ return; }
+        rosterRows = res.data || [];
+        renderRoster();
+        applyRowMetrics();
+      });
+  }
+
+  function subscribeRealtime(){
+    if(!sb || realtimeChan) return;
+    realtimeChan = sb.channel('waitlist-live')
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'waitlist' }, function(payload){
+        rosterRows.unshift(payload.new);
+        renderRoster(payload.new.email);
+        applyRowMetrics();
+      })
+      .subscribe();
+  }
+  function unsubscribeRealtime(){ if(sb && realtimeChan){ sb.removeChannel(realtimeChan); realtimeChan=null; } }
+
+  function renderRoster(flashEmail){
+    var body = document.getElementById('rosterBody');
+    var empty = document.getElementById('rosterEmpty');
+    document.getElementById('rosterWho').textContent =
+      'Signed in as ' + ADMIN_EMAIL + ' · ' + rosterRows.length + ' total';
+    if(!rosterRows.length){ body.innerHTML=''; empty.style.display='block'; return; }
+    empty.style.display='none';
+    body.innerHTML = rosterRows.map(function(r){
+      var flash = (flashEmail && r.email===flashEmail) ? ' class="flash"' : '';
+      return '<tr'+flash+'><td class="em">'+esc(r.email)+'</td><td>'+esc(r.source||'—')+
+             '</td><td class="ago" title="'+esc(new Date(r.created_at).toLocaleString())+'">'+
+             timeAgo(r.created_at)+'</td></tr>';
+    }).join('');
+  }
+
+  // With the full roster loaded (admin), compute the week/today/latest tiles too.
+  function applyRowMetrics(){
+    set('wlTotal', fmtInt(rosterRows.length));
+    var now=Date.now(), midnight=new Date(); midnight.setHours(0,0,0,0);
+    var last7=0, today=0, latest=null;
+    rosterRows.forEach(function(r){
+      var t=new Date(r.created_at).getTime();
+      if(isNaN(t)) return;
+      if(now-t <= 7*86400000) last7++;
+      if(t >= midnight.getTime()) today++;
+      if(!latest || t>new Date(latest).getTime()) latest=r.created_at;
     });
-
-    // Status banner
-    var status = document.getElementById('status');
-    if(live){
-      status.className = 'status live';
-      set('statusMsg', 'Live source connected');
-      set('statusSub', '· auto-refreshing every ' + (REFRESH_MS/1000) + 's');
-    } else {
-      status.className = 'status local';
-      set('statusMsg', 'No live source connected');
-      set('statusSub', '· showing local demo data from this browser only');
-    }
-    document.getElementById('updated').textContent =
-      'Updated ' + new Date(data && data.updatedAt || Date.now()).toLocaleTimeString();
-
-    document.getElementById('foot').innerHTML = live
-      ? 'Live metrics from your configured source. Total registered users and active/inactive counts populate automatically once cloud sign-in (Supabase) is enabled — see <code>apps/keydate/SETUP.md</code>.'
-      : '<b>Not yet connected to a live source.</b> Waitlist signups currently save to each visitor’s own browser, so this shows only signups captured on <i>this</i> device. To see a real global count in real time, point <code>METRICS_ENDPOINT</code> in this page at a shared data source (free Google Apps Script + Sheet, or a Supabase view) — the recipe is in <code>apps/keydate/SETUP.md</code>. This console is built to go live the moment that URL is set.';
-  }
-
-  function load(){
-    if(METRICS_ENDPOINT){
-      fetch(METRICS_ENDPOINT, {cache:'no-store'})
-        .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
-        .then(function(json){ render(json, true); })
-        .catch(function(){ render(localMetrics(), false); });   // fall back, flag as local
-    } else {
-      render(localMetrics(), false);
-    }
+    set('wl7', fmtInt(last7));
+    set('wlToday', fmtInt(today));
+    set('wlLatest', latest ? timeAgo(latest) : '—');
+    document.getElementById('wlLatestNote').textContent =
+      latest ? new Date(latest).toLocaleString() : 'no signups yet';
+    stamp();
   }
 </script>
 </body>
