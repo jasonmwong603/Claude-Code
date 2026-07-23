@@ -378,6 +378,7 @@
       document.getElementById('rosterWho').textContent = 'Signed in as ' + email;
       loadRoster();
       subscribeRealtime();
+      loadUserStats();
     } else {
       unsubscribeRealtime();
       if(email){ // signed in but not the admin address
@@ -402,6 +403,26 @@
   }
 
   function onSignOut(){ if(sb) sb.auth.signOut(); }
+
+  // Registered / active / inactive / guest tiles — readable only by the signed-in
+  // admin (RLS + email check in keydate_admin_stats). Stays pending until app.sql
+  // is run and cloud sign-in has produced accounts.
+  function loadUserStats(){
+    if(!sb) return;
+    sb.rpc('keydate_admin_stats').then(function(res){
+      if(res.error || !res.data) return;   // function not installed yet → tiles stay pending
+      var d = res.data, map = [['registered','uRegistered','cardRegistered'],
+        ['active30','uActive','cardActive'],['inactive','uInactive','cardInactive'],
+        ['guests','uGuests','cardGuests']];
+      map.forEach(function(row){
+        var v = d[row[0]];
+        if(typeof v === 'number'){
+          set(row[1], fmtInt(v));
+          document.getElementById(row[2]).classList.remove('pending');
+        }
+      });
+    }, function(){});
+  }
 
   function loadRoster(){
     if(!sb) return;

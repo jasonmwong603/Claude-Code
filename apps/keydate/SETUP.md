@@ -14,27 +14,32 @@ a couple of config values.
 Turns on Google/Facebook sign-in, cross-device sync, and your registered-user /
 active-user counts.
 
-1. **Create a project** at [supabase.com](https://supabase.com) (free tier). Note
-   the **Project URL** and the **anon public key** (Settings → API).
+The Supabase project already exists (it powers the waitlist). This step turns on
+sign-in, sync, and metrics **inside the app** (`keydate.ca/prelaunchdemo`).
+
+1. **Run the app SQL** — Supabase SQL editor → paste all of
+   `apps/keydate/supabase/app.sql` → Run. Creates the sync table, device metric,
+   `profiles` ledger + signup trigger, the `user_stats` view, and the secure
+   `keydate_admin_stats()` that lights up the admin console's user tiles. Idempotent.
 2. **Google OAuth app** — Google Cloud Console → APIs & Services → Credentials →
    *Create OAuth client ID* (Web). Add authorized redirect URI:
-   `https://<project>.supabase.co/auth/v1/callback`. Copy the client id + secret.
+   `https://ksnlqrcbdumhvqdgjlqs.supabase.co/auth/v1/callback`. Copy the client id + secret.
 3. **Facebook OAuth app** — [developers.facebook.com](https://developers.facebook.com)
    → create app → *Facebook Login* → Settings. Add the same Supabase callback as a
    valid OAuth redirect URI. Copy the app id + secret.
 4. **Enable providers in Supabase** — Authentication → Providers → turn on Google
    and Facebook, paste the ids/secrets from steps 2–3.
-5. **Allow the app URLs** — Authentication → URL Configuration → add the deployed
-   site (`https://keydate.ca/prelaunchdemo/`) and `http://localhost:5173`.
-6. **Run the SQL** — open the Supabase SQL editor and paste the three blocks from
-   `README.md → Accounts & sign-in → One-time database setup` (state sync table,
-   device metric + `track_device`, and the `profiles` ledger + signup trigger).
-7. **Add the keys to the deploy** — GitHub repo → Settings → Secrets and variables
-   → Actions → **Variables** → add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-   (both are public/safe). Re-run the deploy. Sign-in, sync, and counts are now live.
+5. **Allow the app URLs** — Authentication → URL Configuration → confirm the redirect
+   list includes `https://keydate.ca/prelaunchdemo/`, `https://keydate.ca/admin/`, and
+   `http://localhost:5173` (Site URL `https://keydate.ca`).
+6. **Add the keys to the deploy** — GitHub repo → Settings → Secrets and variables
+   → Actions → **Variables** → add `VITE_SUPABASE_URL` =
+   `https://ksnlqrcbdumhvqdgjlqs.supabase.co` and `VITE_SUPABASE_ANON_KEY` = your
+   publishable key (both public/safe). Re-run the deploy. Sign-in, sync, and counts
+   are now live in the app.
 
-**Reading your numbers** (Supabase SQL editor): see `README.md → Reading your user
-numbers` — total registered, active (30-day), inactive, and reach incl. guests.
+**Reading your numbers:** the admin console tiles populate automatically once you're
+signed in there; or query `select * from public.user_stats;` in the SQL editor.
 
 ---
 
