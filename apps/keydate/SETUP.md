@@ -66,6 +66,13 @@ Following feed and the personal 🔖 Saved list in the Community tab.
 Adds `forum_replies` (public read, sign-in to reply/delete own), a `reply_count` on
 posts, and Realtime so replies appear live in an open thread.
 
+**Moderation (report/hide):** run `apps/keydate/supabase/forum_reports.sql` (SQL editor).
+Adds `forum_reports` (signed-in users file reports; only the admin email can read the
+queue). Reporting also hides the item instantly on the reporter's device.
+
+**Rich demo seed (optional):** run `apps/keydate/supabase/forum_seed_rich.sql` to fill
+the live forum with realistic posts (some with images), replies, and likes for a demo.
+
 **Shared photos + videos:** run `apps/keydate/supabase/forum_media.sql` (SQL editor).
 Creates a public `forum-media` Storage bucket (50 MB/file, images + video), access
 rules (anyone can view; users upload/delete only their own files), and `media_url` /

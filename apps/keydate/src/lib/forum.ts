@@ -411,6 +411,45 @@ export function subscribeReplies(postId: string, onChange: () => void): () => vo
   }
 }
 
+/* ————————————————————————— report & hide ————————————————————————— */
+
+const HIDDEN_KEY = 'keydate-forum-hidden'
+
+/** Ids the current device has hidden (via report). Applied to the feed/threads. */
+export function getHidden(): Set<string> {
+  return new Set(readJSON<string[]>(HIDDEN_KEY, []))
+}
+
+function hideLocally(id: string): void {
+  const s = new Set(readJSON<string[]>(HIDDEN_KEY, []))
+  s.add(id)
+  writeJSON(HIDDEN_KEY, [...s])
+}
+
+/** Report a post or reply: hide it immediately on this device and, when signed
+ *  in, file a report row for admin review. Returns the updated hidden set. */
+export async function reportContent(
+  targetType: 'post' | 'reply',
+  targetId: string,
+  userId: string | null,
+  reason?: string,
+): Promise<Set<string>> {
+  hideLocally(targetId)
+  if (supabase && userId && !targetId.startsWith('me-') && !targetId.startsWith('re-')) {
+    try {
+      await supabase.from('forum_reports').insert({
+        reporter_id: userId,
+        target_type: targetType,
+        target_id: targetId,
+        reason: reason ?? null,
+      })
+    } catch {
+      /* still hidden locally even if the report write fails */
+    }
+  }
+  return getHidden()
+}
+
 /** Subscribe to live post inserts/updates (shared mode only). Returns an
  *  unsubscribe function; a no-op in preview mode. */
 export function subscribeFeed(onChange: () => void): () => void {

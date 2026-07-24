@@ -8,12 +8,14 @@ import {
   addReply,
   deletePost,
   deleteReply,
+  getHidden,
   getIdentity,
   isRemoteForum,
   loadFeed,
   loadReplies,
   loadSavedPosts,
   loadSocial,
+  reportContent,
   saveIdentity,
   subscribeFeed,
   subscribeReplies,
@@ -127,6 +129,7 @@ export function Forum({
   const [saved, setSaved] = useState<Set<string>>(new Set())
   const [savedPosts, setSavedPosts] = useState<ForumPost[]>([])
   const [scope, setScope] = useState<'all' | 'following' | 'saved'>('all')
+  const [hidden, setHidden] = useState<Set<string>>(() => getHidden())
   const [authorView, setAuthorView] = useState<{ id: string; name: string; avatar: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<ForumCategory | 'all'>('all')
@@ -286,12 +289,18 @@ export function Forum({
     if (p.authorId) setAuthorView({ id: p.authorId, name: p.author, avatar: p.avatar })
   }
 
+  const report = (targetType: 'post' | 'reply', id: string) => {
+    void reportContent(targetType, id, user?.id ?? null).then(setHidden)
+  }
+
   // In a profile view, show that author's posts; otherwise the scoped/filtered feed.
-  const authorPosts = authorView ? feed.posts.filter((p) => p.authorId === authorView.id) : []
+  // Reported/hidden posts drop out on this device.
+  const visible = (list: ForumPost[]) => list.filter((p) => !hidden.has(p.id))
+  const authorPosts = authorView ? visible(feed.posts.filter((p) => p.authorId === authorView.id)) : []
   const base = scope === 'saved' ? savedPosts : feed.posts
   const posts = authorView
     ? authorPosts
-    : base.filter(
+    : visible(base).filter(
         (p) =>
           (scope !== 'following' || (!!p.authorId && following.has(p.authorId))) &&
           (filter === 'all' || p.category === filter),
@@ -632,6 +641,8 @@ export function Forum({
             canReply={canPost}
             replyIdentity={identity}
             onOpenAuthor={p.authorId ? () => openAuthor(p) : undefined}
+            onReport={!p.mine ? () => report('post', p.id) : undefined}
+            onReportReply={(rid) => report('reply', rid)}
           />
         ))
       )}
@@ -734,6 +745,8 @@ function PostCard({
   canReply,
   replyIdentity,
   onOpenAuthor,
+  onReport,
+  onReportReply,
 }: {
   post: ForumPost
   liked: boolean
@@ -747,6 +760,8 @@ function PostCard({
   canReply: boolean
   replyIdentity: Identity
   onOpenAuthor?: () => void
+  onReport?: () => void
+  onReportReply?: (replyId: string) => void
 }) {
   const [showReplies, setShowReplies] = useState(false)
   return (
@@ -915,10 +930,36 @@ function PostCard({
             Delete
           </button>
         )}
+        {onReport && (
+          <button
+            type="button"
+            onClick={onReport}
+            title="Report this post"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 600,
+              color: C.sub,
+              fontFamily: BODY_FONT,
+              padding: 0,
+              opacity: 0.7,
+            }}
+          >
+            ⚐ Report
+          </button>
+        )}
       </div>
 
       {showReplies && (
-        <PostThread postId={post.id} userId={userId} canReply={canReply} identity={replyIdentity} />
+        <PostThread
+          postId={post.id}
+          userId={userId}
+          canReply={canReply}
+          identity={replyIdentity}
+          onReportReply={onReportReply}
+        />
       )}
     </div>
   )
@@ -929,13 +970,16 @@ function PostThread({
   userId,
   canReply,
   identity,
+  onReportReply,
 }: {
   postId: string
   userId: string | null
   canReply: boolean
   identity: Identity
+  onReportReply?: (replyId: string) => void
 }) {
   const [replies, setReplies] = useState<ForumReply[]>([])
+  const [reported, setReported] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
@@ -971,17 +1015,23 @@ function PostThread({
     await load()
   }
 
+  const shown = replies.filter((r) => !reported.has(r.id))
+  const reportReply = (r: ForumReply) => {
+    setReported((prev) => new Set(prev).add(r.id))
+    onReportReply?.(r.id)
+  }
+
   return (
     <div style={{ marginTop: 12, borderTop: `1px solid ${C.line}`, paddingTop: 12 }}>
       {loading ? (
         <div style={{ fontSize: 12.5, color: C.sub }}>Loading replies…</div>
-      ) : replies.length === 0 ? (
+      ) : shown.length === 0 ? (
         <div style={{ fontSize: 12.5, color: C.sub, marginBottom: canReply ? 10 : 0 }}>
           No replies yet{canReply ? ' — start the conversation.' : '.'}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: canReply ? 12 : 0 }}>
-          {replies.map((r) => (
+          {shown.map((r) => (
             <div key={r.id} style={{ display: 'flex', gap: 8 }}>
               <div
                 style={{
@@ -1005,7 +1055,7 @@ function PostThread({
                   <span style={{ color: C.sub }}> · {timeAgo(r.createdAt)}</span>
                 </div>
                 <div style={{ fontSize: 13.5, lineHeight: 1.5, color: C.ink, whiteSpace: 'pre-wrap' }}>{r.body}</div>
-                {r.mine && (
+                {r.mine ? (
                   <button
                     type="button"
                     onClick={() => del(r)}
@@ -1022,6 +1072,27 @@ function PostThread({
                   >
                     Delete
                   </button>
+                ) : (
+                  onReportReply && (
+                    <button
+                      type="button"
+                      onClick={() => reportReply(r)}
+                      title="Report this reply"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: C.sub,
+                        fontFamily: BODY_FONT,
+                        padding: '2px 0 0',
+                        opacity: 0.7,
+                      }}
+                    >
+                      ⚐ Report
+                    </button>
+                  )
                 )}
               </div>
             </div>

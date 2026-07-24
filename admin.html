@@ -201,6 +201,7 @@
           <span style="flex:1"></span>
           <button class="linkbtn" id="signout">Sign out</button>
         </div>
+        <div id="signupChart" style="margin:6px 0 16px"></div>
         <div class="rscroll">
           <table class="rtable">
             <thead><tr><th>Email</th><th>Source</th><th>Joined</th></tr></thead>
@@ -460,6 +461,33 @@
              '</td><td class="ago" title="'+esc(new Date(r.created_at).toLocaleString())+'">'+
              timeAgo(r.created_at)+'</td></tr>';
     }).join('');
+    drawSignupChart(rosterRows);
+  }
+
+  // Signups-over-time bar chart (last 14 days), drawn as inline SVG from the roster.
+  function drawSignupChart(rows){
+    var host = document.getElementById('signupChart');
+    if(!host) return;
+    var DAYS = 14, buckets = new Array(DAYS).fill(0);
+    var start = new Date(); start.setHours(0,0,0,0); start.setDate(start.getDate() - (DAYS-1));
+    rows.forEach(function(r){
+      var t = new Date(r.created_at); t.setHours(0,0,0,0);
+      var idx = Math.round((t - start)/86400000);
+      if(idx >= 0 && idx < DAYS) buckets[idx]++;
+    });
+    var max = Math.max(1, Math.max.apply(null, buckets)), total = buckets.reduce(function(a,b){return a+b;},0);
+    var W = 100, H = 46, gap = 2, bw = (W - gap*(DAYS-1))/DAYS;
+    var bars = buckets.map(function(v,i){
+      var h = v ? Math.max(3, (v/max)*H) : 1;
+      var x = i*(bw+gap);
+      return '<rect x="'+x.toFixed(2)+'" y="'+(H-h).toFixed(2)+'" width="'+bw.toFixed(2)+'" height="'+h.toFixed(2)+
+             '" rx="1" fill="'+(v?'#3FA672':'#E4E1D4')+'"><title>'+v+' on '+
+             new Date(start.getTime()+i*86400000).toLocaleDateString()+'</title></rect>';
+    }).join('');
+    host.innerHTML =
+      '<div style="font-size:12px;font-weight:700;color:#5C6F66;margin-bottom:6px">Signups · last 14 days'+
+      ' <span style="font-weight:500">('+total+')</span></div>'+
+      '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:52px;display:block">'+bars+'</svg>';
   }
 
   // With the full roster loaded (admin), compute the week/today/latest tiles too.
