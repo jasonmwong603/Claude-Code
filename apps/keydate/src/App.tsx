@@ -10,6 +10,7 @@ import { Bank } from './screens/Bank'
 import { Profile } from './screens/Profile'
 import { PixelAvatar } from './components/PixelAvatar'
 import { DEFAULT_PROFILE } from './data/cosmetics'
+import { buildDemoState, seedDemoBank } from './lib/demoPersona'
 import type { PlanFormValues } from './components/PlanForm'
 import type { Profile as ProfileT } from './types'
 import { TYPE_MULT } from './lib/locations'
@@ -105,6 +106,16 @@ export default function KeyDateApp() {
   const enterAsGuest = () => {
     localStorage.setItem(ENTERED_KEY, '1')
     setScreen('onboard')
+  }
+
+  // Load the sample demo account (aspirational mid-journey state) for walkthroughs.
+  const enterDemo = () => {
+    const demo = buildDemoState()
+    seedDemoBank()
+    saveState(demo)
+    setState(demo)
+    localStorage.setItem(ENTERED_KEY, '1')
+    setScreen('dashboard')
   }
 
   // Track the signed-in user (Google / Facebook). No-op in guest / unconfigured
@@ -370,7 +381,7 @@ export default function KeyDateApp() {
   )
 
   if (screen === 'welcome') {
-    return <Welcome authConfigured={authConfigured} onSignIn={handleSignIn} onGuest={enterAsGuest} />
+    return <Welcome authConfigured={authConfigured} onSignIn={handleSignIn} onGuest={enterAsGuest} onDemo={enterDemo} />
   }
 
   return (

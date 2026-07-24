@@ -7,10 +7,12 @@ import type { OAuthProvider } from '../lib/auth'
 export function Welcome({
   onSignIn,
   onGuest,
+  onDemo,
 }: {
   authConfigured: boolean
   onSignIn: (provider: OAuthProvider) => void
   onGuest: () => void
+  onDemo?: () => void
 }) {
   return (
     <div
@@ -85,6 +87,12 @@ export function Welcome({
           </button>
         </div>
 
+        {onDemo && (
+          <button type="button" onClick={onDemo} style={btnDemo}>
+            👀 Preview a sample journey
+          </button>
+        )}
+
         <p style={{ fontSize: 11.5, color: C.sub, marginTop: 22, lineHeight: 1.5 }}>
           Educational only — not financial, legal, or tax advice.
         </p>
@@ -115,6 +123,15 @@ const btnGuest = {
   color: '#fff',
   background: C.spruce,
   border: 'none',
+} as const
+const btnDemo = {
+  ...btnBase,
+  marginTop: 12,
+  fontSize: 13.5,
+  fontWeight: 600,
+  color: C.sub,
+  background: 'transparent',
+  border: `1px dashed ${C.line}`,
 } as const
 
 function GoogleMark() {
