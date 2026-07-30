@@ -5,9 +5,24 @@ donut chart show where your money goes, set monthly budgets per category, and
 step through your finances month by month. **All data stays in your browser** —
 there is no server, no account, and nothing leaves your device.
 
+## Two apps
+
+- **Monthly budget** (`budget.html`) — the classic month-to-month budgeting tool
+  described below.
+- **Steady** (`steady.html`) — a different tool for people who **earn daily and
+  unevenly** (gig/day/tip work). Instead of money-in/money-out, it logs each
+  day's gross, hours, and job costs to show **net and $/hour**, auto-splits
+  every dollar into set-aside **jars** (taxes, rent, savings) so you see your
+  real **take-home** and a **safe-to-spend-today** number, and turns volatile
+  income into a steady paycheck with a **buffer + runway** ("days of pay
+  banked"). Live at `…/steady/`.
+
 ## Open it online
 
-**Live app: https://jasonmwong603.github.io/Claude-Code/budgeting/**
+**Live apps:**
+- Monthly budget: **https://jasonmwong603.github.io/Claude-Code/budgeting/**
+- Steady (daily earnings): **https://jasonmwong603.github.io/Claude-Code/steady/**
+- Chooser: **https://jasonmwong603.github.io/Claude-Code/**
 
 Open that on your phone, tablet, or any computer — no install needed. Every
 push to the app auto-deploys there via GitHub Actions (see
