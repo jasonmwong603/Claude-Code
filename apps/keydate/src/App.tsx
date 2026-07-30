@@ -8,6 +8,8 @@ import { Forum } from './screens/Forum'
 import { EditPlan } from './screens/EditPlan'
 import { Bank } from './screens/Bank'
 import { Profile } from './screens/Profile'
+import { Activity } from './screens/Activity'
+import { unreadCount, subscribeNotifications } from './lib/forum'
 import { PixelAvatar } from './components/PixelAvatar'
 import { DEFAULT_PROFILE } from './data/cosmetics'
 import { buildDemoState, seedDemoBank } from './lib/demoPersona'
@@ -23,7 +25,7 @@ import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
 import { bankSummary } from './lib/plaid'
 import type { AppState, Badge, Plan } from './types'
 
-type Screen = 'loading' | 'welcome' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan' | 'bank' | 'profile'
+type Screen = 'loading' | 'welcome' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan' | 'bank' | 'profile' | 'activity'
 
 const ENTERED_KEY = 'keydate-entered'
 
@@ -65,6 +67,7 @@ export default function KeyDateApp() {
   const [activeLesson, setActiveLesson] = useState<string | null>(null)
   const [celebrate, setCelebrate] = useState<Badge | null>(null)
   const [user, setUser] = useState<AuthUser | null>(null)
+  const [unread, setUnread] = useState(0)
 
   // Load persisted state once, and award the daily check-in XP.
   useEffect(() => {
@@ -155,6 +158,22 @@ export default function KeyDateApp() {
       }
     })
   }, [])
+
+  // Activity bell: load the unread count and keep it live for the signed-in user.
+  useEffect(() => {
+    if (!user) {
+      setUnread(0)
+      return
+    }
+    const refresh = () => void unreadCount(user.id).then(setUnread)
+    refresh()
+    return subscribeNotifications(user.id, refresh)
+  }, [user])
+
+  const openActivity = () => {
+    setUnread(0)
+    setScreen('activity')
+  }
 
   const handleSignIn = (provider: OAuthProvider) => {
     signIn(provider).catch((e) => alert(`Couldn't start sign-in: ${e?.message ?? e}`))
@@ -392,6 +411,50 @@ export default function KeyDateApp() {
             Key<span style={{ color: C.sprout }}>Date</span>
           </div>
           {state && state.profile && lvl && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {user && (
+              <button
+                type="button"
+                onClick={openActivity}
+                aria-label="Activity"
+                style={{
+                  position: 'relative',
+                  width: 38,
+                  height: 38,
+                  borderRadius: 999,
+                  background: '#fff',
+                  border: `1.5px solid ${C.line}`,
+                  cursor: 'pointer',
+                  fontSize: 17,
+                  lineHeight: 1,
+                }}
+              >
+                🔔
+                {unread > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                      minWidth: 18,
+                      height: 18,
+                      padding: '0 4px',
+                      borderRadius: 999,
+                      background: C.err,
+                      color: '#fff',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    {unread > 9 ? '9+' : unread}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setScreen('profile')}
@@ -422,6 +485,7 @@ export default function KeyDateApp() {
               </span>
               <span style={{ fontSize: 12, fontWeight: 700, color: C.spruce }}>Lv {lvl.level} · {state.xp} XP</span>
             </button>
+            </div>
           )}
         </div>
 
@@ -429,7 +493,8 @@ export default function KeyDateApp() {
           screen !== 'onboard' &&
           screen !== 'editplan' &&
           screen !== 'bank' &&
-          screen !== 'profile' && <NavBar />}
+          screen !== 'profile' &&
+          screen !== 'activity' && <NavBar />}
 
         {celebrate && (
           <div
@@ -499,6 +564,8 @@ export default function KeyDateApp() {
         {screen === 'forum' && state && (
           <Forum state={state} onEarnXp={earnXp} user={user} onSignIn={handleSignIn} />
         )}
+
+        {screen === 'activity' && state && <Activity user={user} onBack={() => setScreen('dashboard')} />}
       </div>
     </div>
   )

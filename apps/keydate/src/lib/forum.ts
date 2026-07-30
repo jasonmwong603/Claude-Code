@@ -1,4 +1,4 @@
-import type { ForumCategory, ForumPost, ForumReply, PostMediaRef } from '../types'
+import type { ForumCategory, ForumNotification, ForumPost, ForumReply, PostMediaRef } from '../types'
 import { SEED_POSTS } from '../data/forumSeed'
 import { delMedia } from './media'
 import { supabase } from './auth'
@@ -301,6 +301,75 @@ export async function loadSavedPosts(userId: string | null, savedIds: string[]):
   const local = loadFeedLocal().posts
   const idset = new Set(savedIds)
   return local.filter((p) => idset.has(p.id))
+}
+
+/* ————————————————————————— activity notifications ————————————————————————— */
+
+interface NotifRow {
+  id: string
+  actor_name: string | null
+  type: 'reply' | 'like' | 'follow'
+  post_id: string | null
+  post_title: string | null
+  excerpt: string | null
+  read: boolean
+  created_at: string
+}
+
+function rowToNotif(r: NotifRow): ForumNotification {
+  return {
+    id: r.id,
+    actorName: r.actor_name,
+    type: r.type,
+    postId: r.post_id,
+    postTitle: r.post_title,
+    excerpt: r.excerpt,
+    read: r.read,
+    createdAt: r.created_at,
+  }
+}
+
+/** This user's activity notifications, newest first (shared mode only). */
+export async function loadNotifications(userId: string | null): Promise<ForumNotification[]> {
+  if (!supabase || !userId) return []
+  const { data } = await supabase
+    .from('forum_notifications')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(100)
+  return ((data as NotifRow[] | null) ?? []).map(rowToNotif)
+}
+
+/** Count of unread notifications (fast head query). */
+export async function unreadCount(userId: string | null): Promise<number> {
+  if (!supabase || !userId) return 0
+  const { count } = await supabase
+    .from('forum_notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('read', false)
+  return count ?? 0
+}
+
+/** Mark all of this user's notifications read. */
+export async function markNotificationsRead(userId: string | null): Promise<void> {
+  if (!supabase || !userId) return
+  await supabase.from('forum_notifications').update({ read: true }).eq('read', false)
+}
+
+/** Live updates for this user's notifications. */
+export function subscribeNotifications(userId: string | null, onChange: () => void): () => void {
+  if (!supabase || !userId) return () => {}
+  const chan = supabase
+    .channel('notifs-' + userId)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'forum_notifications', filter: `user_id=eq.${userId}` },
+      () => onChange(),
+    )
+    .subscribe()
+  return () => {
+    void supabase!.removeChannel(chan)
+  }
 }
 
 /* ————————————————————————— reply threads ————————————————————————— */

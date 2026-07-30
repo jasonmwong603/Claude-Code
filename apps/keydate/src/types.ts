@@ -151,6 +151,17 @@ export interface PlaidItem {
   lastRefreshed: string
 }
 
+export interface ForumNotification {
+  id: string
+  actorName: string | null
+  type: 'reply' | 'like' | 'follow'
+  postId: string | null
+  postTitle: string | null
+  excerpt: string | null
+  read: boolean
+  createdAt: string
+}
+
 export interface ForumReply {
   id: string
   postId: string

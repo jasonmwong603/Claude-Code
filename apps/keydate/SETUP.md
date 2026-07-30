@@ -66,6 +66,10 @@ Following feed and the personal 🔖 Saved list in the Community tab.
 Adds `forum_replies` (public read, sign-in to reply/delete own), a `reply_count` on
 posts, and Realtime so replies appear live in an open thread.
 
+**Activity notifications:** run `apps/keydate/supabase/forum_notifications.sql` (SQL editor).
+Adds `forum_notifications` + triggers that notify a user when someone replies to,
+likes, or follows them; the in-app 🔔 bell + Activity feed read from it (live).
+
 **Moderation (report/hide):** run `apps/keydate/supabase/forum_reports.sql` (SQL editor).
 Adds `forum_reports` (signed-in users file reports; only the admin email can read the
 queue). Reporting also hides the item instantly on the reporter's device.
