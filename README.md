@@ -5,7 +5,21 @@ donut chart show where your money goes, set monthly budgets per category, and
 step through your finances month by month. **All data stays in your browser** —
 there is no server, no account, and nothing leaves your device.
 
-## Two apps
+## The app
+
+- **All-in-one** (`money.html`) — the unified tool. One day-level ledger that
+  does all four jobs most apps split up or skip: **track** (categories +
+  spending donut + budget-vs-actual, the thing Wealthsimple's tracker won't
+  do), **set aside** (auto-split every net dollar into tax/rent/savings jars),
+  **smooth** (turn uneven income into a steady "safe-to-spend today" with a
+  buffer + runway), and **plan** (monthly budgets, $/hour, insights). Handles
+  CAD + USD, and surfaces a "ready to invest" number for the surplus beyond
+  your safety buffer. No login, no bank linking, fully offline. Live at
+  `…/app/`.
+
+The two earlier, single-purpose apps are still available:
+
+## Two earlier apps
 
 - **Monthly budget** (`budget.html`) — the classic month-to-month budgeting tool
   described below.
@@ -20,8 +34,9 @@ there is no server, no account, and nothing leaves your device.
 ## Open it online
 
 **Live apps:**
-- Monthly budget: **https://jasonmwong603.github.io/Claude-Code/budgeting/**
-- Steady (daily earnings): **https://jasonmwong603.github.io/Claude-Code/steady/**
+- ⭐ All-in-one: **https://jasonmwong603.github.io/Claude-Code/app/**
+- Monthly budget only: **https://jasonmwong603.github.io/Claude-Code/budgeting/**
+- Steady (daily earnings only): **https://jasonmwong603.github.io/Claude-Code/steady/**
 - Chooser: **https://jasonmwong603.github.io/Claude-Code/**
 
 Open that on your phone, tablet, or any computer — no install needed. Every

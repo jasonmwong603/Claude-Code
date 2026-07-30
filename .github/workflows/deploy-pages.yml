@@ -28,12 +28,13 @@ jobs:
 
       - name: Assemble site
         run: |
-          # Serve the monthly budget app at /budgeting/ and Steady at /steady/ …
-          mkdir -p _site/budgeting _site/steady
+          # All-in-one at /app/, plus the two originals at /budgeting/ and /steady/.
+          mkdir -p _site/app _site/budgeting _site/steady
+          cp money.html _site/app/index.html
           cp budget.html _site/budgeting/index.html
           cp steady.html _site/steady/index.html
-          # … and give the bare repo URL a small chooser page.
-          printf '%s' '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Money</title><style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;max-width:520px;margin:12vh auto;padding:24px;text-align:center;color:#36323E;background:#F1F8F3}a{display:block;margin:14px 0;padding:16px;border-radius:14px;background:#fff;font-size:18px;font-weight:700;color:#2FA66B;text-decoration:none;box-shadow:0 2px 14px rgba(54,50,62,.06)}p{color:#7A7286}</style><h1>My Money</h1><p>Pick a tool</p><a href="./budgeting/">💰 Monthly budget</a><a href="./steady/">📆 Steady — daily earnings &amp; smoothing</a>' > _site/index.html
+          # A small chooser at the bare repo URL, leading with the unified tool.
+          printf '%s' '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Money</title><style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;max-width:540px;margin:11vh auto;padding:24px;text-align:center;color:#36323E;background:#F1F8F3}a{display:block;margin:12px 0;padding:16px;border-radius:14px;background:#fff;font-weight:700;color:#2FA66B;text-decoration:none;box-shadow:0 2px 14px rgba(54,50,62,.06)}a.main{background:#2FA66B;color:#fff;font-size:19px}small{display:block;color:#7A7286;font-weight:600;margin-top:2px}p{color:#7A7286}</style><h1>My Money</h1><p>Pick a tool</p><a class="main" href="./app/">⭐ All-in-one<small style="color:#dff3e8">budget · set-asides · daily smoothing</small></a><a href="./budgeting/">💰 Monthly budget only</a><a href="./steady/">📆 Steady — daily earnings only</a>' > _site/index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
