@@ -1,8 +1,13 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (DISABLED)
+
+# DISABLED: this workflow shared the single GitHub Pages site with the KeyDate
+# deploy (deploy-keydate.yml) and kept overwriting keydate.ca. The budgeting /
+# money tool is published by KeyDate's deploy at keydate.ca/budgeting/ instead,
+# so this one is turned off to stop the conflict. The push trigger is removed
+# and the job is guarded with `if: ${{ false }}`; re-enable deliberately only if
+# this project moves to its own separate repo/Pages site.
 
 on:
-  push:
-    branches: ["claude/monthly-budgeting-app-dpc0jn"]
   workflow_dispatch:
 
 # Permissions needed for the Pages deployment.
@@ -18,6 +23,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ false }} # disabled — see header note; do not deploy to the shared Pages site
     runs-on: ubuntu-latest
     environment:
       name: github-pages
