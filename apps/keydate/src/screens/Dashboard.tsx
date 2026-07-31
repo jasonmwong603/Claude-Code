@@ -34,6 +34,7 @@ export function Dashboard({
   onOpenLesson,
   onEdit,
   onOpenBank,
+  onRentBuy,
 }: {
   state: AppState
   onLog: (amount: number) => void
@@ -42,6 +43,7 @@ export function Dashboard({
   onOpenLesson: (id: string) => void
   onEdit: () => void
   onOpenBank: () => void
+  onRentBuy: () => void
 }) {
   const bank = bankSummary()
   const { plan } = state
@@ -129,6 +131,24 @@ export function Dashboard({
           {fmtShort(maxQualifiedPrice(plan.income, plan.homeType))}.
         </div>
       )}
+      <button
+        type="button"
+        onClick={onRentBuy}
+        style={{
+          marginTop: 12,
+          background: 'rgba(255,255,255,0.12)',
+          border: '1px solid rgba(255,255,255,0.25)',
+          borderRadius: 999,
+          color: '#fff',
+          fontSize: 12.5,
+          fontWeight: 600,
+          fontFamily: BODY_FONT,
+          padding: '8px 14px',
+          cursor: 'pointer',
+        }}
+      >
+        🤔 Should you even buy? See rent vs. buy →
+      </button>
       {plan.targetSource === 'custom' && plan.targetLabel && (
         <div style={{ marginTop: 10 }}>
           <span
