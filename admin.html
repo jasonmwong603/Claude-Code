@@ -209,6 +209,12 @@
           </table>
         </div>
         <div class="rempty" id="rosterEmpty" style="display:none">No signups yet — you’ll see them appear here the moment someone joins.</div>
+
+        <div id="reportsWrap" style="margin-top:22px;border-top:1px solid var(--line);padding-top:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px">🚩 Reported content</div>
+          <div id="reportsBody"></div>
+          <div class="rempty" id="reportsEmpty">No open reports. 🎉</div>
+        </div>
       </div>
     </div>
 
@@ -380,6 +386,7 @@
       loadRoster();
       subscribeRealtime();
       loadUserStats();
+      loadReports();
     } else {
       unsubscribeRealtime();
       if(email){ // signed in but not the admin address
@@ -404,6 +411,50 @@
   }
 
   function onSignOut(){ if(sb) sb.auth.signOut(); }
+
+  // Moderation queue: reports + the content they point at, with remove/dismiss.
+  async function loadReports(){
+    if(!sb) return;
+    var res = await sb.from('forum_reports').select('*').order('created_at',{ascending:false}).limit(50);
+    var reports = res.data || [];
+    var body = document.getElementById('reportsBody');
+    var empty = document.getElementById('reportsEmpty');
+    if(!reports.length){ body.innerHTML=''; empty.style.display='block'; return; }
+    empty.style.display='none';
+    // Fetch the referenced content for previews.
+    var postIds = reports.filter(function(r){return r.target_type==='post';}).map(function(r){return r.target_id;});
+    var replyIds = reports.filter(function(r){return r.target_type==='reply';}).map(function(r){return r.target_id;});
+    var posts={}, replies={};
+    if(postIds.length){ var p=await sb.from('forum_posts').select('id,author_name,title,body').in('id',postIds); (p.data||[]).forEach(function(x){posts[x.id]=x;}); }
+    if(replyIds.length){ var q=await sb.from('forum_replies').select('id,author_name,body').in('id',replyIds); (q.data||[]).forEach(function(x){replies[x.id]=x;}); }
+    body.innerHTML = reports.map(function(r){
+      var c = r.target_type==='post' ? posts[r.target_id] : replies[r.target_id];
+      var gone = !c;
+      var who = c ? esc(c.author_name||'—') : '';
+      var text = c ? esc((c.title? c.title+' — ':'') + (c.body||'')).slice(0,160) : '<i>content already removed</i>';
+      return '<div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px">'+
+        '<div style="font-size:12px;color:var(--muted)">'+esc(r.target_type)+' · reported '+timeAgo(r.created_at)+(r.reason?(' · '+esc(r.reason)):'')+'</div>'+
+        '<div style="font-size:13.5px;margin:6px 0"><b>'+who+'</b> '+text+'</div>'+
+        '<div style="display:flex;gap:8px">'+
+          (gone?'':'<button data-remove="'+r.target_type+'|'+esc(r.target_id)+'" style="font:inherit;font-size:12px;font-weight:700;color:#fff;background:var(--err);border:none;border-radius:8px;padding:6px 12px;cursor:pointer">Remove content</button>')+
+          '<button data-dismiss="'+esc(r.id)+'" style="font:inherit;font-size:12px;font-weight:600;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer">Dismiss</button>'+
+        '</div></div>';
+    }).join('');
+    body.querySelectorAll('[data-remove]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        var parts = btn.getAttribute('data-remove').split('|');
+        var tbl = parts[0]==='post' ? 'forum_posts' : 'forum_replies';
+        await sb.from(tbl).delete().eq('id', parts[1]);
+        loadReports();
+      });
+    });
+    body.querySelectorAll('[data-dismiss]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        await sb.from('forum_reports').delete().eq('id', btn.getAttribute('data-dismiss'));
+        loadReports();
+      });
+    });
+  }
 
   // Registered / active / inactive / guest tiles — readable only by the signed-in
   // admin (RLS + email check in keydate_admin_stats). Stays pending until app.sql

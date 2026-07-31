@@ -72,7 +72,9 @@ likes, or follows them; the in-app 🔔 bell + Activity feed read from it (live)
 
 **Moderation (report/hide):** run `apps/keydate/supabase/forum_reports.sql` (SQL editor).
 Adds `forum_reports` (signed-in users file reports; only the admin email can read the
-queue). Reporting also hides the item instantly on the reporter's device.
+queue). Reporting also hides the item instantly on the reporter's device. Then run
+`apps/keydate/supabase/forum_admin.sql` so the admin console's 🚩 Reported-content
+queue can remove offending posts/replies and dismiss reports.
 
 **Rich demo seed (optional):** run `apps/keydate/supabase/forum_seed_rich.sql` to fill
 the live forum with realistic posts (some with images), replies, and likes for a demo.
