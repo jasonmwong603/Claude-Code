@@ -647,8 +647,11 @@ export function Forum({
         ))
       )}
 
-      <p style={{ fontSize: 11.5, color: C.sub, lineHeight: 1.55, marginTop: 6 }}>
-        Be kind and keep it real. Posts are personal stories, not financial advice.
+      <p style={{ fontSize: 11.5, color: C.sub, lineHeight: 1.6, marginTop: 6 }}>
+        <b>Community guidelines:</b> be kind and respectful, keep it real, and don’t share others’
+        personal info. Posts are personal stories and opinions — <b>not financial, legal, or tax
+        advice</b>; verify anything important with a licensed professional. See something off? Tap
+        <b> ⚐ Report</b> and we’ll review it.
       </p>
     </>
   )
