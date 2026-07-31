@@ -1,22 +1,28 @@
 import type { HomeTypeKey, ResolvedLocation } from '../types'
 
-/* ————— Built-in market prices (rough average detached, CAD) —————
-   Illustrative baseline figures. TODO (see project roadmap): replace this
-   hand-maintained table with a generated one sourced from CMHC / StatCan and a
-   real geocoder for disambiguation. */
+/* ————— Built-in market prices (representative detached, CAD) —————
+   These are ESTIMATES, not live market data. The `base` for each place is a
+   rough "typical detached" figure; the app scales it by home type (see
+   TYPE_MULT). The largest metros were calibrated against mid-2026 CREA / local-
+   board / WOWA figures (e.g. Toronto detached avg ≈ $1.36M, Vancouver ≈ $1.99M,
+   Edmonton benchmark ≈ $530K, June/July 2026); the long tail of smaller towns
+   remains hand-estimated and can be off. Markets also move, so treat every
+   number as a starting point the user can override.
+   TODO (roadmap): replace this hand-maintained table with a live feed (CREA
+   MLS® HPI / a data API) + a real geocoder — see resolvePrice() below. */
 export const BUILT_IN: Record<string, number> = {
-  edmonton: 480000, calgary: 620000, 'red deer': 380000, lethbridge: 400000,
+  edmonton: 530000, calgary: 740000, 'red deer': 380000, lethbridge: 400000,
   'medicine hat': 340000, 'grande prairie': 380000, 'grand prairie': 380000,
   'fort mcmurray': 400000, camrose: 330000, airdrie: 555000, 'st. albert': 550000,
   'st albert': 550000, 'sherwood park': 540000, leduc: 470000, 'spruce grove': 490000,
   okotoks: 600000, 'cold lake': 300000, lloydminster: 340000,
   'fort saskatchewan': 450000, beaumont: 480000, cochrane: 620000,
   canmore: 1300000, wetaskiwin: 280000, brooks: 300000,
-  saskatoon: 420000, regina: 340000, 'prince albert': 250000, 'moose jaw': 280000,
+  saskatoon: 460000, regina: 385000, 'prince albert': 250000, 'moose jaw': 280000,
   'swift current': 260000, yorkton: 240000, 'north battleford': 220000, estevan: 250000,
-  winnipeg: 400000, brandon: 320000, steinbach: 350000,
+  winnipeg: 420000, brandon: 320000, steinbach: 350000,
   'portage la prairie': 280000, thompson: 250000,
-  vancouver: 2000000, victoria: 1150000, kelowna: 900000, kamloops: 650000,
+  vancouver: 1990000, victoria: 1300000, kelowna: 900000, kamloops: 650000,
   abbotsford: 1050000, nanaimo: 750000, 'prince george': 480000, surrey: 1500000,
   burnaby: 1900000, chilliwack: 850000, coquitlam: 1450000, richmond: 1700000,
   langley: 1350000, delta: 1400000, 'maple ridge': 1150000,
@@ -24,8 +30,8 @@ export const BUILT_IN: Record<string, number> = {
   'new westminster': 1300000, vernon: 750000, penticton: 750000,
   courtenay: 800000, 'campbell river': 700000, squamish: 1500000,
   mission: 1000000, 'white rock': 1600000,
-  toronto: 1350000, ottawa: 730000, hamilton: 850000, london: 650000,
-  kitchener: 800000, waterloo: 810000, windsor: 550000, kingston: 600000,
+  toronto: 1360000, ottawa: 790000, hamilton: 900000, london: 700000,
+  kitchener: 870000, waterloo: 870000, windsor: 575000, kingston: 620000,
   sudbury: 450000, 'thunder bay': 350000, barrie: 800000, guelph: 850000,
   mississauga: 1300000, brampton: 1100000, 'niagara falls': 650000,
   'st. catharines': 650000, 'st catharines': 650000, oshawa: 850000,
@@ -36,13 +42,13 @@ export const BUILT_IN: Record<string, number> = {
   'sault ste marie': 330000, 'north bay': 420000, peterborough: 650000,
   belleville: 550000, sarnia: 500000, 'chatham-kent': 430000, chatham: 430000,
   cornwall: 400000, orillia: 700000, 'owen sound': 500000, timmins: 280000,
-  montreal: 650000, 'montréal': 650000, 'quebec city': 400000, 'québec city': 400000,
+  montreal: 650000, 'montréal': 650000, 'quebec city': 450000, 'québec city': 450000,
   gatineau: 500000, sherbrooke: 420000, 'trois-rivières': 320000,
   'trois-rivieres': 320000, laval: 600000, longueuil: 580000,
   'saint-jérôme': 450000, 'saint-jerome': 450000, terrebonne: 550000,
   brossard: 650000, drummondville: 350000, saguenay: 300000,
   'lévis': 400000, levis: 400000,
-  halifax: 565000, moncton: 350000, 'saint john': 300000, fredericton: 350000,
+  halifax: 620000, moncton: 355000, 'saint john': 300000, fredericton: 350000,
   charlottetown: 400000, "st. john's": 350000, "st john's": 350000, sydney: 300000,
   dartmouth: 500000, truro: 350000, bathurst: 250000, miramichi: 220000,
   summerside: 330000, 'corner brook': 280000,
@@ -180,7 +186,7 @@ export function matchBuiltIn(q: string): ResolvedLocation | null {
   if (norm.length < 3) return null
   for (const key of Object.keys(BUILT_IN)) {
     if (norm === key || norm.includes(key) || key.startsWith(norm)) {
-      return { name: titleCase(key), base: BUILT_IN[key], source: 'built-in estimate' }
+      return { name: titleCase(key), base: BUILT_IN[key], source: 'rough estimate' }
     }
   }
   return null
@@ -208,7 +214,7 @@ export function suggestLocations(q: string, limit = 6): ResolvedLocation[] {
     const d = dedupeKey(key)
     if (seen.has(d)) continue
     seen.add(d)
-    out.push({ name: titleCase(key), base: BUILT_IN[key], source: 'built-in estimate' })
+    out.push({ name: titleCase(key), base: BUILT_IN[key], source: 'rough estimate' })
     if (out.length >= limit) break
   }
   return out
