@@ -13,6 +13,7 @@ import {
   savingsGoal,
 } from '../lib/math'
 import { CLOSING_RATE } from '../lib/config'
+import { projectKeys, maxQualifiedPrice, SCENARIOS } from '../lib/projection'
 import { KEYRING, calcStreak, levelInfo } from '../lib/gamification'
 import { bankSummary, refreshedAgo } from '../lib/plaid'
 import { LESSONS, STAGES } from '../data/curriculum'
@@ -56,8 +57,11 @@ export function Dashboard({
     const remaining = Math.max(0, goal - totalSaved)
     const baseMonthly = plan.monthly * (plan.coBuyer ? 2 : 1)
     const effMonthly = baseMonthly + boost
-    const months = effMonthly > 0 ? remaining / effMonthly : Infinity
-    const baseMonths = baseMonthly > 0 ? remaining / baseMonthly : Infinity
+    // Appreciation-aware, range-based projection (replaces the old straight line).
+    const proj = projectKeys(plan, totalSaved, effMonthly)
+    const baseProj = projectKeys(plan, totalSaved, baseMonthly)
+    const months = proj.likelyMonths
+    const baseMonths = baseProj.likelyMonths
     const progress = Math.min(1, totalSaved / goal)
     return {
       totalSaved,
@@ -66,6 +70,7 @@ export function Dashboard({
       remaining,
       months,
       baseMonths,
+      proj: baseProj,
       progress,
       streak: calcStreak(state.contributions),
       payment: mortgagePayment(plan.target - down),
@@ -88,12 +93,42 @@ export function Dashboard({
         Keys in hand · {plan.location}
       </div>
       <div style={{ fontFamily: DISPLAY_FONT, fontSize: 42, fontWeight: 800, lineHeight: 1.05 }}>
-        {dash.remaining === 0 ? 'Today 🎉' : keysDate(dash.baseMonths)}
+        {dash.remaining === 0
+          ? 'Today 🎉'
+          : isFinite(dash.baseMonths)
+            ? keysDate(dash.baseMonths)
+            : 'Goalpost is moving'}
       </div>
+      {dash.remaining > 0 && (
+        <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
+          {isFinite(dash.baseMonths)
+            ? `likely window · ${keysDate(dash.proj.earliestMonths)} – ${keysDate(dash.proj.latestMonths)}`
+            : 'at this rate prices may rise faster than you save — raise savings or aim lower'}
+        </div>
+      )}
       <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.85)', marginTop: 6 }}>
         {fmtShort(plan.target)} {homeTypeLabel(plan.homeType).toLowerCase()} · est.{' '}
         {fmt(dash.payment)}/mo mortgage{plan.coBuyer ? ' · 👥 with co-buyer' : ''}
       </div>
+      {!dash.proj.qualifiesNow && (
+        <div
+          style={{
+            marginTop: 12,
+            background: 'rgba(232,184,75,0.16)',
+            border: '1px solid rgba(232,184,75,0.5)',
+            borderRadius: 10,
+            padding: '9px 11px',
+            fontSize: 12,
+            color: '#FBF3DD',
+            lineHeight: 1.5,
+          }}
+        >
+          ⚠️ <b>A date isn’t an approval.</b> At {fmt(plan.income)}/yr you likely wouldn’t{' '}
+          <b>qualify</b> for {fmtShort(plan.target)} under the mortgage stress test. You’d need about{' '}
+          {fmt(dash.proj.incomeToQualify)} household income — or aim closer to{' '}
+          {fmtShort(maxQualifiedPrice(plan.income, plan.homeType))}.
+        </div>
+      )}
       {plan.targetSource === 'custom' && plan.targetLabel && (
         <div style={{ marginTop: 10 }}>
           <span
@@ -299,15 +334,25 @@ export function Dashboard({
           />
           <div style={{ fontSize: 13.5, lineHeight: 1.5 }}>
             {boost === 0 ? (
-              <span style={{ color: C.sub }}>Drag to see your date move.</span>
+              <span style={{ color: C.sub }}>💡 {dash.proj.topLever}</span>
+            ) : !isFinite(dash.months) ? (
+              <span style={{ color: C.sub }}>
+                Even +{fmt(boost)}/mo doesn’t outrun the rising price on this path — a bigger boost or a lower target is needed.
+              </span>
             ) : (
               <>
                 +{fmt(boost)}/mo → keys in <strong>{keysDate(dash.months)}</strong>{' '}
-                <span style={{ color: C.sprout, fontWeight: 700 }}>
-                  ({Math.max(0, Math.ceil(dash.baseMonths - dash.months))} months sooner)
-                </span>
+                {isFinite(dash.baseMonths) && (
+                  <span style={{ color: C.sprout, fontWeight: 700 }}>
+                    ({Math.max(0, Math.ceil(dash.baseMonths - dash.months))} months sooner)
+                  </span>
+                )}
               </>
             )}
+          </div>
+          <div style={{ fontSize: 11, color: C.sub, marginTop: 8, lineHeight: 1.5 }}>
+            Dates assume ~3%/yr price growth &amp; ~3% return on savings (the “Likely” scenario), a{' '}
+            {(SCENARIOS.likely.appreciation * 100).toFixed(0)}% market and the federal stress test. Estimates, not a guarantee — your real date will move.
           </div>
         </div>
       </>
