@@ -12,7 +12,6 @@ import {
   mortgagePayment,
   savingsGoal,
 } from '../lib/math'
-import { CLOSING_RATE } from '../lib/config'
 import { projectKeys, maxQualifiedPrice, SCENARIOS } from '../lib/projection'
 import { KEYRING, calcStreak, levelInfo } from '../lib/gamification'
 import { bankSummary, refreshedAgo } from '../lib/plaid'
@@ -129,6 +128,9 @@ export function Dashboard({
           <b>qualify</b> for {fmtShort(plan.target)} under the mortgage stress test. You’d need about{' '}
           {fmt(dash.proj.incomeToQualify)} household income — or aim closer to{' '}
           {fmtShort(maxQualifiedPrice(plan.income, plan.homeType))}.
+          <div style={{ marginTop: 6, fontWeight: 700 }}>
+            👇 Scroll to <i>Your options</i> — we’ve mapped the routes that do work.
+          </div>
         </div>
       )}
       <button
@@ -301,12 +303,25 @@ export function Dashboard({
     ),
   })
 
-  // Blueprint: faster paths (only when the date is 4+ years out).
-  if (dash.baseMonths > 48) {
+  // Blueprint: alternate paths — shown when the date is far out, the goalpost is
+  // outrunning them, or they wouldn't qualify. Never a dead end: every "no" here
+  // comes with a route that works.
+  const needsPlanB = !isFinite(dash.baseMonths) || dash.baseMonths > 48 || !dash.proj.qualifiesNow
+  if (needsPlanB) {
     floors.push({
       key: 'faster',
-      label: 'Blueprint · faster paths',
-      node: <FasterPaths state={state} totalSaved={dash.totalSaved} goal={dash.goal} onUpdatePlan={onUpdatePlan} />,
+      label: 'Blueprint · your options',
+      node: (
+        <FasterPaths
+          state={state}
+          totalSaved={dash.totalSaved}
+
+          months={dash.baseMonths}
+          qualifies={dash.proj.qualifiesNow}
+          onUpdatePlan={onUpdatePlan}
+          onRentBuy={onRentBuy}
+        />
+      ),
     })
   }
 
@@ -512,22 +527,32 @@ export function Dashboard({
   )
 }
 
-/** "Faster paths" cards shown when the keys date is more than 4 years out.
- *  Never says "you can't afford it" — only offers ways to get there sooner. */
+/** Alternate paths — shown when the date is far out, the price is outrunning the
+ *  saver, or they wouldn't qualify. The rule: never leave the user at a dead end.
+ *  Every discouraging finding here is paired with a route that actually works,
+ *  including the legitimate option of renting longer and investing. */
 function FasterPaths({
   state,
   totalSaved,
-  goal,
+  months,
+  qualifies,
   onUpdatePlan,
+  onRentBuy,
 }: {
   state: AppState
   totalSaved: number
-  goal: number
+  months: number
+  qualifies: boolean
   onUpdatePlan: (patch: Partial<Plan>, xpReward?: number) => void
+  onRentBuy: () => void
 }) {
   const { plan } = state
   const baseMonthly = plan.monthly * (plan.coBuyer ? 2 : 1) || 1
-  const monthsFor = (g: number, rate = baseMonthly) => Math.max(0, g - totalSaved) / rate
+  // Use the same appreciation-aware model as the hero so these dates are honest.
+  const dateFor = (patch: Partial<Plan>, monthly = baseMonthly) => {
+    const m = projectKeys({ ...plan, ...patch } as Plan, totalSaved, monthly).likelyMonths
+    return isFinite(m) ? keysDate(m) : 'still out of reach'
+  }
 
   const paths: {
     id: string
@@ -538,13 +563,27 @@ function FasterPaths({
     apply: () => void
   }[] = []
 
+  // 1. If they can't qualify, lead with a target they actually can.
+  const maxQ = maxQualifiedPrice(plan.income, plan.homeType)
+  if (!qualifies && maxQ > 0) {
+    const qTarget = Math.round(maxQ / 1000) * 1000
+    paths.push({
+      id: 'qualify',
+      emoji: '✅',
+      label: `Aim at ${fmtShort(qTarget)} — what you could actually be approved for`,
+      detail: 'Re-aims your plan at a price a lender would likely approve at your income.',
+      date: dateFor({ target: qTarget }),
+      apply: () => onUpdatePlan({ target: qTarget, targetSource: 'custom', targetLabel: 'What I can qualify for' }),
+    })
+  }
+
   if (!plan.coBuyer) {
     paths.push({
       id: 'cobuy',
       emoji: '👥',
       label: 'Buy with a partner, sibling, or friend',
-      detail: 'Two people saving together get there about twice as fast.',
-      date: keysDate(monthsFor(goal, plan.monthly * 2 || 1)),
+      detail: 'Two incomes save faster and qualify for more.',
+      date: dateFor({ coBuyer: true }, plan.monthly * 2 || 1),
       apply: () => onUpdatePlan({ coBuyer: true }),
     })
   }
@@ -558,9 +597,9 @@ function FasterPaths({
     paths.push({
       id: 'type',
       emoji: '🏢',
-      label: `Start with a ${t.label.toLowerCase()} instead`,
+      label: `Start with ${/^[aeiou]/i.test(t.label) ? 'an' : 'a'} ${t.label.toLowerCase()} instead`,
       detail: 'Get in sooner, build equity, upgrade later.',
-      date: keysDate(monthsFor(minDownPayment(target, t.key) + target * CLOSING_RATE)),
+      date: dateFor({ homeType: t.key, target }),
       apply: () => onUpdatePlan({ homeType: t.key, target }),
     })
   }
@@ -571,14 +610,20 @@ function FasterPaths({
     emoji: '🎯',
     label: 'Aim 15% below the average price',
     detail: 'Plenty of good homes sell under the average.',
-    date: keysDate(monthsFor(minDownPayment(trimmed, plan.homeType) + trimmed * CLOSING_RATE)),
+    date: dateFor({ target: trimmed }),
     apply: () => onUpdatePlan({ target: trimmed }),
   })
+
+  const heading = !qualifies
+    ? '🧭 Here’s how to get to a “yes”'
+    : !isFinite(months)
+      ? '🧭 Prices are outrunning this plan — here’s what works'
+      : '🚀 Your date is a while away. Faster paths:'
 
   return (
     <div style={{ background: C.goldSoft, border: `1.5px solid ${C.gold}`, borderRadius: 14, padding: 16 }}>
       <div style={{ fontWeight: 800, fontSize: 15, fontFamily: DISPLAY_FONT, marginBottom: 2 }}>
-        🚀 Your date is a while away. Faster paths:
+        {heading}
       </div>
       {paths.map((p) => (
         <div key={p.id} style={{ background: '#fff', borderRadius: 14, padding: '12px 14px', marginTop: 10 }}>
@@ -607,6 +652,32 @@ function FasterPaths({
           </button>
         </div>
       ))}
+
+      {/* Renting longer is a legitimate outcome, not a failure. */}
+      <div style={{ background: '#fff', borderRadius: 14, padding: '12px 14px', marginTop: 10 }}>
+        <div style={{ fontWeight: 700, fontSize: 14 }}>📈 Or: rent a while longer and invest</div>
+        <div style={{ fontSize: 12.5, color: C.sub, margin: '3px 0 8px', lineHeight: 1.45 }}>
+          Waiting isn’t losing. For plenty of people right now, renting and investing the difference
+          builds more wealth — and keeps you flexible until the numbers work.
+        </div>
+        <button
+          type="button"
+          onClick={onRentBuy}
+          style={{
+            padding: '8px 14px',
+            fontSize: 13,
+            fontWeight: 700,
+            color: C.spruce,
+            background: '#fff',
+            border: `1.5px solid ${C.line}`,
+            borderRadius: 10,
+            cursor: 'pointer',
+            fontFamily: BODY_FONT,
+          }}
+        >
+          Compare rent vs. buy →
+        </button>
+      </div>
     </div>
   )
 }
