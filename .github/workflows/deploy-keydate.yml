@@ -66,6 +66,10 @@ jobs:
           # Private, passcode-gated admin metrics console (keydate.ca/admin/).
           mkdir -p _site/admin
           cp admin.html _site/admin/index.html
+          # Legal pages (keydate.ca/privacy/ and /terms/).
+          mkdir -p _site/privacy _site/terms
+          cp privacy.html _site/privacy/index.html
+          cp terms.html _site/terms/index.html
           # Vendored libraries served from our own domain (no external CDN).
           cp -r vendor _site/vendor
           # Custom domain for GitHub Pages — DNS verified, so this is active.

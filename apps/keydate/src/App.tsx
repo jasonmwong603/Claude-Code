@@ -484,7 +484,9 @@ export default function KeyDateApp() {
               >
                 <PixelAvatar config={state.profile.avatar} mode="head" size={30} />
               </span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: C.spruce }}>Lv {lvl.level} · {state.xp} XP</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: C.spruce }}>
+                {state.focusMode ? 'Profile' : `Lv ${lvl.level} · ${state.xp} XP`}
+              </span>
             </button>
             </div>
           )}
@@ -551,6 +553,7 @@ export default function KeyDateApp() {
             user={user}
             onSignIn={handleSignIn}
             onSignOut={handleSignOut}
+            onToggleFocus={(on) => state && persist({ ...state, focusMode: on })}
           />
         )}
 

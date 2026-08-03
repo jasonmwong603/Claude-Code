@@ -65,6 +65,9 @@ export interface AppState {
   xp: number
   lastVisit: string
   profile?: Profile
+  /** "Focus mode": dials down the game layer (levels/XP/avatar chrome) for users
+   *  who want a straight financial tool. Defaults to off. */
+  focusMode?: boolean
 }
 
 export interface Quiz {

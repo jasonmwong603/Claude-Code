@@ -47,6 +47,7 @@ export function Profile({
   user,
   onSignIn,
   onSignOut,
+  onToggleFocus,
 }: {
   state: AppState
   onSave: (p: ProfileT) => void
@@ -55,6 +56,7 @@ export function Profile({
   user: AuthUser | null
   onSignIn: (provider: OAuthProvider) => void
   onSignOut: () => void
+  onToggleFocus: (on: boolean) => void
 }) {
   const profile = state.profile!
   const lvl = levelInfo(state.xp)
@@ -273,6 +275,34 @@ export function Profile({
       <button type="button" onClick={() => { setDraft(profile); setEditing(true) }} style={btnPrimary}>
         🎨 Customize character
       </button>
+
+      {/* Focus mode — for people who want the money tool without the game layer. */}
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 10,
+          marginTop: 18,
+          padding: '13px 14px',
+          background: '#fff',
+          border: `1px solid ${C.line}`,
+          borderRadius: 14,
+          cursor: 'pointer',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={!!state.focusMode}
+          onChange={(e) => onToggleFocus(e.target.checked)}
+          style={{ width: 18, height: 18, accentColor: C.spruce, marginTop: 1, flexShrink: 0 }}
+        />
+        <span>
+          <span style={{ fontWeight: 700, fontSize: 14 }}>Focus mode</span>
+          <span style={{ display: 'block', fontSize: 12.5, color: C.sub, lineHeight: 1.5, marginTop: 2 }}>
+            Hide levels, XP, and character extras. Same plan and tracking — just the money, no game.
+          </span>
+        </span>
+      </label>
     </>
   )
 }

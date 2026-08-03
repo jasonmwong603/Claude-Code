@@ -346,6 +346,27 @@ export function Forum({
         </div>
       )}
 
+      {/* Honesty: the starter posts are KeyDate-written examples, not real members.
+          Say so plainly rather than passing fiction off as a live community. */}
+      {remote && (
+        <div
+          style={{
+            fontSize: 12,
+            color: C.sub,
+            background: C.goldSoft,
+            border: `1px solid ${C.gold}`,
+            borderRadius: 12,
+            padding: '10px 12px',
+            lineHeight: 1.5,
+            marginBottom: 14,
+          }}
+        >
+          👋 <strong>Early days.</strong> Posts marked <b>“KeyDate example”</b> were written by us to
+          show what this space is for — they aren’t real members yet. Everything else is from real
+          people. Post something and help make this real.
+        </div>
+      )}
+
       {/* Shared mode, not signed in: reading is open, posting needs an account. */}
       {remote && !user && (
         <div style={{ ...card, marginBottom: 16, textAlign: 'center' }}>
@@ -814,6 +835,23 @@ function PostCard({
               post.author
             )}
             {post.mine && <span style={{ color: C.sub, fontWeight: 500 }}> · you</span>}
+            {isRemoteForum() && !post.authorId && (
+              <span
+                style={{
+                  marginLeft: 6,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: C.gold,
+                  background: C.goldSoft,
+                  border: `1px solid ${C.gold}`,
+                  borderRadius: 999,
+                  padding: '1px 7px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                KeyDate example
+              </span>
+            )}
           </div>
           <div style={{ fontSize: 11.5, color: C.sub }}>
             {post.location ? `${post.location} · ` : ''}

@@ -46,6 +46,14 @@ export function Dashboard({
 }) {
   const bank = bankSummary()
   const { plan } = state
+  // Has a deposit already been logged this calendar month? Drives the one-tap CTA.
+  const loggedThisMonth = useMemo(() => {
+    const now = new Date()
+    return state.contributions.some((c) => {
+      const d = new Date(c.date)
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+    })
+  }, [state.contributions])
   const [logAmount, setLogAmount] = useState(plan.monthly)
   const [boost, setBoost] = useState(0)
   const lvl = levelInfo(state.xp)
@@ -220,8 +228,8 @@ export function Dashboard({
   // ————— Floors, top to bottom —————
   const floors: FloorSpec[] = []
 
-  // Top floor: level + the house that builds itself.
-  floors.push({
+  // Top floor: level + the house that builds itself. (Hidden in focus mode.)
+  if (!state.focusMode) floors.push({
     key: 'level',
     label: 'Top floor · your level',
     node: (
@@ -332,7 +340,32 @@ export function Dashboard({
     node: (
       <>
         <div style={{ ...roomCard, marginBottom: 12 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>Log this month’s savings</div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Log this month’s savings</div>
+          {loggedThisMonth ? (
+            <div style={{ fontSize: 12.5, color: C.sprout, fontWeight: 600, marginBottom: 10 }}>
+              ✓ Logged this month — nice work. Add more any time.
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => plan.monthly > 0 && onLog(plan.monthly)}
+              style={{
+                width: '100%',
+                padding: '11px',
+                fontSize: 14,
+                fontWeight: 700,
+                fontFamily: DISPLAY_FONT,
+                color: C.spruce,
+                background: C.sproutSoft,
+                border: `1.5px dashed ${C.sprout}`,
+                borderRadius: 12,
+                cursor: 'pointer',
+                margin: '6px 0 10px',
+              }}
+            >
+              ⚡ Same as usual — log {fmt(plan.monthly)}
+            </button>
+          )}
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1 }}>
               <MoneyInput value={logAmount} onChange={setLogAmount} step={50} />
@@ -484,7 +517,7 @@ export function Dashboard({
 
   return (
     <>
-      <HouseFrame attic={attic} floors={floors} foundation={foundation} />
+      <HouseFrame attic={attic} floors={floors} foundation={state.focusMode ? undefined : foundation} />
 
       <div style={{ display: 'flex', gap: 10 }}>
         <button
@@ -522,6 +555,25 @@ export function Dashboard({
         >
           Start over
         </button>
+      </div>
+
+      {/* Support / feedback — beta users need somewhere to go. */}
+      <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: C.sub, lineHeight: 1.6 }}>
+        Something wrong, or a number look off?{' '}
+        <a
+          href="mailto:hello@keydate.ca?subject=KeyDate%20feedback"
+          style={{ color: C.spruce, fontWeight: 600 }}
+        >
+          Tell us — we read everything
+        </a>
+        <br />
+        <a href="/privacy/" style={{ color: C.sub, textDecoration: 'underline' }}>
+          Privacy
+        </a>{' '}
+        ·{' '}
+        <a href="/terms/" style={{ color: C.sub, textDecoration: 'underline' }}>
+          Terms
+        </a>
       </div>
     </>
   )
