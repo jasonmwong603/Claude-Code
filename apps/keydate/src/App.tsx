@@ -541,6 +541,7 @@ export default function KeyDateApp() {
             onBack={() => setScreen('dashboard')}
             onSetSavings={(total) => updatePlan({ startingSavings: total }, 0)}
             onBankChange={recheckBadges}
+            userId={user?.id ?? null}
           />
         )}
 

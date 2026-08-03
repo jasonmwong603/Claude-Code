@@ -156,3 +156,10 @@ login). To go live you need a small backend to hold the Plaid secret:
 Free beta on guest mode → **(1) Supabase** (activates accounts + your metrics, the
 big credibility unlock) → **(2) waitlist endpoint** → domain → **(3) Plaid** and
 **(5) compliance** once there's traction and funding behind them.
+
+**Feature demand signals:** run `apps/keydate/supabase/feature_interest.sql` (SQL
+editor). Adds `feature_interest` (anyone may vote, deduped per account/device;
+raw rows admin-only) plus a public `feature_interest_counts()` tally. Powers the
+"notify me when bank sync is ready" capture on the Bank screen and the Feature
+demand tile in the admin console — so Plaid gets built on measured demand rather
+than a guess.

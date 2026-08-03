@@ -12,21 +12,25 @@ import {
   refreshedAgo,
   toggleCountToward,
 } from '../lib/plaid'
+import { hasVoted, registerInterest } from '../lib/interest'
 import type { PlaidItem } from '../types'
 
 export function Bank({
   onBack,
   onSetSavings,
   onBankChange,
+  userId,
 }: {
   onBack: () => void
   onSetSavings: (total: number) => void
   onBankChange: () => void
+  userId: string | null
 }) {
   const [items, setItems] = useState<PlaidItem[]>(() => loadItems())
   const [picking, setPicking] = useState(false)
   const [connecting, setConnecting] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [wantsSync, setWantsSync] = useState(() => hasVoted('bank_sync'))
 
   const total = fundTotal(items)
   const lastRefreshed = items.map((i) => i.lastRefreshed).sort().pop()
@@ -97,6 +101,44 @@ export function Bank({
         🔒 <strong>Sandbox preview.</strong> This is a simulation with sample data — no real bank and
         no login. In production this opens <strong>Plaid Link</strong> (Plaid’s secure hosted
         sign-in), and balances are read-only.
+      </div>
+
+      {/* Demand signal: we build real bank sync when enough people ask for it. */}
+      <div style={{ ...card, marginBottom: 16 }}>
+        <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+          🏦 Want this connected to your real bank?
+        </div>
+        <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.5, margin: '0 0 12px' }}>
+          Real, read-only balance sync — your deposits logged automatically, no manual entry. It’s
+          the next big build, and we’re prioritizing it by how many people actually want it.
+        </p>
+        {wantsSync ? (
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: C.spruce,
+              background: C.sproutSoft,
+              border: `1.5px solid ${C.sprout}`,
+              borderRadius: 12,
+              padding: '11px 14px',
+              textAlign: 'center',
+            }}
+          >
+            ✓ Counted — we’ll email you the moment it’s live.
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setWantsSync(true)
+              void registerInterest('bank_sync', userId)
+            }}
+            style={{ ...bigBtn(true, C.spruce), fontSize: 14, padding: '12px 16px' }}
+          >
+            👋 Yes — notify me when bank sync is ready
+          </button>
+        )}
       </div>
 
       {/* Total counting toward the fund */}
