@@ -93,21 +93,18 @@
         <span class="chip">🎮 Gamified saving</span>
         <span class="chip">🍁 Canadian lessons</span>
       </div>
-      <!-- Beta is OPEN: the primary action is to actually use it. -->
-      <a class="cta" href="./app/">Start my plan — free →</a>
-      <div class="note">Free, in beta, no credit card. Takes about a minute.</div>
-
-      <div class="or"><span>or get launch updates</span></div>
-
+      <!-- Email first: joining the launch list is how you get into the beta. -->
       <form data-wl novalidate>
         <input type="email" name="email" placeholder="you@email.com" aria-label="Email address" required />
         <!-- Honeypot: hidden from humans; bots fill it and get silently dropped so
              fake signups don't inflate the count. -->
         <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"
           style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" />
-        <button type="submit">Keep me posted</button>
+        <button type="submit">Join &amp; start my plan →</button>
       </form>
-      <p class="success" data-success>You’re on the list — we’ll be in touch. 🔑</p>
+      <div class="note">Free beta · no credit card · takes about a minute.<br />
+        Your email joins the launch list — we’ll tell you when we go live. No spam.</div>
+      <p class="success" data-success>You’re in — opening your plan… 🔑</p>
     </section>
 
     <!-- Footer -->
@@ -151,7 +148,16 @@
       var hp = form.querySelector('input[name=website]');
       if(hp && hp.value){ var s=form.parentElement.querySelector('[data-success]'); if(s) s.classList.add('on'); form.reset(); return; }
       if(!email || email.indexOf('@')<1){ input.focus(); return; }
-      var done = function(){ saveLocal(email); var s=form.parentElement.querySelector('[data-success]'); if(s) s.classList.add('on'); form.reset(); };
+      var done = function(){
+        saveLocal(email);
+        // Remember that this person joined, so the app lets them straight in and
+        // doesn't ask again on this device.
+        try{ localStorage.setItem('keydate-beta-email', email); }catch(e){}
+        var s=form.parentElement.querySelector('[data-success]'); if(s) s.classList.add('on');
+        form.reset();
+        // Hand them into the beta.
+        setTimeout(function(){ location.href = './app/'; }, 650);
+      };
       // Send to the shared store in the background (fire-and-forget) and give the
       // visitor instant confirmation — the localStorage mirror in done() means a
       // slow/failed network never loses the signup.

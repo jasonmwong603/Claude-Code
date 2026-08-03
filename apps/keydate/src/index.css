@@ -1,8 +1,11 @@
 /* KeyDate global styles. The prototype styled everything inline; this file only
-   holds the resets and things inline styles can't express (font import, box-sizing,
-   safe-area padding for notched phones). Design tokens live in src/theme.ts. */
+   holds the resets and things inline styles can't express (box-sizing, safe-area
+   padding for notched phones). Design tokens live in src/theme.ts.
 
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Inter:wght@400;500;600;700&display=swap');
+   Web fonts are deliberately NOT @imported here: a CSS @import is render-blocking
+   and network-dependent, so a slow or blocked Google Fonts request would leave the
+   whole app blank. They're loaded asynchronously from index.html instead, and the
+   font stacks in theme.ts fall back to system fonts until they arrive. */
 
 *,
 *::before,
