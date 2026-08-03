@@ -52,11 +52,13 @@ jobs:
 
       - name: Assemble site
         run: |
-          mkdir -p _site/prelaunchdemo
-          # The KeyDate app lives at an UNLISTED path (keydate.ca/prelaunchdemo/)
-          # so it isn't discoverable from the public landing page — it's the
-          # private demo build used for investor/beta walkthroughs. The base is
-          # relative, so the app works from any path.
+          mkdir -p _site/app _site/prelaunchdemo
+          # The same build is served at two paths (base is relative, so it works
+          # from either):
+          #   /app/           → the PUBLIC beta, open to testers (no passcode)
+          #   /prelaunchdemo/ → the PRIVATE investor demo, passcode-gated
+          # PasscodeGate checks the path and only gates /prelaunchdemo/.
+          cp -r apps/keydate/dist/* _site/app/
           cp -r apps/keydate/dist/* _site/prelaunchdemo/
           # (The budgeting/money tool is intentionally NOT published here — it
           # lives in its own separate repo at jasonmwong603.github.io/steadybudgeting,

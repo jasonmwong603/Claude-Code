@@ -48,15 +48,22 @@
     color:var(--spruce);background:rgba(46,154,103,.12);border:1px solid rgba(46,154,103,.24);
     border-radius:999px;padding:6px 12px}
 
+  /* Primary beta CTA */
+  .cta{display:block;text-decoration:none;font-weight:800;font-size:16.5px;padding:15px 18px;
+    border-radius:14px;background:var(--spruce);color:#fff;box-shadow:0 8px 20px rgba(30,77,59,.22)}
+  .cta:hover{background:#17402F}
+  .or{display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:var(--muted);font-size:11.5px}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:rgba(30,60,45,.14)}
+
   form{display:flex;flex-direction:column;gap:10px}
   form input{font:inherit;font-size:15px;padding:13px 15px;border-radius:12px;border:1px solid rgba(30,60,45,.20);
     background:#fff;color:var(--ink);text-align:center}
   form input::placeholder{color:#8A948C}
   form input:focus{outline:2px solid var(--sprout);outline-offset:1px}
-  form button{font:inherit;font-weight:700;font-size:15px;padding:13px 16px;border-radius:12px;border:none;
-    background:var(--gold);color:#3a2a00;cursor:pointer}
-  form button:hover{background:#f0c766}
-  .note{font-size:12px;color:var(--muted);margin-top:12px}
+  form button{font:inherit;font-weight:700;font-size:14.5px;padding:12px 16px;border-radius:12px;
+    border:1px solid var(--line);background:#fff;color:var(--spruce);cursor:pointer}
+  form button:hover{border-color:var(--sprout)}
+  .note{font-size:12px;color:var(--muted);margin-top:10px}
   .success{display:none;margin-top:12px;font-weight:700;color:var(--gold-deep)}
   .success.on{display:block}
 
@@ -80,21 +87,26 @@
 
     <!-- Frosted glass: description + waitlist -->
     <section class="glass" aria-label="Join the beta">
-      <p class="desc">That date is <b>real — and closer than you think.</b> KeyDate helps the next generation of Canadians understand what it actually takes to buy a first home: the savings, the steps, and the whole process, made simple. Join the beta to find yours.</p>
+      <p class="desc">That date is <b>real — and closer than you think.</b> KeyDate helps the next generation of Canadians understand what it actually takes to buy a first home: the savings, the steps, and the whole process, made simple. Find yours in about a minute.</p>
       <div class="offers">
         <span class="chip">📅 Your keys date</span>
         <span class="chip">🎮 Gamified saving</span>
         <span class="chip">🍁 Canadian lessons</span>
       </div>
+      <!-- Beta is OPEN: the primary action is to actually use it. -->
+      <a class="cta" href="./app/">Start my plan — free →</a>
+      <div class="note">Free, in beta, no credit card. Takes about a minute.</div>
+
+      <div class="or"><span>or get launch updates</span></div>
+
       <form data-wl novalidate>
         <input type="email" name="email" placeholder="you@email.com" aria-label="Email address" required />
         <!-- Honeypot: hidden from humans; bots fill it and get silently dropped so
              fake signups don't inflate the count. -->
         <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"
           style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" />
-        <button type="submit">Join the beta waitlist</button>
+        <button type="submit">Keep me posted</button>
       </form>
-      <div class="note">Be first in when the beta opens. No spam — just a launch note.</div>
       <p class="success" data-success>You’re on the list — we’ll be in touch. 🔑</p>
     </section>
 

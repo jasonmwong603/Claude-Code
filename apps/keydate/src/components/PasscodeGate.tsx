@@ -24,7 +24,13 @@ async function sha256Hex(text: string): Promise<string> {
 }
 
 export function PasscodeGate({ children }: { children: ReactNode }) {
+  // The same build is served at two paths: the public beta at /app/ (open to
+  // testers) and the private investor demo at /prelaunchdemo/ (gated). Only the
+  // latter asks for a passcode.
+  const gatedPath = typeof location !== 'undefined' && location.pathname.includes('prelaunchdemo')
+
   const [unlocked, setUnlocked] = useState(() => {
+    if (!gatedPath) return true
     try {
       return localStorage.getItem(UNLOCK_KEY) === PASSCODE_HASH
     } catch {
