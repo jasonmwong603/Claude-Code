@@ -71,6 +71,15 @@ export const BUILT_IN: Record<string, number> = {
   riverview: 350000, quispamsis: 350000, paradise: 400000,
   'conception bay south': 380000,
 
+  // ——— Greater Edmonton Area (beta focus region) ———
+  // Counties/rural areas skew higher (acreages); small towns lower.
+  'strathcona county': 620000, 'parkland county': 620000, 'sturgeon county': 600000,
+  'leduc county': 560000, ardrossan: 620000, josephburg: 560000, nisku: 460000,
+  gibbons: 380000, 'bon accord': 340000, legal: 360000, redwater: 310000,
+  calmar: 380000, thorsby: 330000, onoway: 400000, bruderheim: 330000,
+  lamont: 300000, wabamun: 400000, 'alberta beach': 360000, 'new sarepta': 400000,
+  millet: 380000, 'sundance beach': 450000,
+
   // ——— Expanded coverage (illustrative averages, CAD) ———
   // Alberta
   banff: 900000, jasper: 650000, 'high river': 500000, strathmore: 470000,
