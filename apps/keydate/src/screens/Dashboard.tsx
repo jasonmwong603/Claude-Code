@@ -34,6 +34,7 @@ export function Dashboard({
   onEdit,
   onOpenBank,
   onRentBuy,
+  onFeedback,
 }: {
   state: AppState
   onLog: (amount: number) => void
@@ -43,6 +44,7 @@ export function Dashboard({
   onEdit: () => void
   onOpenBank: () => void
   onRentBuy: () => void
+  onFeedback: () => void
 }) {
   const bank = bankSummary()
   const { plan } = state
@@ -559,13 +561,24 @@ export function Dashboard({
 
       {/* Support / feedback — beta users need somewhere to go. */}
       <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: C.sub, lineHeight: 1.6 }}>
-        Something wrong, or a number look off?{' '}
-        <a
-          href="mailto:hello@keydate.ca?subject=KeyDate%20feedback"
-          style={{ color: C.spruce, fontWeight: 600 }}
+        <button
+          type="button"
+          onClick={onFeedback}
+          style={{
+            background: '#fff',
+            border: `1.5px solid ${C.line}`,
+            borderRadius: 999,
+            padding: '10px 18px',
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: BODY_FONT,
+            color: C.spruce,
+            cursor: 'pointer',
+            marginBottom: 10,
+          }}
         >
-          Tell us — we read everything
-        </a>
+          💬 Give feedback — we read everything
+        </button>
         <br />
         <a href="/privacy/" style={{ color: C.sub, textDecoration: 'underline' }}>
           Privacy

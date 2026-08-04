@@ -77,7 +77,10 @@ export function PlanForm({
 
   // Only offer manual entry when we truly have nothing to suggest.
   const showManual = suggestions.length === 0 && !resolved && locQuery.trim().length > 2
-  const canSubmit = !!resolved && (targetSource === 'area' || customPrice > 0)
+  // Income and a monthly amount are required for the projection to mean anything
+  // (savings may legitimately be 0 — plenty of people start there).
+  const canSubmit =
+    !!resolved && (targetSource === 'area' || customPrice > 0) && income > 0 && monthly > 0
 
   const submit = () => {
     if (!canSubmit || !resolved) return
@@ -216,13 +219,13 @@ export function PlanForm({
       </Field>
 
       <Field label="Household income (before tax, per year)">
-        <MoneyInput value={income} onChange={setIncome} />
+        <MoneyInput value={income} onChange={setIncome} placeholder="e.g. 72,000" />
       </Field>
       <Field label="Saved so far">
-        <MoneyInput value={savings} onChange={setSavings} step={500} />
+        <MoneyInput value={savings} onChange={setSavings} step={500} placeholder="e.g. 8,000 — 0 is fine" />
       </Field>
       <Field label="What you can put away each month">
-        <MoneyInput value={monthly} onChange={setMonthly} step={50} />
+        <MoneyInput value={monthly} onChange={setMonthly} step={50} placeholder="e.g. 600" />
       </Field>
 
       <div style={{ display: 'flex', gap: 10 }}>
@@ -251,11 +254,16 @@ export function PlanForm({
           disabled={!canSubmit}
           style={{ ...bigBtn(canSubmit), flex: onCancel ? 2 : undefined }}
         >
+          {/* Say exactly what's still missing, in the order the fields appear. */}
           {!resolved
             ? 'Add a location first'
             : targetSource === 'custom' && customPrice <= 0
               ? 'Enter your target price'
-              : submitLabel}
+              : income <= 0
+                ? 'Add your household income'
+                : monthly <= 0
+                  ? 'Add what you can save monthly'
+                  : submitLabel}
         </button>
       </div>
     </>

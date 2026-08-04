@@ -163,3 +163,9 @@ raw rows admin-only) plus a public `feature_interest_counts()` tally. Powers the
 "notify me when bank sync is ready" capture on the Bank screen and the Feature
 demand tile in the admin console — so Plaid gets built on measured demand rather
 than a guess.
+
+**Feedback inbox:** run `apps/keydate/supabase/feedback.sql` (SQL editor). Adds a
+`feedback` table (anyone may submit; admin-only read/update) and a
+`feedback_count()` tally. The in-app "Give feedback" screen writes here and also
+offers a prefilled email to `keydateadmin@gmail.com` — swap that constant in
+`src/screens/Feedback.tsx` once the business inbox exists.

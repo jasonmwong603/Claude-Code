@@ -10,6 +10,7 @@ import { Bank } from './screens/Bank'
 import { Profile } from './screens/Profile'
 import { Activity } from './screens/Activity'
 import { RentBuy } from './screens/RentBuy'
+import { Feedback } from './screens/Feedback'
 import { unreadCount, subscribeNotifications } from './lib/forum'
 import { PixelAvatar } from './components/PixelAvatar'
 import { DEFAULT_PROFILE } from './data/cosmetics'
@@ -26,7 +27,7 @@ import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
 import { bankSummary } from './lib/plaid'
 import type { AppState, Badge, Plan } from './types'
 
-type Screen = 'loading' | 'welcome' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan' | 'bank' | 'profile' | 'activity' | 'rentbuy'
+type Screen = 'loading' | 'welcome' | 'onboard' | 'dashboard' | 'learn' | 'forum' | 'editplan' | 'bank' | 'profile' | 'activity' | 'rentbuy' | 'feedback'
 
 const ENTERED_KEY = 'keydate-entered'
 
@@ -498,7 +499,8 @@ export default function KeyDateApp() {
           screen !== 'bank' &&
           screen !== 'profile' &&
           screen !== 'activity' &&
-          screen !== 'rentbuy' && <NavBar />}
+          screen !== 'rentbuy' &&
+          screen !== 'feedback' && <NavBar />}
 
         {celebrate && (
           <div
@@ -529,6 +531,7 @@ export default function KeyDateApp() {
             onEdit={() => setScreen('editplan')}
             onOpenBank={() => setScreen('bank')}
             onRentBuy={() => setScreen('rentbuy')}
+            onFeedback={() => setScreen('feedback')}
           />
         )}
 
@@ -575,6 +578,8 @@ export default function KeyDateApp() {
         {screen === 'activity' && state && <Activity user={user} onBack={() => setScreen('dashboard')} />}
 
         {screen === 'rentbuy' && state && <RentBuy state={state} onBack={() => setScreen('dashboard')} />}
+
+        {screen === 'feedback' && <Feedback user={user} onBack={() => setScreen('dashboard')} />}
       </div>
     </div>
   )
