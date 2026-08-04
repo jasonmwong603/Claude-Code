@@ -215,6 +215,12 @@
           <div id="reportsBody"></div>
           <div class="rempty" id="reportsEmpty">No open reports. 🎉</div>
         </div>
+
+        <div id="feedbackWrap" style="margin-top:22px;border-top:1px solid var(--line);padding-top:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px">💬 What users are telling us</div>
+          <div id="feedbackBody"></div>
+          <div class="rempty" id="feedbackEmpty">No feedback yet. It’ll show up here the moment someone sends one.</div>
+        </div>
       </div>
     </div>
 
@@ -244,12 +250,17 @@
     </div>
 
     <!-- Feature demand: build what people actually ask for -->
-    <div class="section-label">Feature demand</div>
+    <div class="section-label">Feature demand &amp; feedback</div>
     <div class="grid">
       <div class="card pending" id="cardBankSync">
         <div class="k">🏦 Want bank sync</div>
         <div class="v" id="fBankSync">—</div>
         <div class="note">asked for real Plaid balance sync</div>
+      </div>
+      <div class="card pending" id="cardFeedback">
+        <div class="k">💬 Unread feedback</div>
+        <div class="v" id="fFeedback">—</div>
+        <div class="note">read it in the roster panel below</div>
       </div>
     </div>
 
@@ -347,7 +358,7 @@
 
   function stamp(){ document.getElementById('updated').textContent = 'Updated ' + new Date().toLocaleTimeString(); }
 
-  function refreshAll(){ refreshCount(); if(currentAdmin()) loadRoster(); }
+  function refreshAll(){ refreshCount(); if(currentAdmin()){ loadRoster(); loadReports(); loadFeedback(); } }
 
   // Public live total (no login required). Uses a plain fetch to the public RPC
   // so it never waits on the auth client to initialize — the count is decoupled
@@ -393,6 +404,20 @@
       }
     })
     .catch(function(){});
+
+    // Unread feedback tally — public RPC, so the tile works before sign-in.
+    fetch(SUPABASE_URL + '/rest/v1/rpc/feedback_count', {
+      method:'POST', cache:'no-store',
+      headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Content-Type':'application/json' },
+      body:'{}'
+    })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(n){
+      if(typeof n !== 'number') return;
+      set('fFeedback', fmtInt(n));
+      document.getElementById('cardFeedback').classList.remove('pending');
+    })
+    .catch(function(){});
   }
 
   function renderNoBackend(){
@@ -417,6 +442,7 @@
       subscribeRealtime();
       loadUserStats();
       loadReports();
+      loadFeedback();
     } else {
       unsubscribeRealtime();
       if(email){ // signed in but not the admin address
@@ -482,6 +508,55 @@
       btn.addEventListener('click', async function(){
         await sb.from('forum_reports').delete().eq('id', btn.getAttribute('data-dismiss'));
         loadReports();
+      });
+    });
+  }
+
+  // Feedback inbox — what beta users actually said. RLS means only ADMIN_EMAIL
+  // can read these rows, so the messages (and any email people left) are
+  // protected by real auth, not just the passcode.
+  var FEEDBACK_KINDS = {
+    wrong:'🔢 A number looks wrong', confusing:'😕 Something’s confusing',
+    idea:'💡 An idea', praise:'💚 Something they like', other:'💬 Something else'
+  };
+  async function loadFeedback(){
+    if(!sb) return;
+    var res = await sb.from('feedback')
+      .select('id,kind,message,email,path,handled,created_at')
+      .order('created_at',{ascending:false}).limit(100);
+    if(res.error) return;                       // table not installed yet
+    var rows = res.data || [];
+    var body = document.getElementById('feedbackBody');
+    var empty = document.getElementById('feedbackEmpty');
+    if(!rows.length){ body.innerHTML=''; empty.style.display='block'; return; }
+    empty.style.display='none';
+    body.innerHTML = rows.map(function(f){
+      var open = !f.handled;
+      // A reply is only possible when they chose to leave an address.
+      var reply = f.email
+        ? '<a href="mailto:'+esc(f.email)+'?subject='+encodeURIComponent('Re: your KeyDate feedback')+
+          '" style="font-size:12px;font-weight:600">Reply to '+esc(f.email)+'</a>'
+        : '<span style="font-size:12px;color:var(--muted)">No reply address left</span>';
+      return '<div style="border:1px solid '+(open?'rgba(63,166,114,.45)':'var(--line)')+
+        ';background:'+(open?'rgba(63,166,114,.06)':'#fff')+';border-radius:12px;padding:12px;margin-bottom:10px">'+
+        '<div style="font-size:12px;color:var(--muted)">'+
+          esc(FEEDBACK_KINDS[f.kind]||f.kind)+' · '+timeAgo(f.created_at)+
+          (f.path?(' · '+esc(f.path)):'')+(open?'':' · <b>handled</b>')+'</div>'+
+        '<div style="font-size:13.5px;margin:7px 0;white-space:pre-wrap;line-height:1.5">'+esc(f.message)+'</div>'+
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+reply+
+          '<span style="flex:1"></span>'+
+          '<button data-fb="'+esc(f.id)+'" data-handled="'+(f.handled?'1':'0')+'" '+
+            'style="font:inherit;font-size:12px;font-weight:600;color:'+(open?'#fff':'var(--muted)')+
+            ';background:'+(open?'var(--spruce)':'#fff')+';border:1px solid '+(open?'var(--spruce)':'var(--line)')+
+            ';border-radius:8px;padding:6px 12px;cursor:pointer">'+(open?'Mark handled':'Reopen')+'</button>'+
+        '</div></div>';
+    }).join('');
+    body.querySelectorAll('[data-fb]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        var next = btn.getAttribute('data-handled') !== '1';
+        await sb.from('feedback').update({ handled: next }).eq('id', btn.getAttribute('data-fb'));
+        loadFeedback();
+        refreshCount();                          // keep the unread tile honest
       });
     });
   }
