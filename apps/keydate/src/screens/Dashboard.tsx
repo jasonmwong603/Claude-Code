@@ -370,7 +370,7 @@ export function Dashboard({
           )}
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1 }}>
-              <MoneyInput value={logAmount} onChange={setLogAmount} step={50} />
+              <MoneyInput value={logAmount} onChange={(v) => setLogAmount(v === '' ? 0 : v)} step={50} />
             </div>
             <button
               type="button"
@@ -840,7 +840,7 @@ function TargetRoom({
         <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
           <div>
             <div style={{ fontSize: 12, color: C.sub, marginBottom: 6 }}>Target price</div>
-            <MoneyInput value={price} onChange={setPrice} step={5000} />
+            <MoneyInput value={price} onChange={(v) => setPrice(v === '' ? 0 : v)} step={5000} />
           </div>
           <input
             type="text"

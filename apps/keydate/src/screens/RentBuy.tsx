@@ -98,12 +98,12 @@ export function RentBuy({ state, onBack }: { state: AppState; onBack: () => void
 
         <label style={{ fontSize: 12.5, fontWeight: 600, color: C.sub }}>Your monthly rent (or what you’d pay)</label>
         <div style={{ margin: '6px 0 14px' }}>
-          <MoneyInput value={rent} onChange={setRent} step={50} />
+          <MoneyInput value={rent} onChange={(v) => setRent(v === '' ? 0 : v)} step={50} />
         </div>
 
         <label style={{ fontSize: 12.5, fontWeight: 600, color: C.sub }}>Down payment you’d put in</label>
         <div style={{ margin: '6px 0 14px' }}>
-          <MoneyInput value={down} onChange={setDown} step={500} />
+          <MoneyInput value={down} onChange={(v) => setDown(v === '' ? 0 : v)} step={500} />
         </div>
 
         <label style={{ fontSize: 12.5, fontWeight: 600, color: C.sub }}>

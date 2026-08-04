@@ -28,11 +28,11 @@ export function Onboarding({ onSubmit }: { onSubmit: (r: OnboardingResult) => vo
           locationText: '',
           resolved: null,
           homeType: 'apartment',
-          // Blank, not pre-filled: a stray default is easy to submit by accident,
-          // which would put someone else's numbers in a real user's plan.
-          income: 0,
-          savings: 0,
-          monthly: 0,
+          // Blank, not pre-filled. A stray default is easy to submit by accident,
+          // and '' (unanswered) is deliberately distinct from a typed 0.
+          income: '',
+          savings: '',
+          monthly: '',
           targetSource: 'area',
           customPrice: 0,
           targetLabel: '',

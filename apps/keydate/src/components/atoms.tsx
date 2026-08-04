@@ -61,16 +61,20 @@ export function Field({
   )
 }
 
+/** A dollar-prefixed number field.
+ *
+ * `value` may be `''` to mean "nothing entered yet" — which is deliberately
+ * distinct from `0`, so a user who genuinely has $0 saved must type it rather
+ * than leaving the field untouched. Callers that don't need that distinction can
+ * keep passing plain numbers. */
 export function MoneyInput({
   value,
   onChange,
   step = 1000,
-  placeholder,
 }: {
-  value: number
-  onChange: (n: number) => void
+  value: number | ''
+  onChange: (n: number | '') => void
   step?: number
-  placeholder?: string
 }) {
   return (
     <div style={{ position: 'relative' }}>
@@ -91,11 +95,12 @@ export function MoneyInput({
         inputMode="numeric"
         min={0}
         step={step}
-        // Show an empty field rather than a stray "0" before anything is typed
-        // (and when the user clears it) — 0 means "not entered yet" here.
-        value={value === 0 ? '' : value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
+        // Empty stays empty; a typed 0 stays 0.
+        value={value}
+        onChange={(e) => {
+          const raw = e.target.value
+          onChange(raw === '' ? '' : Number(raw))
+        }}
         style={{ ...inputStyle, paddingLeft: 28 }}
       />
     </div>

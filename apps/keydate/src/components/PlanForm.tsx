@@ -18,9 +18,14 @@ export interface PlanFormValues {
   listingUrl: string
 }
 
-export interface PlanFormInitial extends Omit<PlanFormValues, 'resolved'> {
+export interface PlanFormInitial
+  extends Omit<PlanFormValues, 'resolved' | 'income' | 'savings' | 'monthly'> {
   locationText: string
   resolved: ResolvedLocation | null
+  /** '' means "not entered yet" — distinct from a deliberate 0. */
+  income: number | ''
+  savings: number | ''
+  monthly: number | ''
 }
 
 const TARGET_MODES: { key: TargetSource; label: string }[] = [
@@ -44,9 +49,9 @@ export function PlanForm({
   const [manualPrice, setManualPrice] = useState(0)
   const [locFocused, setLocFocused] = useState(false)
   const [homeType, setHomeType] = useState<HomeTypeKey>(initial.homeType)
-  const [income, setIncome] = useState(initial.income)
-  const [savings, setSavings] = useState(initial.savings)
-  const [monthly, setMonthly] = useState(initial.monthly)
+  const [income, setIncome] = useState<number | ''>(initial.income)
+  const [savings, setSavings] = useState<number | ''>(initial.savings)
+  const [monthly, setMonthly] = useState<number | ''>(initial.monthly)
   const [targetSource, setTargetSource] = useState<TargetSource>(initial.targetSource)
   const [customPrice, setCustomPrice] = useState(initial.customPrice)
   const [targetLabel, setTargetLabel] = useState(initial.targetLabel)
@@ -77,14 +82,29 @@ export function PlanForm({
 
   // Only offer manual entry when we truly have nothing to suggest.
   const showManual = suggestions.length === 0 && !resolved && locQuery.trim().length > 2
-  // Income and a monthly amount are required for the projection to mean anything
-  // (savings may legitimately be 0 — plenty of people start there).
+  // Every money field must be answered — a blank is "unanswered", while a typed
+  // 0 is a real answer (no savings yet / nothing to put away right now).
+  const filled = (v: number | '') => v !== '' && !Number.isNaN(v)
   const canSubmit =
-    !!resolved && (targetSource === 'area' || customPrice > 0) && income > 0 && monthly > 0
+    !!resolved &&
+    (targetSource === 'area' || customPrice > 0) &&
+    filled(income) &&
+    filled(savings) &&
+    filled(monthly)
 
   const submit = () => {
     if (!canSubmit || !resolved) return
-    onSubmit({ resolved, homeType, income, savings, monthly, targetSource, customPrice, targetLabel, listingUrl })
+    onSubmit({
+      resolved,
+      homeType,
+      income: Number(income),
+      savings: Number(savings),
+      monthly: Number(monthly),
+      targetSource,
+      customPrice,
+      targetLabel,
+      listingUrl,
+    })
   }
 
   return (
@@ -175,7 +195,7 @@ export function PlanForm({
               We don’t have “{locQuery.trim()}” built in. What’s a typical home price there? (A quick
               web search for “average home price {locQuery.trim()}” gives a good number.)
             </div>
-            <MoneyInput value={manualPrice} onChange={useManualPrice} step={10000} />
+            <MoneyInput value={manualPrice} onChange={(v) => useManualPrice(v === '' ? 0 : v)} step={10000} />
           </div>
         )}
       </Field>
@@ -197,7 +217,7 @@ export function PlanForm({
           <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
             <div>
               <div style={{ fontSize: 12, color: C.sub, marginBottom: 6 }}>Target price</div>
-              <MoneyInput value={customPrice} onChange={setCustomPrice} step={5000} />
+              <MoneyInput value={customPrice} onChange={(v) => setCustomPrice(v === '' ? 0 : v)} step={5000} />
             </div>
             <input
               type="text"
@@ -219,13 +239,13 @@ export function PlanForm({
       </Field>
 
       <Field label="Household income (before tax, per year)">
-        <MoneyInput value={income} onChange={setIncome} placeholder="e.g. 72,000" />
+        <MoneyInput value={income} onChange={setIncome} />
       </Field>
       <Field label="Saved so far">
-        <MoneyInput value={savings} onChange={setSavings} step={500} placeholder="e.g. 8,000 — 0 is fine" />
+        <MoneyInput value={savings} onChange={setSavings} step={500} />
       </Field>
       <Field label="What you can put away each month">
-        <MoneyInput value={monthly} onChange={setMonthly} step={50} placeholder="e.g. 600" />
+        <MoneyInput value={monthly} onChange={setMonthly} step={50} />
       </Field>
 
       <div style={{ display: 'flex', gap: 10 }}>
@@ -259,11 +279,13 @@ export function PlanForm({
             ? 'Add a location first'
             : targetSource === 'custom' && customPrice <= 0
               ? 'Enter your target price'
-              : income <= 0
-                ? 'Add your household income'
-                : monthly <= 0
-                  ? 'Add what you can save monthly'
-                  : submitLabel}
+              : !filled(income)
+                ? 'Enter your household income'
+                : !filled(savings)
+                  ? 'Enter how much you’ve saved (0 is fine)'
+                  : !filled(monthly)
+                    ? 'Enter what you can save monthly (0 is fine)'
+                    : submitLabel}
         </button>
       </div>
     </>
