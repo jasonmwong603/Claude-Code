@@ -29,8 +29,24 @@ createRoot(document.getElementById('root')!).render(
 // Relative URL keeps the scope under the deploy path (e.g. /prelaunchdemo/).
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {
-      /* SW is a progressive enhancement — ignore failures */
-    })
+    // updateViaCache:'none' keeps the browser's HTTP cache from handing back a
+    // stale sw.js, which would leave an old caching strategy in charge.
+    navigator.serviceWorker
+      .register('./sw.js', { updateViaCache: 'none' })
+      .then((reg) => {
+        // A new worker that activates while a tab is open means the assets in
+        // memory are now the old build; reload once so the user lands on the
+        // deploy rather than a half-stale mix.
+        reg.addEventListener('updatefound', () => {
+          const sw = reg.installing
+          if (!sw) return
+          sw.addEventListener('statechange', () => {
+            if (sw.state === 'activated' && navigator.serviceWorker.controller) location.reload()
+          })
+        })
+      })
+      .catch(() => {
+        /* SW is a progressive enhancement — ignore failures */
+      })
   })
 }
