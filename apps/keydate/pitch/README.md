@@ -115,6 +115,20 @@ deck is then reported as "looking like Times New Roman" while the file itself is
 perfectly correct. Arial is the only typeface reliably present everywhere, so it
 is the default; the PDF is the real answer.
 
+## Flat slide images
+
+`slide-01.png` … `slide-10.png` — every slide at 2668x1500, exported from the
+same source as the PDF.
+
+These exist because phone preview apps and Drive previews do not really render
+`.pptx`; they approximate it, substituting fonts and re-measuring text. A card
+shape and the text on top of it are separate objects in the file, so when a
+previewer mis-measures either, they visibly drift apart and the deck looks
+broken when it isn't. An image cannot reflow, so these settle the question.
+
+Regenerate them the same way as the PDF, screenshotting each `.slide` element
+in `preview.html` instead of printing.
+
 ## Making the PDF
 
     python3 render.py KeyDate-JCI-Edmonton-Montserrat.pptx --pdf
