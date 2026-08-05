@@ -14,8 +14,26 @@ EMU = 914400.0
 PX = 100.0  # px per inch
 A = 'http://schemas.openxmlformats.org/drawingml/2006/main'
 
+import base64, os
 deck = sys.argv[1]
+PDF_MODE = '--pdf' in sys.argv
 z = zipfile.ZipFile(deck)
+
+def rel_images(slide_name):
+    """r:embed id -> data URI, for the pictures on one slide."""
+    rels = f'ppt/slides/_rels/{os.path.basename(slide_name)}.rels'
+    out = {}
+    if rels not in z.namelist():
+        return out
+    doc = minidom.parseString(z.read(rels))
+    for r in doc.getElementsByTagName('Relationship'):
+        tgt = r.getAttribute('Target')
+        if '/media/' in tgt or tgt.startswith('../media/'):
+            path = 'ppt/' + tgt.replace('../', '')
+            if path in z.namelist():
+                b64 = base64.b64encode(z.read(path)).decode()
+                out[r.getAttribute('Id')] = f'data:image/png;base64,{b64}'
+    return out
 slides = sorted(
     (n for n in z.namelist() if re.fullmatch(r'ppt/slides/slide\d+\.xml', n)),
     key=lambda n: int(re.search(r'(\d+)', n.rsplit('/', 1)[1]).group(1)),
@@ -65,9 +83,14 @@ out = ['<meta charset="utf-8"><style>',
        '.n{position:absolute;top:4px;right:8px;color:#fff;background:#000a;padding:2px 8px;',
        'font:12px monospace;z-index:99}',
        '.t{position:absolute;overflow:visible}',
+       '@page{size:13.333in 7.5in;margin:0}',
+       '@media print{body{background:#fff}',
+       '.slide{margin:0;box-shadow:none;page-break-after:always;break-after:page}',
+       '.n{display:none}}',
        '</style>']
 
 for idx, name in enumerate(slides, 1):
+    imgs = rel_images(name)
     doc = minidom.parseString(z.read(name))
     csld = doc.getElementsByTagNameNS('http://schemas.openxmlformats.org/presentationml/2006/main', 'cSld')[0]
     bg = solid_color(child(csld, 'bg')) or 'FFFFFF'
@@ -91,11 +114,17 @@ for idx, name in enumerate(slides, 1):
             g = geom(sp)
             if g:
                 x, y, w, h = g
-                out.append(
-                    f'<div class="t" style="left:{x*PX:.0f}px;top:{y*PX:.0f}px;width:{w*PX:.0f}px;'
-                    f'height:{h*PX:.0f}px;border:2px solid #E8B84B;background:#E8B84B22;'
-                    f'color:#17302A;font:bold 13px sans-serif;display:flex;align-items:center;'
-                    f'justify-content:center;text-align:center">[ UI screenshot ]</div>')
+                blip = sp.getElementsByTagNameNS(A, 'blip')
+                src = imgs.get(blip[0].getAttribute('r:embed')) if blip else None
+                if src:
+                    out.append(
+                        f'<img src="{src}" style="position:absolute;left:{x*PX:.0f}px;'
+                        f'top:{y*PX:.0f}px;width:{w*PX:.0f}px;height:{h*PX:.0f}px;'
+                        f'object-fit:fill;filter:drop-shadow(0 4px 14px rgba(0,0,0,.35))">')
+                else:
+                    out.append(
+                        f'<div class="t" style="left:{x*PX:.0f}px;top:{y*PX:.0f}px;'
+                        f'width:{w*PX:.0f}px;height:{h*PX:.0f}px;border:2px solid #E8B84B"></div>')
             continue
         if sp.localName != 'sp':
             continue
@@ -127,6 +156,9 @@ for idx, name in enumerate(slides, 1):
             continue
         paras = []
         align = 'left'
+        bodypr = child(tx, 'bodyPr')
+        anchor = bodypr.getAttribute('anchor') if bodypr is not None else ''
+        just = {'ctr': 'center', 'b': 'flex-end'}.get(anchor, 'flex-start')
         for p in tx.childNodes:
             if p.nodeType != 1 or p.localName != 'p':
                 continue
@@ -162,6 +194,7 @@ for idx, name in enumerate(slides, 1):
             out.append(
                 f'<div class="t" style="left:{x*PX:.0f}px;top:{y*PX:.0f}px;width:{w*PX:.0f}px;'
                 f'height:{h*PX:.0f}px;text-align:{align};padding:2px;box-sizing:border-box;'
+                f'display:flex;flex-direction:column;justify-content:{just};'
                 f'line-height:1.25">' + ''.join(paras) + '</div>')
     out.append('</div>')
 

@@ -19,24 +19,32 @@ const LINE = 'DDE4DC'
 const WHITE = 'FFFFFF'
 const MIST = 'E3F2E9'
 
-/* Two builds from one generator — same layout, different typeface.
+/* Three builds from one layout, chosen by DECK_FONT.
  *
- *   DECK_FONT=montserrat → sharper, but Montserrat is not bundled with Office,
- *                          so it only renders right where it is installed.
- *   DECK_FONT=century    → Century Gothic ships with Office. Safe on a venue
- *   (default)              laptop you have never seen.
+ *   (default)            → Arial. The only typeface guaranteed to exist on
+ *                          every device, including phone previews, Google
+ *                          Drive, and Quick Look. Anything else risks a viewer
+ *                          silently substituting a serif — which is exactly
+ *                          what "it looks like Times New Roman" is.
+ *   DECK_FONT=century    → Century Gothic. Geometric, closer to the intended
+ *                          look, ships with Office — but absent from most
+ *                          previewers.
+ *   DECK_FONT=montserrat → Montserrat. Best looking, narrowest support. This
+ *                          is the build the PDF is printed from, because a PDF
+ *                          embeds the font and stops caring what is installed.
  *
- * Century Gothic sets wider than Montserrat at the same point size. Measuring
- * the Montserrat build showed exactly one line under 22% horizontal slack — the
- * slide 7 title, at 14% — so only that one is scaled down, via tight(). */
-const MONTSERRAT = process.env.DECK_FONT === 'montserrat'
-const HEAD = MONTSERRAT ? 'Montserrat' : 'Century Gothic'
+ * Century Gothic and Montserrat set wider than Arial. Measuring the Montserrat
+ * build found exactly one line under 22% horizontal slack — the slide 7 title,
+ * at 14% — so only that one is scaled, via tight(). */
+const FONT = process.env.DECK_FONT || 'arial'
+const FACES = { arial: 'Arial', century: 'Century Gothic', montserrat: 'Montserrat' }
+const HEAD = FACES[FONT] || FACES.arial
 const BODY = HEAD
-const OUTFILE = MONTSERRAT
-  ? 'KeyDate-JCI-Edmonton-Montserrat.pptx'
-  : 'KeyDate-JCI-Edmonton.pptx'
-/** Size for a line with little room to spare, given the wider face. */
-const tight = (n) => (MONTSERRAT ? n : Math.round(n * 0.9))
+const OUTFILE = FONT === 'arial'
+  ? 'KeyDate-JCI-Edmonton.pptx'
+  : `KeyDate-JCI-Edmonton-${HEAD.replace(/ /g, '')}.pptx`
+/** Size for a line with little room to spare, given the wider faces. */
+const tight = (n) => (FONT === 'arial' ? n : Math.round(n * 0.9))
 
 const W = 13.33
 const M = 0.75
@@ -405,15 +413,16 @@ function eyebrow(s, text, color = SPROUT) {
     fontFace: HEAD, fontSize: 23, bold: true, color: WHITE,
   })
 
-  // 1170x1010 → 1.158 aspect. This is the app telling a user to keep renting.
+  // 1170x1258 → 0.930 aspect. This is the app telling a user to keep renting,
+  // cropped to end after the verdict rather than mid-sentence.
   s.addImage({
     data: shot('deck-rentbuy.png'),
-    x: 7.62, y: 2.3, w: 4.96, h: 4.28,
+    x: 8.35, y: 2.0, w: 4.23, h: 4.55,
     shadow: { type: 'outer', color: '000000', opacity: 0.35, blur: 16, offset: 4, angle: 90 },
   })
 
   s.addText('A company on referral fees can never say that.', {
-    x: M, y: 5.95, w: 6.3, h: 0.9, margin: 0,
+    x: M, y: 5.95, w: 7.3, h: 0.9, margin: 0,
     fontFace: HEAD, fontSize: 21, italic: true, color: GOLD,
   })
 

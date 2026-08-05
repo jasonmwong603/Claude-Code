@@ -67,21 +67,31 @@ show the app telling someone not to buy.
 Re-capture whenever the UI changes materially, or the deck starts advertising a
 product that no longer exists.
 
-## Two builds, one generator
+## Which file to use
 
-| File | Typeface | Use when |
+| File | Typeface | When |
 | --- | --- | --- |
-| `KeyDate-JCI-Edmonton.pptx` | **Century Gothic** | **Default.** Ships with Office, so it renders correctly on any machine — including a venue laptop you have never seen. |
-| `KeyDate-JCI-Edmonton-Montserrat.pptx` | Montserrat | Sharper, but only where Montserrat is installed. Substitutes to a default elsewhere and the layout shifts. |
+| **`KeyDate-JCI-Edmonton.pdf`** | Montserrat, **embedded** | **Present from this.** A PDF carries its own fonts and images, so it looks identical on any laptop, projector, or phone — nothing to install, nothing to substitute. |
+| `KeyDate-JCI-Edmonton.pptx` | Arial | Editable, and safe everywhere. Arial is the one face present on every device and previewer. |
+| `…-CenturyGothic.pptx` | Century Gothic | Closer to the intended geometric look. Ships with Office, but absent from most previewers. |
+| `…-Montserrat.pptx` | Montserrat | Best looking, narrowest support — only correct where Montserrat is installed. |
 
-Century Gothic sets wider than Montserrat at the same point size. Rather than
-guessing, the Montserrat build was measured line by line against its container:
-71 of 72 lines had 22% or more horizontal slack, and one — the slide 7 title —
-had 14%. Only that line is scaled down, by `tight()` in the generator.
+**Why there is an Arial build at all.** A `.pptx` stores a font *name*, not the
+font. Open one in a viewer that lacks that face — a phone preview, Google Drive,
+Quick Look, Google Slides — and it silently substitutes, often a serif. The
+deck is then reported as "looking like Times New Roman" while the file itself is
+perfectly correct. Arial is the only typeface reliably present everywhere, so it
+is the default; the PDF is the real answer.
 
-Regardless of which you present from, **export a PDF as backup**
-(File → Export → PDF). PDF embeds the font, so it renders identically anywhere
-and survives a laptop that has neither typeface.
+## Making the PDF
+
+    python3 render.py KeyDate-JCI-Edmonton-Montserrat.pptx --pdf
+    node topdf.mjs
+
+`render.py` reads the packed slide XML — real positions, sizes, colours, and
+the embedded screenshots — into `preview.html`, and Chromium prints it at
+13.333x7.5in. Montserrat is subset into the PDF, so it travels with the file.
+Rebuild the PDF whenever the deck changes.
 
 ## Rebuilding
 
