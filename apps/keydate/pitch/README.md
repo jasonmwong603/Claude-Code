@@ -1,7 +1,13 @@
 # Pitch deck — JCI Edmonton, Creative Young Entrepreneur
 
 `KeyDate-JCI-Edmonton.pptx` — 10 slides, 3-minute pitch plus 1 minute of Q&A.
-Speaker notes are on every slide, including delivery cues.
+
+**The slides are anchors, not a script.** 246 words across the whole deck,
+averaging ~25 per slide, most of that headings and labels. Every sentence that
+would otherwise sit on a wall lives in the speaker notes as a talking point
+instead — if a judge can read the pitch off the screen, they stop listening to
+the person delivering it. Presentation is 15 points and it scores the presenter,
+not the slides.
 
 ## Why it's shaped this way
 
@@ -46,7 +52,11 @@ costs more than the number gains.
 
 ## Rebuilding
 
-    node build-deck.js
+    node build-deck.cjs
 
-Requires `pptxgenjs`. Edit the generator rather than the `.pptx` so the deck
-stays reproducible.
+Requires `pptxgenjs`. `.cjs` because `apps/keydate` is an ES-module package.
+Edit the generator rather than the `.pptx` so the deck stays reproducible.
+
+For visual QA, `render.py` draws the packed slide XML — real positions, real
+sizes — to `preview.html` for screenshotting. LibreOffice can't open pptx in the
+dev sandbox, so this is the check that catches overflow and collisions.

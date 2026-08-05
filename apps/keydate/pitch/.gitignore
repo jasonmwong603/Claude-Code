@@ -1,0 +1,4 @@
+# QA scratch — regenerate with render.py + a headless screenshot pass
+preview.html
+qa-*.png
+node_modules
