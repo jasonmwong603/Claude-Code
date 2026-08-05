@@ -157,6 +157,24 @@
       <span><span id="statusMsg">Checking data source…</span> <span class="sub" id="statusSub"></span></span>
     </div>
 
+    <!-- Launch switch -->
+    <div class="section-label">Beta access</div>
+    <div class="roster" style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:4px">
+            Status: <span id="betaState" style="font-weight:800">—</span>
+          </div>
+          <div style="font-size:12.5px;color:var(--muted);line-height:1.5" id="betaHint">
+            While this is closed, people can join the launch list but nobody can use the app.
+            Flip it once and the whole waitlist gets in at the same moment.
+          </div>
+        </div>
+        <button class="refresh" id="betaToggle" type="button" disabled
+          style="font-size:13.5px;padding:11px 18px;font-weight:700">Sign in to change</button>
+      </div>
+    </div>
+
     <!-- Waitlist -->
     <div class="section-label">Beta waitlist</div>
     <div class="grid">
@@ -345,6 +363,7 @@
     document.getElementById('refresh').addEventListener('click', refreshAll);
     document.getElementById('signinForm').addEventListener('submit', onSignIn);
     document.getElementById('signout').addEventListener('click', onSignOut);
+    document.getElementById('betaToggle').addEventListener('click', onBetaToggle);
 
     if(!sb){ renderNoBackend(); return; }
     refreshAll();
@@ -418,6 +437,59 @@
       document.getElementById('cardFeedback').classList.remove('pending');
     })
     .catch(function(){});
+
+    loadBetaFlag();
+  }
+
+  /* ---- launch switch ----
+   * The flag itself lives in Supabase (app_flags.beta_open) so opening the beta
+   * is one click here rather than a code change plus a deploy. Reading it is
+   * public; writing it re-checks the admin email inside set_beta_open(), so the
+   * publishable key alone can't flip it. */
+  var betaOpen = null;
+  function loadBetaFlag(){
+    fetch(SUPABASE_URL + '/rest/v1/rpc/beta_open', {
+      method:'POST', cache:'no-store',
+      headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Content-Type':'application/json' },
+      body:'{}'
+    })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(v){
+      if(typeof v !== 'boolean'){ set('betaState','not installed'); return; }
+      betaOpen = v;
+      var el = document.getElementById('betaState');
+      el.textContent = v ? 'OPEN — anyone on the list can use the app' : 'CLOSED — collecting signups only';
+      el.style.color = v ? 'var(--sprout)' : 'var(--gold-deep)';
+      renderBetaBtn();
+    })
+    .catch(function(){});
+  }
+
+  function renderBetaBtn(){
+    var btn = document.getElementById('betaToggle');
+    if(!currentAdmin()){ btn.disabled = true; btn.textContent = 'Sign in to change'; return; }
+    if(betaOpen === null){ btn.disabled = true; btn.textContent = 'Unavailable'; return; }
+    btn.disabled = false;
+    btn.textContent = betaOpen ? 'Close the beta' : '🚀 Open the beta to everyone';
+    btn.style.color = betaOpen ? 'var(--muted)' : '#fff';
+    btn.style.background = betaOpen ? '#fff' : 'var(--spruce)';
+    btn.style.borderColor = betaOpen ? 'var(--line)' : 'var(--spruce)';
+  }
+
+  function onBetaToggle(){
+    if(!sb || betaOpen === null || !currentAdmin()) return;
+    var next = !betaOpen;
+    // Opening is outward-facing and immediate — make it deliberate.
+    var msg = next
+      ? 'Open the beta to EVERYONE on the waitlist right now?\n\nAnyone who has joined will be able to use the app immediately.'
+      : 'Close the beta again?\n\nPeople already using it on this device keep access; new visitors will only be able to join the list.';
+    if(!confirm(msg)) return;
+    var btn = document.getElementById('betaToggle');
+    btn.disabled = true; btn.textContent = 'Working…';
+    sb.rpc('set_beta_open', { open: next }).then(function(res){
+      if(res.error){ alert('Could not change it: ' + res.error.message); }
+      loadBetaFlag();
+    }, function(){ loadBetaFlag(); });
   }
 
   function renderNoBackend(){
@@ -443,7 +515,9 @@
       loadUserStats();
       loadReports();
       loadFeedback();
+      renderBetaBtn();
     } else {
+      renderBetaBtn();
       unsubscribeRealtime();
       if(email){ // signed in but not the admin address
         var m=document.getElementById('signinMsg'); m.className='msg err';

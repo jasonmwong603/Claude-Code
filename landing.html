@@ -100,11 +100,11 @@
              fake signups don't inflate the count. -->
         <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"
           style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" />
-        <button type="submit">Join &amp; start my plan →</button>
+        <button type="submit">Save my spot →</button>
       </form>
-      <div class="note">Free beta · no credit card · takes about a minute.<br />
-        Your email joins the launch list — we’ll tell you when we go live. No spam.</div>
-      <p class="success" data-success>You’re in — opening your plan… 🔑</p>
+      <div class="note">Free beta · no credit card.<br />
+        We’re opening KeyDate to everyone at the same time — we’ll email you the moment it’s live. No spam.</div>
+      <p class="success" data-success>You’re on the list 🎉 We’ll email you when KeyDate opens.</p>
     </section>
 
     <!-- Footer -->
@@ -150,13 +150,12 @@
       if(!email || email.indexOf('@')<1){ input.focus(); return; }
       var done = function(){
         saveLocal(email);
-        // Remember that this person joined, so the app lets them straight in and
-        // doesn't ask again on this device.
+        // Remember the address so the app doesn't ask twice on this device. This
+        // records that they joined — it does NOT admit them; the app checks the
+        // server-side beta_open flag for that, so the cohort starts together.
         try{ localStorage.setItem('keydate-beta-email', email); }catch(e){}
         var s=form.parentElement.querySelector('[data-success]'); if(s) s.classList.add('on');
         form.reset();
-        // Hand them into the beta.
-        setTimeout(function(){ location.href = './app/'; }, 650);
       };
       // Send to the shared store in the background (fire-and-forget) and give the
       // visitor instant confirmation — the localStorage mirror in done() means a

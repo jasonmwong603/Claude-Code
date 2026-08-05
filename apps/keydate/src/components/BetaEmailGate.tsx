@@ -1,13 +1,17 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { C, DISPLAY_FONT, BODY_FONT } from '../theme'
 import { supabase } from '../lib/auth'
+import { betaOpenCached, fetchBetaOpen } from '../lib/flags'
 
-/* Beta entry gate: joining the launch list is how you get into the beta.
+/* Beta entry gate.
  *
- * The normal path is the landing page, which captures the email and forwards
- * here with the flag already set. This component is the backstop for anyone who
- * lands on /app/ directly (shared link, bookmark), so the email is captured
- * either way. Stored per-device, so it's asked once. */
+ * Signing up joins the launch list — it does NOT grant access. Everyone waits
+ * until the admin flips `beta_open`, so the whole cohort starts together rather
+ * than the earliest signups getting a head start. Once the flag is on, joining
+ * (or having already joined) opens the app immediately.
+ *
+ * /prelaunchdemo/ never reaches this component, so demos still work while the
+ * public door is shut. */
 
 const EMAIL_KEY = 'keydate-beta-email'
 
@@ -19,21 +23,41 @@ export function hasJoined(): boolean {
   }
 }
 
+type Phase = 'checking' | 'form' | 'waiting' | 'in'
+
 export function BetaEmailGate({ children }: { children: ReactNode }) {
-  const [joined, setJoined] = useState(hasJoined)
+  // Cached-open + already-joined is the steady state after launch: no flash, no
+  // network wait, straight into the app.
+  const [phase, setPhase] = useState<Phase>(() =>
+    betaOpenCached() && hasJoined() ? 'in' : 'checking',
+  )
+  const open = useRef(betaOpenCached())
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [honey, setHoney] = useState('')
 
-  if (joined) return <>{children}</>
+  useEffect(() => {
+    if (phase !== 'checking') return
+    let alive = true
+    void fetchBetaOpen().then((isOpen) => {
+      if (!alive) return
+      open.current = isOpen
+      setPhase(isOpen ? (hasJoined() ? 'in' : 'form') : hasJoined() ? 'waiting' : 'form')
+    })
+    return () => {
+      alive = false
+    }
+  }, [phase])
+
+  if (phase === 'in') return <>{children}</>
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     const value = email.trim()
-    // Honeypot filled → bot. Accept silently without storing anything.
+    // Honeypot filled → bot. Show the same confirmation, store nothing.
     if (honey) {
-      setJoined(true)
+      setPhase('waiting')
       return
     }
     if (!value || value.indexOf('@') < 1) {
@@ -46,16 +70,130 @@ export function BetaEmailGate({ children }: { children: ReactNode }) {
     } catch {
       /* private mode — continue for this session */
     }
-    // Fire-and-forget: never make the user wait on the network to get in.
+    // Fire-and-forget: never make the user wait on the network to be counted.
     if (supabase) {
       void supabase.from('waitlist').insert({ email: value, source: 'app' }).then(
         () => {},
         () => {},
       )
     }
-    setJoined(true)
+    setBusy(false)
+    setPhase(open.current ? 'in' : 'waiting')
   }
 
+  return (
+    <Shell>
+      {phase === 'checking' ? (
+        <p style={{ fontSize: 14, color: C.sub, marginTop: 18 }}>Loading…</p>
+      ) : phase === 'waiting' ? (
+        <>
+          <h1 style={h1Style}>You’re on the list 🎉</h1>
+          <p style={pStyle}>
+            KeyDate opens to everyone at once, so nobody starts ahead of anyone else. We’ll email
+            you the moment it’s live — keep an eye on your inbox.
+          </p>
+          <div
+            style={{
+              background: C.sproutSoft,
+              border: `1.5px solid ${C.sprout}`,
+              borderRadius: 14,
+              padding: '14px 16px',
+              fontSize: 13.5,
+              color: C.spruce,
+              lineHeight: 1.55,
+            }}
+          >
+            🔑 Want in sooner? Send this to a friend who’s trying to buy their first place — we’re
+            opening the Edmonton beta first.
+          </div>
+        </>
+      ) : (
+        <>
+          <h1 style={h1Style}>Join the beta launch list</h1>
+          <p style={pStyle}>
+            Drop your email and you’re in line for the beta. We’re opening it to everyone at the
+            same time — we’ll email you the moment it’s live. No spam.
+          </p>
+
+          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                setError('')
+              }}
+              placeholder="you@email.com"
+              aria-label="Email address"
+              autoFocus
+              style={{
+                font: 'inherit',
+                fontSize: 15,
+                textAlign: 'center',
+                padding: '14px 16px',
+                borderRadius: 14,
+                border: `1.5px solid ${error ? C.err : C.line}`,
+                background: '#fff',
+                color: C.ink,
+                outline: 'none',
+              }}
+            />
+            {/* Honeypot — hidden from people, catches bots. */}
+            <input
+              type="text"
+              value={honey}
+              onChange={(e) => setHoney(e.target.value)}
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              style={{ position: 'absolute', left: -9999, width: 1, height: 1, opacity: 0 }}
+            />
+            <button
+              type="submit"
+              disabled={busy}
+              style={{
+                font: 'inherit',
+                fontFamily: DISPLAY_FONT,
+                fontWeight: 700,
+                fontSize: 15,
+                padding: '14px 16px',
+                borderRadius: 14,
+                border: 'none',
+                color: '#fff',
+                background: C.spruce,
+                cursor: busy ? 'default' : 'pointer',
+                opacity: busy ? 0.7 : 1,
+              }}
+            >
+              {busy ? 'Saving…' : 'Save my spot →'}
+            </button>
+          </form>
+
+          {error && <p style={{ fontSize: 13, color: C.err, marginTop: 12, fontWeight: 600 }}>{error}</p>}
+        </>
+      )}
+    </Shell>
+  )
+}
+
+const h1Style = {
+  fontFamily: DISPLAY_FONT,
+  fontWeight: 800,
+  fontSize: 20,
+  margin: '16px 0 8px',
+  textWrap: 'balance',
+} as const
+
+const pStyle = {
+  fontSize: 14,
+  color: C.sub,
+  lineHeight: 1.55,
+  margin: '0 auto 22px',
+  maxWidth: 320,
+} as const
+
+/** The branded card every gate state sits inside. */
+function Shell({ children }: { children: ReactNode }) {
   return (
     <div
       style={{
@@ -93,69 +231,8 @@ export function BetaEmailGate({ children }: { children: ReactNode }) {
         <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 800, fontSize: 28, letterSpacing: '-0.02em' }}>
           Key<span style={{ color: C.sprout }}>Date</span>
         </div>
-        <h1 style={{ fontFamily: DISPLAY_FONT, fontWeight: 800, fontSize: 20, margin: '16px 0 8px', textWrap: 'balance' }}>
-          Join the beta
-        </h1>
-        <p style={{ fontSize: 14, color: C.sub, lineHeight: 1.55, margin: '0 auto 22px', maxWidth: 320 }}>
-          Pop in your email and you’re straight into your plan. You’ll also be on the launch list —
-          we’ll let you know when KeyDate goes live. No spam.
-        </p>
 
-        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value)
-              setError('')
-            }}
-            placeholder="you@email.com"
-            aria-label="Email address"
-            autoFocus
-            style={{
-              font: 'inherit',
-              fontSize: 15,
-              textAlign: 'center',
-              padding: '14px 16px',
-              borderRadius: 14,
-              border: `1.5px solid ${error ? C.err : C.line}`,
-              background: '#fff',
-              color: C.ink,
-              outline: 'none',
-            }}
-          />
-          {/* Honeypot — hidden from people, catches bots. */}
-          <input
-            type="text"
-            value={honey}
-            onChange={(e) => setHoney(e.target.value)}
-            tabIndex={-1}
-            autoComplete="off"
-            aria-hidden="true"
-            style={{ position: 'absolute', left: -9999, width: 1, height: 1, opacity: 0 }}
-          />
-          <button
-            type="submit"
-            disabled={busy}
-            style={{
-              font: 'inherit',
-              fontFamily: DISPLAY_FONT,
-              fontWeight: 700,
-              fontSize: 15,
-              padding: '14px 16px',
-              borderRadius: 14,
-              border: 'none',
-              color: '#fff',
-              background: C.spruce,
-              cursor: busy ? 'default' : 'pointer',
-              opacity: busy ? 0.7 : 1,
-            }}
-          >
-            {busy ? 'Opening…' : 'Join & start my plan →'}
-          </button>
-        </form>
-
-        {error && <p style={{ fontSize: 13, color: C.err, marginTop: 12, fontWeight: 600 }}>{error}</p>}
+        {children}
 
         <p style={{ fontSize: 11.5, color: C.sub, marginTop: 22, lineHeight: 1.5 }}>
           Free beta · no credit card. Educational only — not financial, legal, or tax advice.
