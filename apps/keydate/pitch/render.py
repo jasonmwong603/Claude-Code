@@ -87,6 +87,16 @@ for idx, name in enumerate(slides, 1):
                     f'color:#1E4D3B;font:bold 15px sans-serif;display:flex;align-items:center;'
                     f'justify-content:center">[ native chart ]</div>')
             continue
+        if sp.localName == 'pic':
+            g = geom(sp)
+            if g:
+                x, y, w, h = g
+                out.append(
+                    f'<div class="t" style="left:{x*PX:.0f}px;top:{y*PX:.0f}px;width:{w*PX:.0f}px;'
+                    f'height:{h*PX:.0f}px;border:2px solid #E8B84B;background:#E8B84B22;'
+                    f'color:#17302A;font:bold 13px sans-serif;display:flex;align-items:center;'
+                    f'justify-content:center;text-align:center">[ UI screenshot ]</div>')
+            continue
         if sp.localName != 'sp':
             continue
         g = geom(sp)

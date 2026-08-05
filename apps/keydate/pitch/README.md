@@ -50,6 +50,23 @@ No national household-income figure is quoted anywhere. The comparable series
 doesn't line up cleanly against 2006, and a shaky number invites a question that
 costs more than the number gains.
 
+## UI screenshots
+
+Slides 5 and 8 carry real screens captured from a production build, not
+mockups. `capture-ui.mjs` drives the app in a headless phone viewport at 3x and
+writes them; the crop step is documented at the foot of that file.
+
+The scenario is chosen, not incidental: an Edmonton two-storey on $92k income
+with $9k saved puts the keys date years out *and* trips the stress-test warning,
+so the dashboard shot argues "a date isn't an approval" without a slide having
+to say it. The rent-vs-buy capture walks the rent up until the app returns
+"Renting + investing wins", and asserts that verdict is on screen before
+saving — that image is the evidence for the ethics slide, so it must actually
+show the app telling someone not to buy.
+
+Re-capture whenever the UI changes materially, or the deck starts advertising a
+product that no longer exists.
+
 ## Two builds, one generator
 
 | File | Typeface | Use when |

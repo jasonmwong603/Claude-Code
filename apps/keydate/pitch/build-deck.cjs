@@ -1,4 +1,6 @@
 const pptxgen = require('pptxgenjs')
+const fs = require('fs')
+const path = require('path')
 
 /* KeyDate — JCI Edmonton CYE pitch deck.
  *
@@ -60,6 +62,14 @@ function keyMark(s, x, y, scale = 1, color = GOLD) {
     x: x + 0.66 * scale, y: y + 0.17 * scale, w: 0.075 * scale, h: 0.2 * scale,
     fill: { color }, line: { color, width: 0 },
   })
+}
+
+/** Real UI, captured from the running app by capture-ui.mjs. Screenshots beat a
+ *  mockup here: the dashboard shot happens to contain the stress-test warning,
+ *  which argues the honesty point better than a sentence about it could. */
+function shot(name) {
+  const f = path.join(__dirname, name)
+  return 'image/png;base64,' + fs.readFileSync(f).toString('base64')
 }
 
 const darkSlide = () => {
@@ -259,30 +269,17 @@ function eyebrow(s, text, color = SPROUT) {
     y += 1.2
   })
 
-  s.addShape(pres.ShapeType.roundRect, {
-    x: 8.9, y: 2.35, w: 3.68, h: 3.55, rectRadius: 0.18,
-    fill: { color: SPRUCE }, line: { color: SPRUCE, width: 0 },
+  // 1170x1300 → 0.900 aspect
+  s.addImage({
+    data: shot('deck-dashboard.png'),
+    x: 8.78, y: 1.95, w: 3.6, h: 4.0,
+    shadow: { type: 'outer', color: '17302A', opacity: 0.28, blur: 14, offset: 4, angle: 90 },
   })
-  s.addText('KEYS IN HAND', {
-    x: 9.25, y: 2.8, w: 3.0, h: 0.3, margin: 0,
-    fontFace: BODY, fontSize: 11, bold: true, charSpacing: 2, color: GOLD,
+  s.addText('Real screen, real plan', {
+    x: 8.78, y: 6.05, w: 3.6, h: 0.35, margin: 0, align: 'center',
+    fontFace: BODY, fontSize: 12, color: MUTED,
   })
-  s.addText('June 2029', {
-    x: 9.25, y: 3.2, w: 3.1, h: 0.9, margin: 0,
-    fontFace: HEAD, fontSize: 33, bold: true, color: WHITE,
-  })
-  s.addShape(pres.ShapeType.roundRect, {
-    x: 9.25, y: 4.35, w: 3.0, h: 0.28, rectRadius: 0.14,
-    fill: { color: '2C6349' }, line: { color: '2C6349', width: 0 },
-  })
-  s.addShape(pres.ShapeType.roundRect, {
-    x: 9.25, y: 4.35, w: 1.74, h: 0.28, rectRadius: 0.14,
-    fill: { color: SPROUT }, line: { color: SPROUT, width: 0 },
-  })
-  s.addText('58% of the way there', {
-    x: 9.25, y: 4.78, w: 3.1, h: 0.35, margin: 0,
-    fontFace: BODY, fontSize: 13, color: MIST,
-  })
+
   s.addNotes(
     'HOLD UP THE PHONE HERE. Have your own plan already on screen — never type live, never rely on venue wifi.\n\n' +
     'Talking points: income, savings, monthly · built on the real Canadian rules — FHSA, Home Buyers\' Plan, the stress test · every dollar saved builds the house on screen.',
@@ -391,27 +388,35 @@ function eyebrow(s, text, color = SPROUT) {
   })
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: M, y: 2.55, w: 5.55, h: 2.4, rectRadius: 0.16,
+    x: M, y: 2.3, w: 6.3, h: 1.55, rectRadius: 0.16,
     fill: { color: '17402F' }, line: { color: SPROUT, width: 1.2 },
   })
-  s.addText('We never sell you\nto brokers.', {
-    x: M + 0.5, y: 2.55, w: 4.7, h: 2.4, margin: 0, valign: 'middle',
-    fontFace: HEAD, fontSize: 23, bold: true, color: WHITE, lineSpacing: 34,
+  s.addText('We never sell you to brokers.', {
+    x: M + 0.5, y: 2.3, w: 5.4, h: 1.55, margin: 0, valign: 'middle',
+    fontFace: HEAD, fontSize: 23, bold: true, color: WHITE,
   })
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: M + 6.05, y: 2.55, w: 5.55, h: 2.4, rectRadius: 0.16,
+    x: M, y: 4.05, w: 6.3, h: 1.55, rectRadius: 0.16,
     fill: { color: '17402F' }, line: { color: SPROUT, width: 1.2 },
   })
-  s.addText('We built the tool\nthat says don’t buy.', {
-    x: M + 6.55, y: 2.55, w: 4.7, h: 2.4, margin: 0, valign: 'middle',
-    fontFace: HEAD, fontSize: 23, bold: true, color: WHITE, lineSpacing: 34,
+  s.addText('We built the tool that says don’t buy.', {
+    x: M + 0.5, y: 4.05, w: 5.4, h: 1.55, margin: 0, valign: 'middle',
+    fontFace: HEAD, fontSize: 23, bold: true, color: WHITE,
+  })
+
+  // 1170x1010 → 1.158 aspect. This is the app telling a user to keep renting.
+  s.addImage({
+    data: shot('deck-rentbuy.png'),
+    x: 7.62, y: 2.3, w: 4.96, h: 4.28,
+    shadow: { type: 'outer', color: '000000', opacity: 0.35, blur: 16, offset: 4, angle: 90 },
   })
 
   s.addText('A company on referral fees can never say that.', {
-    x: M, y: 5.5, w: 11.6, h: 0.7, margin: 0,
-    fontFace: HEAD, fontSize: 23, italic: true, color: GOLD,
+    x: M, y: 5.95, w: 6.3, h: 0.9, margin: 0,
+    fontFace: HEAD, fontSize: 21, italic: true, color: GOLD,
   })
+
   s.addNotes(
     'SECOND BIGGEST SCORING SLIDE — community + sustainability is 20 points.\n\n' +
     'Talking points: the obvious way to monetise this is selling users to mortgage brokers — people who just told you their income, their savings, and exactly when they\'ll need a mortgage · most valuable lead list in the country · our privacy policy says we never will, in writing, live today · the moment I\'m paid to push you toward a house I stop being able to tell you the truth.\n\n' +
