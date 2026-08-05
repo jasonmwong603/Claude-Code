@@ -49,6 +49,18 @@ const tight = (n) => (FONT === 'arial' ? n : Math.round(n * 0.9))
 const W = 13.33
 const M = 0.75
 
+/* Layout grid. Every slide places against these, so headings land on the same
+ * baseline, content blocks start together, and the right-hand images share a
+ * margin with the text above them. Ad-hoc y-values are what made the deck look
+ * like ten separate slides rather than one deck. */
+const RIGHT = W - M          // 12.58 — right edge of the live area
+const EYEBROW_Y = 0.55
+const TITLE_Y = 1.05         // titled slides (4-9)
+const CONTENT_Y = 2.45       // where content starts on every slide
+const STATEMENT_Y = 2.15     // big statements on the wordless slides (2,3,10)
+const MARK_Y = 1.05          // the key mark, same height wherever it appears
+const SOURCE_Y = 6.75
+
 const pres = new pptxgen()
 pres.layout = 'LAYOUT_WIDE'
 pres.author = 'KeyDate'
@@ -85,7 +97,7 @@ const lightSlide = () => {
 
 function eyebrow(s, text, color = SPROUT) {
   s.addText(text.toUpperCase(), {
-    x: M, y: 0.55, w: 10, h: 0.3, margin: 0,
+    x: M, y: EYEBROW_Y, w: 10, h: 0.3, margin: 0,
     fontFace: BODY, fontSize: 12, bold: true, charSpacing: 2, color,
   })
 }
@@ -93,24 +105,24 @@ function eyebrow(s, text, color = SPROUT) {
 /* ───────────────────────── 1. Title ───────────────────────── */
 {
   const s = darkSlide()
-  keyMark(s, M, 1.15, 1.5)
+  keyMark(s, M, MARK_Y, 1.5)
   s.addText([
     { text: 'Key', options: { color: WHITE } },
     { text: 'Date', options: { color: SPROUT } },
   ], {
-    x: M, y: 2.45, w: 9, h: 1.1, margin: 0,
+    x: M, y: 2.35, w: 9, h: 1.1, margin: 0,
     fontFace: HEAD, fontSize: 58, bold: true,
   })
   s.addText('Owning a home isn’t impossible.\nIt has a date.', {
-    x: M, y: 3.65, w: 10, h: 1.6, margin: 0,
+    x: M, y: 3.55, w: 10, h: 1.6, margin: 0,
     fontFace: HEAD, fontSize: 28, color: MIST, lineSpacing: 42,
   })
   s.addText('JCI Edmonton  ·  Creative Young Entrepreneur', {
-    x: M, y: 6.3, w: 8, h: 0.35, margin: 0,
+    x: M, y: 6.55, w: 8, h: 0.35, margin: 0,
     fontFace: BODY, fontSize: 14, color: MIST, bold: true,
   })
   s.addText('keydate.ca', {
-    x: W - M - 3, y: 6.3, w: 3, h: 0.35, margin: 0, align: 'right',
+    x: RIGHT - 3, y: 6.55, w: 3, h: 0.35, margin: 0, align: 'right',
     fontFace: BODY, fontSize: 14, color: GOLD, bold: true,
   })
   s.addNotes(
@@ -125,11 +137,11 @@ function eyebrow(s, text, color = SPROUT) {
   const s = lightSlide()
   eyebrow(s, 'Why I built this')
   s.addText('I bought my first place.', {
-    x: M, y: 1.85, w: 11.6, h: 1.1, margin: 0,
+    x: M, y: STATEMENT_Y, w: 11.6, h: 1.1, margin: 0,
     fontFace: HEAD, fontSize: 44, bold: true, color: INK,
   })
   s.addText('I was guessing the whole way.', {
-    x: M, y: 3.05, w: 11.6, h: 1.0, margin: 0,
+    x: M, y: 3.35, w: 11.6, h: 1.0, margin: 0,
     fontFace: HEAD, fontSize: 37, bold: true, color: SPRUCE,
   })
 
@@ -137,11 +149,11 @@ function eyebrow(s, text, color = SPROUT) {
   let x = M
   chips.forEach((c) => {
     s.addShape(pres.ShapeType.roundRect, {
-      x, y: 4.7, w: 3.68, h: 0.85, rectRadius: 0.14,
+      x, y: 4.9, w: 3.68, h: 0.9, rectRadius: 0.14,
       fill: { color: MIST }, line: { color: SPROUT, width: 1 },
     })
     s.addText(c, {
-      x, y: 4.7, w: 3.68, h: 0.85, margin: 0, align: 'center', valign: 'middle',
+      x, y: 4.9, w: 3.68, h: 0.9, margin: 0, align: 'center', valign: 'middle',
       fontFace: BODY, fontSize: 16, bold: true, color: SPRUCE,
     })
     x += 3.96
@@ -159,13 +171,13 @@ function eyebrow(s, text, color = SPROUT) {
 /* ─────────────── 3. Nobody could tell me when ─────────────── */
 {
   const s = darkSlide()
-  keyMark(s, M, 1.2, 1.0)
+  keyMark(s, M, MARK_Y, 1.0)
   s.addText('Nobody could tell me when.', {
-    x: M, y: 2.15, w: 11.6, h: 1.2, margin: 0,
+    x: M, y: STATEMENT_Y, w: 11.6, h: 1.2, margin: 0,
     fontFace: HEAD, fontSize: 44, bold: true, color: GOLD,
   })
   const qs = ['How much do I actually need?', 'Am I even close?', 'Is this the year, or five years away?']
-  let y = 3.75
+  let y = 3.85
   qs.forEach((q) => {
     s.addShape(pres.ShapeType.ellipse, {
       x: M + 0.05, y: y + 0.14, w: 0.18, h: 0.18,
@@ -188,25 +200,25 @@ function eyebrow(s, text, color = SPROUT) {
   const s = lightSlide()
   eyebrow(s, 'And I had it easier than the people behind me')
   s.addText('One generation apart', {
-    x: M, y: 1.0, w: 11.6, h: 0.9, margin: 0,
+    x: M, y: TITLE_Y, w: 11.6, h: 0.9, margin: 0,
     fontFace: HEAD, fontSize: 35, bold: true, color: INK,
   })
 
-  const cardY = 2.45
+  const cardY = CONTENT_Y
   const cardW = 5.415
   const GAP = 1.0
-  const cardH = 2.35
+  const cardH = 3.1
 
   s.addShape(pres.ShapeType.roundRect, {
     x: M, y: cardY, w: cardW, h: cardH, rectRadius: 0.14,
     fill: { color: WHITE }, line: { color: LINE, width: 1 },
   })
   s.addText('2006', {
-    x: M + 0.45, y: cardY + 0.32, w: 3, h: 0.38, margin: 0,
+    x: M + 0.45, y: cardY + 0.42, w: 3, h: 0.38, margin: 0,
     fontFace: BODY, fontSize: 16, bold: true, color: MUTED,
   })
   s.addText('$276,974', {
-    x: M + 0.45, y: cardY + 0.85, w: 4.5, h: 1.0, margin: 0,
+    x: M + 0.45, y: cardY + 1.05, w: 4.5, h: 1.0, margin: 0,
     fontFace: HEAD, fontSize: 42, bold: true, color: INK,
   })
 
@@ -215,24 +227,28 @@ function eyebrow(s, text, color = SPROUT) {
     fill: { color: SPRUCE }, line: { color: SPRUCE, width: 1 },
   })
   s.addText('TODAY', {
-    x: M + cardW + GAP + 0.45, y: cardY + 0.32, w: 3, h: 0.38, margin: 0,
+    x: M + cardW + GAP + 0.45, y: cardY + 0.42, w: 3, h: 0.38, margin: 0,
     fontFace: BODY, fontSize: 16, bold: true, color: GOLD,
   })
   s.addText('$696,078', {
-    x: M + cardW + GAP + 0.45, y: cardY + 0.85, w: 4.5, h: 1.0, margin: 0,
+    x: M + cardW + GAP + 0.45, y: cardY + 1.05, w: 4.5, h: 1.0, margin: 0,
     fontFace: HEAD, fontSize: 42, bold: true, color: WHITE,
   })
   s.addText('2.5×', {
-    x: M + cardW, y: cardY + 0.95, w: GAP, h: 0.6, margin: 0, align: 'center',
+    x: M + cardW, y: cardY + 1.25, w: GAP, h: 0.6, margin: 0, align: 'center',
     fontFace: HEAD, fontSize: 23, bold: true, color: SPROUT,
   })
 
-  s.addText('Average Canadian home', {
-    x: M, y: 5.15, w: 11.6, h: 0.4, margin: 0,
-    fontFace: BODY, fontSize: 15, color: MUTED,
+  s.addText('average Canadian home', {
+    x: M + 0.45, y: cardY + 2.32, w: 4.5, h: 0.35, margin: 0,
+    fontFace: BODY, fontSize: 13, color: MUTED,
+  })
+  s.addText('average Canadian home', {
+    x: M + cardW + GAP + 0.45, y: cardY + 2.32, w: 4.5, h: 0.35, margin: 0,
+    fontFace: BODY, fontSize: 13, color: MIST,
   })
   s.addText('Source: CREA (2006 average MLS price) · national average, June 2026', {
-    x: M, y: 6.6, w: 11.6, h: 0.3, margin: 0,
+    x: M, y: SOURCE_Y, w: 11.6, h: 0.3, margin: 0,
     fontFace: BODY, fontSize: 10, color: MUTED,
   })
   s.addNotes(
@@ -247,12 +263,12 @@ function eyebrow(s, text, color = SPROUT) {
   const s = lightSlide()
   eyebrow(s, 'So I built the thing I needed')
   s.addText('Sixty seconds in. A real date out.', {
-    x: M, y: 1.0, w: 11.6, h: 0.9, margin: 0,
+    x: M, y: TITLE_Y, w: 11.6, h: 0.9, margin: 0,
     fontFace: HEAD, fontSize: 35, bold: true, color: INK,
   })
 
   const steps = [['1', 'Three questions'], ['2', 'A real month'], ['3', 'Watch it get closer']]
-  let y = 2.55
+  let y = CONTENT_Y
   steps.forEach(([n, head]) => {
     s.addShape(pres.ShapeType.ellipse, {
       x: M, y, w: 0.7, h: 0.7,
@@ -272,11 +288,11 @@ function eyebrow(s, text, color = SPROUT) {
   // 1170x1300 → 0.900 aspect
   s.addImage({
     data: shot('deck-dashboard.png'),
-    x: 8.78, y: 1.95, w: 3.6, h: 4.0,
+    x: RIGHT - 3.6, y: CONTENT_Y, w: 3.6, h: 4.0,
     shadow: { type: 'outer', color: '17302A', opacity: 0.28, blur: 14, offset: 4, angle: 90 },
   })
   s.addText('Real screen, real plan', {
-    x: 8.78, y: 6.05, w: 3.6, h: 0.35, margin: 0, align: 'center',
+    x: RIGHT - 3.6, y: CONTENT_Y + 4.1, w: 3.6, h: 0.35, margin: 0, align: 'center',
     fontFace: BODY, fontSize: 12, color: MUTED,
   })
 
@@ -291,41 +307,41 @@ function eyebrow(s, text, color = SPROUT) {
   const s = lightSlide()
   eyebrow(s, 'Innovation')
   s.addText('We changed the question', {
-    x: M, y: 1.0, w: 11.6, h: 0.9, margin: 0,
+    x: M, y: TITLE_Y, w: 11.6, h: 0.9, margin: 0,
     fontFace: HEAD, fontSize: 35, bold: true, color: INK,
   })
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: M, y: 2.5, w: 5.55, h: 3.0, rectRadius: 0.16,
+    x: M, y: CONTENT_Y, w: 5.55, h: 3.45, rectRadius: 0.16,
     fill: { color: WHITE }, line: { color: LINE, width: 1 },
   })
   s.addText('EVERY OTHER TOOL', {
-    x: M + 0.5, y: 2.9, w: 4.6, h: 0.3, margin: 0,
+    x: M + 0.5, y: CONTENT_Y + 0.5, w: 4.6, h: 0.3, margin: 0,
     fontFace: BODY, fontSize: 11, bold: true, charSpacing: 2, color: MUTED,
   })
   s.addText('“Afford it today?”', {
-    x: M + 0.5, y: 3.35, w: 4.7, h: 0.7, margin: 0,
+    x: M + 0.5, y: CONTENT_Y + 1.05, w: 4.7, h: 0.7, margin: 0,
     fontFace: HEAD, fontSize: 25, bold: true, color: MUTED,
   })
   s.addText('No.', {
-    x: M + 0.5, y: 4.35, w: 4.6, h: 0.7, margin: 0,
+    x: M + 0.5, y: CONTENT_Y + 2.25, w: 4.6, h: 0.7, margin: 0,
     fontFace: HEAD, fontSize: 35, bold: true, color: 'B4452F',
   })
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: M + 6.05, y: 2.5, w: 5.55, h: 3.0, rectRadius: 0.16,
+    x: M + 6.05, y: CONTENT_Y, w: 5.55, h: 3.45, rectRadius: 0.16,
     fill: { color: SPRUCE }, line: { color: SPRUCE, width: 0 },
   })
   s.addText('KEYDATE', {
-    x: M + 6.55, y: 2.9, w: 4.6, h: 0.3, margin: 0,
+    x: M + 6.55, y: CONTENT_Y + 0.5, w: 4.6, h: 0.3, margin: 0,
     fontFace: BODY, fontSize: 11, bold: true, charSpacing: 2, color: GOLD,
   })
   s.addText('“When?”', {
-    x: M + 6.55, y: 3.35, w: 4.7, h: 0.7, margin: 0,
+    x: M + 6.55, y: CONTENT_Y + 1.05, w: 4.7, h: 0.7, margin: 0,
     fontFace: HEAD, fontSize: 25, bold: true, color: WHITE,
   })
   s.addText('June 2029.', {
-    x: M + 6.55, y: 4.35, w: 4.6, h: 0.7, margin: 0,
+    x: M + 6.55, y: CONTENT_Y + 2.25, w: 4.6, h: 0.7, margin: 0,
     fontFace: HEAD, fontSize: 35, bold: true, color: SPROUT,
   })
   s.addNotes(
@@ -340,7 +356,7 @@ function eyebrow(s, text, color = SPROUT) {
   const s = lightSlide()
   eyebrow(s, 'It was never just my story')
   s.addText('The engine doesn’t change at the border', {
-    x: M, y: 1.0, w: 11.6, h: 0.9, margin: 0,
+    x: M, y: TITLE_Y, w: 11.6, h: 0.9, margin: 0,
     fontFace: HEAD, fontSize: tight(35), bold: true, color: INK,
   })
 
@@ -349,26 +365,26 @@ function eyebrow(s, text, color = SPROUT) {
   countries.forEach((c, i) => {
     const first = i === 0
     s.addShape(pres.ShapeType.roundRect, {
-      x, y: 2.65, w: 2.16, h: 1.15, rectRadius: 0.12,
+      x, y: CONTENT_Y, w: 2.16, h: 1.15, rectRadius: 0.12,
       fill: { color: first ? SPROUT : WHITE },
       line: { color: first ? SPROUT : LINE, width: 1 },
     })
     s.addText(c, {
-      x, y: 2.65, w: 2.16, h: 1.15, margin: 0, align: 'center', valign: 'middle',
+      x, y: CONTENT_Y, w: 2.16, h: 1.15, margin: 0, align: 'center', valign: 'middle',
       fontFace: BODY, fontSize: 15, bold: true, color: first ? WHITE : INK,
     })
     x += 2.32
   })
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: M, y: 4.5, w: 11.6, h: 1.5, rectRadius: 0.16,
+    x: M, y: CONTENT_Y + 1.75, w: 11.6, h: 1.5, rectRadius: 0.16,
     fill: { color: SPRUCE }, line: { color: SPRUCE, width: 0 },
   })
   s.addText([
     { text: 'The engine stays. ', options: { color: MIST } },
     { text: 'The rulebook swaps.', options: { color: GOLD, bold: true } },
   ], {
-    x: M + 0.6, y: 4.5, w: 10.4, h: 1.5, margin: 0, valign: 'middle',
+    x: M + 0.6, y: CONTENT_Y + 1.75, w: 10.4, h: 1.5, margin: 0, valign: 'middle',
     fontFace: HEAD, fontSize: 26,
   })
   s.addNotes(
@@ -383,25 +399,25 @@ function eyebrow(s, text, color = SPROUT) {
   const s = darkSlide()
   eyebrow(s, 'Community impact & sustainability', GOLD)
   s.addText('The money we refuse to take', {
-    x: M, y: 1.0, w: 11.6, h: 0.9, margin: 0,
+    x: M, y: TITLE_Y, w: 11.6, h: 0.9, margin: 0,
     fontFace: HEAD, fontSize: 35, bold: true, color: WHITE,
   })
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: M, y: 2.3, w: 6.3, h: 1.55, rectRadius: 0.16,
+    x: M, y: CONTENT_Y, w: 6.3, h: 1.55, rectRadius: 0.16,
     fill: { color: '17402F' }, line: { color: SPROUT, width: 1.2 },
   })
-  s.addText('We never sell you to brokers.', {
-    x: M + 0.5, y: 2.3, w: 5.4, h: 1.55, margin: 0, valign: 'middle',
+  s.addText('We never sell you\nto brokers.', {
+    x: M + 0.5, y: CONTENT_Y, w: 5.4, h: 1.55, margin: 0, valign: 'middle',
     fontFace: HEAD, fontSize: 23, bold: true, color: WHITE,
   })
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: M, y: 4.05, w: 6.3, h: 1.55, rectRadius: 0.16,
+    x: M, y: CONTENT_Y + 1.75, w: 6.3, h: 1.55, rectRadius: 0.16,
     fill: { color: '17402F' }, line: { color: SPROUT, width: 1.2 },
   })
-  s.addText('We built the tool that says don’t buy.', {
-    x: M + 0.5, y: 4.05, w: 5.4, h: 1.55, margin: 0, valign: 'middle',
+  s.addText('We built the tool\nthat says don’t buy.', {
+    x: M + 0.5, y: CONTENT_Y + 1.75, w: 5.4, h: 1.55, margin: 0, valign: 'middle',
     fontFace: HEAD, fontSize: 23, bold: true, color: WHITE,
   })
 
@@ -409,12 +425,12 @@ function eyebrow(s, text, color = SPROUT) {
   // cropped to end after the verdict rather than mid-sentence.
   s.addImage({
     data: shot('deck-rentbuy.png'),
-    x: 8.35, y: 2.0, w: 4.23, h: 4.55,
+    x: RIGHT - 3.9, y: CONTENT_Y, w: 3.9, h: 4.19,
     shadow: { type: 'outer', color: '000000', opacity: 0.35, blur: 16, offset: 4, angle: 90 },
   })
 
   s.addText('A company on referral fees can never say that.', {
-    x: M, y: 5.95, w: 7.3, h: 0.9, margin: 0,
+    x: M, y: CONTENT_Y + 3.75, w: 7.3, h: 0.9, margin: 0,
     fontFace: HEAD, fontSize: 21, italic: true, color: GOLD,
   })
 
@@ -430,7 +446,7 @@ function eyebrow(s, text, color = SPROUT) {
   const s = lightSlide()
   eyebrow(s, 'Scalability & leadership')
   s.addText('Built, shipped, live', {
-    x: M, y: 1.0, w: 11.6, h: 0.9, margin: 0,
+    x: M, y: TITLE_Y, w: 11.6, h: 0.9, margin: 0,
     fontFace: HEAD, fontSize: 35, bold: true, color: INK,
   })
 
@@ -438,26 +454,26 @@ function eyebrow(s, text, color = SPROUT) {
   let x = M
   stats.forEach(([big, label]) => {
     s.addShape(pres.ShapeType.roundRect, {
-      x, y: 2.5, w: 3.68, h: 2.05, rectRadius: 0.16,
+      x, y: CONTENT_Y, w: 3.68, h: 2.05, rectRadius: 0.16,
       fill: { color: WHITE }, line: { color: LINE, width: 1 },
     })
     s.addText(big, {
-      x: x + 0.45, y: 2.8, w: 2.9, h: 0.9, margin: 0,
+      x: x + 0.45, y: CONTENT_Y + 0.3, w: 2.9, h: 0.9, margin: 0,
       fontFace: HEAD, fontSize: 40, bold: true, color: SPROUT,
     })
     s.addText(label, {
-      x: x + 0.45, y: 3.75, w: 2.95, h: 0.4, margin: 0,
+      x: x + 0.45, y: CONTENT_Y + 1.25, w: 2.95, h: 0.4, margin: 0,
       fontFace: BODY, fontSize: 15, color: MUTED,
     })
     x += 3.96
   })
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: M, y: 4.9, w: 11.6, h: 1.2, rectRadius: 0.16,
+    x: M, y: CONTENT_Y + 2.45, w: 11.6, h: 1.2, rectRadius: 0.16,
     fill: { color: MIST }, line: { color: SPROUT, width: 1 },
   })
   s.addText('A new country is a rulebook, not a rebuild.', {
-    x: M + 0.6, y: 4.9, w: 10.4, h: 1.2, margin: 0, valign: 'middle',
+    x: M + 0.6, y: CONTENT_Y + 2.45, w: 10.4, h: 1.2, margin: 0, valign: 'middle',
     fontFace: HEAD, fontSize: 23, bold: true, color: SPRUCE,
   })
   s.addNotes(
@@ -469,21 +485,21 @@ function eyebrow(s, text, color = SPROUT) {
 /* ─────────────── 10. Close ─────────────── */
 {
   const s = darkSlide()
-  keyMark(s, M, 1.25, 1.5)
+  keyMark(s, M, MARK_Y, 1.5)
   s.addText('It just doesn’t have\na date yet.', {
-    x: M, y: 2.6, w: 11.6, h: 1.8, margin: 0,
+    x: M, y: STATEMENT_Y, w: 11.6, h: 1.8, margin: 0,
     fontFace: HEAD, fontSize: 35, color: MIST, lineSpacing: 54,
   })
   s.addText('We’re giving it one.', {
-    x: M, y: 4.6, w: 11.6, h: 1.1, margin: 0,
+    x: M, y: 4.35, w: 11.6, h: 1.1, margin: 0,
     fontFace: HEAD, fontSize: 48, bold: true, color: GOLD,
   })
   s.addText('keydate.ca', {
-    x: M, y: 6.3, w: 6, h: 0.4, margin: 0,
+    x: M, y: 6.55, w: 6, h: 0.4, margin: 0,
     fontFace: BODY, fontSize: 17, bold: true, color: GOLD,
   })
   s.addText('Edmonton beta opens this week', {
-    x: W - M - 5, y: 6.3, w: 5, h: 0.4, margin: 0, align: 'right',
+    x: RIGHT - 5, y: 6.55, w: 5, h: 0.4, margin: 0, align: 'right',
     fontFace: BODY, fontSize: 14, color: MIST,
   })
   s.addNotes(

@@ -50,6 +50,24 @@ No national household-income figure is quoted anywhere. The comparable series
 doesn't line up cleanly against 2006, and a shaky number invites a question that
 costs more than the number gains.
 
+## Layout grid
+
+Positions come from constants at the top of the generator, not per-slide
+guesses: `EYEBROW_Y`, `TITLE_Y`, `CONTENT_Y`, `STATEMENT_Y`, `MARK_Y`,
+`SOURCE_Y`, and `RIGHT`. Every eyebrow lands on one baseline, every title on
+another, every content block starts together, and both screenshot columns hang
+off the same right margin.
+
+Two consequences worth keeping:
+
+- Slides 4 and 6 carry less content than their neighbours. Their cards are
+  *taller* rather than shifted down — moving them would have broken the shared
+  `CONTENT_Y` baseline, and a wandering content start reads worse than uneven
+  bottom whitespace.
+- Deliberate line breaks beat lucky ones. The slide 8 cards break where they
+  read best; left to wrap, one line sat 5% from its edge and would have
+  overflowed in the wider Century Gothic build.
+
 ## The spoken script
 
 `SCRIPT.md` — the pitch, slide by slide, with timings, delivery cues, the
