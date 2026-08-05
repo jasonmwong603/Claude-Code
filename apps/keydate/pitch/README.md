@@ -50,30 +50,37 @@ No national household-income figure is quoted anywhere. The comparable series
 doesn't line up cleanly against 2006, and a shaky number invites a question that
 costs more than the number gains.
 
-## Font
+## Two builds, one generator
 
-The deck is set in **Montserrat** — one family, weight doing the contrast.
+| File | Typeface | Use when |
+| --- | --- | --- |
+| `KeyDate-JCI-Edmonton.pptx` | **Century Gothic** | **Default.** Ships with Office, so it renders correctly on any machine — including a venue laptop you have never seen. |
+| `KeyDate-JCI-Edmonton-Montserrat.pptx` | Montserrat | Sharper, but only where Montserrat is installed. Substitutes to a default elsewhere and the layout shifts. |
 
-**Montserrat does not ship with Office.** On a machine without it installed,
-PowerPoint substitutes a default and the layout shifts. Before presenting:
+Century Gothic sets wider than Montserrat at the same point size. Rather than
+guessing, the Montserrat build was measured line by line against its container:
+71 of 72 lines had 22% or more horizontal slack, and one — the slide 7 title —
+had 14%. Only that line is scaled down, by `tight()` in the generator.
 
-1. Install Montserrat (free, fonts.google.com/specimen/Montserrat) on whatever
-   machine will drive the projector, **or**
-2. Export to PDF (File → Export → PDF) and present from that — PDF embeds the
-   font, so it renders identically anywhere. Worth doing regardless as a backup.
-
-To fall back to a font that is always present, change `HEAD`/`BODY` in the
-generator to `Century Gothic` (nearest Office-bundled geometric sans) and
-rebuild. Display sizes are tuned for Montserrat's width; a swap may need them
-nudged.
+Regardless of which you present from, **export a PDF as backup**
+(File → Export → PDF). PDF embeds the font, so it renders identically anywhere
+and survives a laptop that has neither typeface.
 
 ## Rebuilding
 
-    node build-deck.cjs
+    node build-deck.cjs                    # Century Gothic → KeyDate-JCI-Edmonton.pptx
+    DECK_FONT=montserrat node build-deck.cjs   # Montserrat variant
 
 Requires `pptxgenjs`. `.cjs` because `apps/keydate` is an ES-module package.
-Edit the generator rather than the `.pptx` so the deck stays reproducible.
+Edit the generator rather than either `.pptx` so both stay reproducible and in
+sync.
 
 For visual QA, `render.py` draws the packed slide XML — real positions, real
 sizes — to `preview.html` for screenshotting. LibreOffice can't open pptx in the
 dev sandbox, so this is the check that catches overflow and collisions.
+
+Caveat worth knowing: Century Gothic is a licensed Monotype face and isn't
+installable in the dev sandbox, so QA renders it with a substitute. The
+substitute is wider than the real thing, which makes the fit check conservative
+rather than optimistic — but give the Century Gothic build one look on a real
+machine before presenting.

@@ -17,11 +17,24 @@ const LINE = 'DDE4DC'
 const WHITE = 'FFFFFF'
 const MIST = 'E3F2E9'
 
-// Montserrat: geometric sans, one family across the deck with weight doing the
-// contrast. NOT bundled with Office — see README before presenting on a machine
-// that isn't yours.
-const HEAD = 'Montserrat'
-const BODY = 'Montserrat'
+/* Two builds from one generator — same layout, different typeface.
+ *
+ *   DECK_FONT=montserrat → sharper, but Montserrat is not bundled with Office,
+ *                          so it only renders right where it is installed.
+ *   DECK_FONT=century    → Century Gothic ships with Office. Safe on a venue
+ *   (default)              laptop you have never seen.
+ *
+ * Century Gothic sets wider than Montserrat at the same point size. Measuring
+ * the Montserrat build showed exactly one line under 22% horizontal slack — the
+ * slide 7 title, at 14% — so only that one is scaled down, via tight(). */
+const MONTSERRAT = process.env.DECK_FONT === 'montserrat'
+const HEAD = MONTSERRAT ? 'Montserrat' : 'Century Gothic'
+const BODY = HEAD
+const OUTFILE = MONTSERRAT
+  ? 'KeyDate-JCI-Edmonton-Montserrat.pptx'
+  : 'KeyDate-JCI-Edmonton.pptx'
+/** Size for a line with little room to spare, given the wider face. */
+const tight = (n) => (MONTSERRAT ? n : Math.round(n * 0.9))
 
 const W = 13.33
 const M = 0.75
@@ -331,7 +344,7 @@ function eyebrow(s, text, color = SPROUT) {
   eyebrow(s, 'It was never just my story')
   s.addText('The engine doesn’t change at the border', {
     x: M, y: 1.0, w: 11.6, h: 0.9, margin: 0,
-    fontFace: HEAD, fontSize: 35, bold: true, color: INK,
+    fontFace: HEAD, fontSize: tight(35), bold: true, color: INK,
   })
 
   const countries = ['Canada', 'Australia', 'UK', 'Ireland', 'New Zealand']
@@ -474,4 +487,4 @@ function eyebrow(s, text, color = SPROUT) {
   )
 }
 
-pres.writeFile({ fileName: 'KeyDate-JCI-Edmonton.pptx' }).then((f) => console.log('wrote', f))
+pres.writeFile({ fileName: OUTFILE }).then((f) => console.log('wrote', f))
