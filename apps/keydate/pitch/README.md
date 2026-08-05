@@ -50,6 +50,23 @@ No national household-income figure is quoted anywhere. The comparable series
 doesn't line up cleanly against 2006, and a shaky number invites a question that
 costs more than the number gains.
 
+## Font
+
+The deck is set in **Montserrat** — one family, weight doing the contrast.
+
+**Montserrat does not ship with Office.** On a machine without it installed,
+PowerPoint substitutes a default and the layout shifts. Before presenting:
+
+1. Install Montserrat (free, fonts.google.com/specimen/Montserrat) on whatever
+   machine will drive the projector, **or**
+2. Export to PDF (File → Export → PDF) and present from that — PDF embeds the
+   font, so it renders identically anywhere. Worth doing regardless as a backup.
+
+To fall back to a font that is always present, change `HEAD`/`BODY` in the
+generator to `Century Gothic` (nearest Office-bundled geometric sans) and
+rebuild. Display sizes are tuned for Montserrat's width; a swap may need them
+nudged.
+
 ## Rebuilding
 
     node build-deck.cjs
