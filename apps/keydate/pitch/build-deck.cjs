@@ -54,30 +54,22 @@ pres.layout = 'LAYOUT_WIDE'
 pres.author = 'KeyDate'
 pres.title = 'KeyDate — JCI Edmonton CYE'
 
-/** Recurring motif: the gold key mark. Fresh option objects each call —
- *  pptxgenjs mutates them in place. */
-function keyMark(s, x, y, scale = 1, color = GOLD) {
-  s.addShape(pres.ShapeType.ellipse, {
-    x, y, w: 0.42 * scale, h: 0.42 * scale,
-    fill: { type: 'solid', color: 'FFFFFF', transparency: 100 },
-    line: { color, width: 2.6 * scale },
-  })
-  s.addShape(pres.ShapeType.rect, {
-    x: x + 0.38 * scale, y: y + 0.17 * scale, w: 0.46 * scale, h: 0.075 * scale,
-    fill: { color }, line: { color, width: 0 },
-  })
-  s.addShape(pres.ShapeType.rect, {
-    x: x + 0.66 * scale, y: y + 0.17 * scale, w: 0.075 * scale, h: 0.2 * scale,
-    fill: { color }, line: { color, width: 0 },
-  })
-}
-
-/** Real UI, captured from the running app by capture-ui.mjs. Screenshots beat a
- *  mockup here: the dashboard shot happens to contain the stress-test warning,
- *  which argues the honesty point better than a sentence about it could. */
+/** Any PNG in this directory, inlined. Used for the logo and the UI captures —
+ *  a self-contained deck means no missing-image placeholders on a strange
+ *  laptop. */
 function shot(name) {
   const f = path.join(__dirname, name)
   return 'image/png;base64,' + fs.readFileSync(f).toString('base64')
+}
+
+/** Recurring motif: the key lifted out of the KeyDate app icon.
+ *
+ *  The full icon is a gold key on a dark green tile — which disappears against
+ *  these dark green slides, so the mark used here is the key alone on
+ *  transparency. logo.png keeps the complete tile for the app and the site. */
+function keyMark(s, x, y, scale = 1) {
+  const h = 0.72 * scale
+  s.addImage({ data: shot('logo-key.png'), x, y, w: h * 0.469, h })
 }
 
 const darkSlide = () => {
@@ -101,7 +93,7 @@ function eyebrow(s, text, color = SPROUT) {
 /* ───────────────────────── 1. Title ───────────────────────── */
 {
   const s = darkSlide()
-  keyMark(s, M, 1.7, 1.5, GOLD)
+  keyMark(s, M, 1.15, 1.5)
   s.addText([
     { text: 'Key', options: { color: WHITE } },
     { text: 'Date', options: { color: SPROUT } },
@@ -167,7 +159,7 @@ function eyebrow(s, text, color = SPROUT) {
 /* ─────────────── 3. Nobody could tell me when ─────────────── */
 {
   const s = darkSlide()
-  keyMark(s, M, 1.3, 1.0, GOLD)
+  keyMark(s, M, 1.2, 1.0)
   s.addText('Nobody could tell me when.', {
     x: M, y: 2.15, w: 11.6, h: 1.2, margin: 0,
     fontFace: HEAD, fontSize: 44, bold: true, color: GOLD,
@@ -477,7 +469,7 @@ function eyebrow(s, text, color = SPROUT) {
 /* ─────────────── 10. Close ─────────────── */
 {
   const s = darkSlide()
-  keyMark(s, M, 1.6, 1.5, GOLD)
+  keyMark(s, M, 1.25, 1.5)
   s.addText('It just doesn’t have\na date yet.', {
     x: M, y: 2.6, w: 11.6, h: 1.8, margin: 0,
     fontFace: HEAD, fontSize: 35, color: MIST, lineSpacing: 54,

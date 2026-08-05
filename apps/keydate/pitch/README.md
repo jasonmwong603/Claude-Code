@@ -50,6 +50,20 @@ No national household-income figure is quoted anywhere. The comparable series
 doesn't line up cleanly against 2006, and a shaky number invites a question that
 costs more than the number gains.
 
+## The spoken script
+
+`SCRIPT.md` — the pitch, slide by slide, with timings, delivery cues, the
+rubric mapping, and prepared Q&A answers. One slot is marked `[YOUR DETAIL]`
+on slide 2; everything else is written.
+
+## Brand mark
+
+`logo.png` is the app icon as supplied — gold key on a dark green tile, corners
+made transparent so it sits on any background. `logo-key.png` is the key alone,
+knocked out of the tile: the deck's dark slides are almost the same green as the
+tile, so the full icon would vanish on them. Sizes 32/180/192/256/512/1024 are
+generated for favicon and app-icon use.
+
 ## UI screenshots
 
 Slides 5 and 8 carry real screens captured from a production build, not
