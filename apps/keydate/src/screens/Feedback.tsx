@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { C, DISPLAY_FONT, BODY_FONT } from '../theme'
+import { track } from '../lib/analytics'
 import { inputStyle, bigBtn, card } from '../components/atoms'
 import { supabase } from '../lib/auth'
 import type { AuthUser } from '../lib/auth'
@@ -40,6 +41,7 @@ export function Feedback({ user, onBack }: { user: AuthUser | null; onBack: () =
   const submit = async () => {
     if (!message.trim() || busy) return
     setBusy(true)
+    track('feedback_sent', kind)
     // Store it (best-effort) so nothing is lost even if the mail client never opens.
     if (supabase) {
       try {

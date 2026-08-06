@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { C, DISPLAY_FONT, BODY_FONT } from '../theme'
+import { track } from '../lib/analytics'
 import { Pills, bigBtn, card, inputStyle } from '../components/atoms'
 import { CATEGORY_META } from '../data/forumSeed'
 import {
@@ -117,6 +118,8 @@ export function Forum({
   user: AuthUser | null
   onSignIn: (provider: OAuthProvider) => void
 }) {
+  useEffect(() => track('forum_viewed', undefined, { once: true }), [])
+
   const remote = isRemoteForum()
   const canPost = !remote || !!user // preview mode posts locally; shared mode needs sign-in
 

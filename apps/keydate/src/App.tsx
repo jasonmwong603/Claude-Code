@@ -22,7 +22,7 @@ import { maxAffordablePrice, savingsGoal } from './lib/math'
 import { clearState, loadState, saveState } from './lib/storage'
 import { authConfigured, getCurrentUser, onAuthChange, signIn, signOut, type AuthUser, type OAuthProvider } from './lib/auth'
 import { pullState, pushState, queueSync } from './lib/sync'
-import { recordProfile, trackVisit } from './lib/analytics'
+import { recordProfile, track, trackVisit } from './lib/analytics'
 import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
 import { bankSummary } from './lib/plaid'
 import type { AppState, Badge, Plan } from './types'
@@ -73,6 +73,8 @@ export default function KeyDateApp() {
 
   // Load persisted state once, and award the daily check-in XP.
   useEffect(() => {
+    // Top of the funnel — every other rate is a share of this.
+    track('app_opened', undefined, { once: true })
     let s = loadState()
     if (s) {
       const today = new Date().toDateString()
@@ -110,6 +112,7 @@ export default function KeyDateApp() {
 
   const enterAsGuest = () => {
     localStorage.setItem(ENTERED_KEY, '1')
+    track('onboarding_started')
     setScreen('onboard')
   }
 
@@ -234,6 +237,7 @@ export default function KeyDateApp() {
       profile: { ...DEFAULT_PROFILE },
     }
     persist(s)
+    track('plan_created')
     setScreen('dashboard')
   }
 
@@ -248,6 +252,7 @@ export default function KeyDateApp() {
     const interim: AppState = { ...state, contributions }
     const { earnedBadges, newly } = awardBadges(interim)
     persist({ ...interim, earnedBadges, xp: state.xp + 50 + newly.length * 50 })
+    track('contribution_logged')
     celebrateNewly(newly)
   }
 
@@ -258,6 +263,7 @@ export default function KeyDateApp() {
       ? state.completedLessons
       : [...state.completedLessons, lessonId]
     const interim: AppState = { ...state, completedLessons }
+    if (!alreadyDone) track('lesson_completed', lessonId)
     const { earnedBadges, newly } = awardBadges(interim)
     const lessonXp = alreadyDone ? 0 : 100 + bonus
     persist({ ...interim, earnedBadges, xp: state.xp + lessonXp + newly.length * 50 })

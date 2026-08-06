@@ -276,3 +276,26 @@ Monetization (freemium + a vetted professional directory on flat placement fees)
 and all educational content need a legal/compliance review — Alberta RECA
 referral-disclosure and law-society fee-sharing rules informed the flat-fee
 model. Keep all content educational with disclaimers; no personalized advice.
+
+## Product analytics
+
+`supabase/events.sql` creates an append-only `events` table with a **closed
+vocabulary** — an unknown event name fails the insert rather than quietly
+polluting the funnel. No free-form payloads, no PII, no third-party tracker.
+Write-only from the browser, admin-only to read.
+
+Instrumented: `app_opened`, `onboarding_started`, `plan_created`,
+`contribution_logged`, `lesson_completed`, `rentbuy_viewed`, `forum_viewed`,
+`feedback_sent`.
+
+Two public aggregate functions feed the admin console:
+
+- `funnel_counts()` — distinct **devices** per step, so one enthusiastic tester
+  can't inflate a stage, and a service-worker reload can't double-count.
+- `northstar()` — the ROADMAP metric: planners who logged savings in 3+ separate
+  months. Returns a numerator and denominator rather than a percentage, because
+  a rate off a handful of testers flatters more than it informs.
+
+Events only fire when `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are set at
+build time — a local `npm run build` without them produces a build that records
+nothing, which is easy to mistake for broken instrumentation.

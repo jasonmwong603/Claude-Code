@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { C, DISPLAY_FONT, BODY_FONT } from '../theme'
+import { track } from '../lib/analytics'
 import { MoneyInput } from '../components/atoms'
 import { fmt, fmtShort, minDownPayment } from '../lib/math'
 import { rentVsBuy } from '../lib/rentbuy'
@@ -8,6 +9,8 @@ import type { AppState } from '../types'
 /* An honest rent-vs-buy comparison. Buying isn't always the win — this shows the
  * renter-who-invests path side by side and says so plainly. */
 export function RentBuy({ state, onBack }: { state: AppState; onBack: () => void }) {
+  useEffect(() => track('rentbuy_viewed', undefined, { once: true }), [])
+
   const { plan } = state
   const savedNow = plan.startingSavings + state.contributions.reduce((a, c) => a + c.amount, 0)
   const minDown = minDownPayment(plan.target, plan.homeType)

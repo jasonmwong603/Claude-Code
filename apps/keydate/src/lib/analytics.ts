@@ -67,3 +67,46 @@ export async function recordProfile(user: AuthUser): Promise<void> {
     /* metric only — never block the app */
   }
 }
+
+/* ── Product funnel ──────────────────────────────────────────────────────────
+ *
+ * A fixed vocabulary of product events, so we can tell "nobody finished
+ * onboarding" from "everyone finished and never came back" — those need
+ * opposite fixes, and the difference is invisible without this.
+ *
+ * Deliberately narrow: no free-form payloads, no PII, no third-party tracker.
+ * `detail` carries only bounded context like a lesson id. Fire-and-forget, so a
+ * blocked request or a missing table can never affect what the user sees.
+ *
+ * Requires supabase/events.sql. */
+export type EventName =
+  | 'app_opened'
+  | 'onboarding_started'
+  | 'plan_created'
+  | 'contribution_logged'
+  | 'lesson_completed'
+  | 'rentbuy_viewed'
+  | 'forum_viewed'
+  | 'feedback_sent'
+  | 'bank_connect_clicked'
+
+/** Events that should count once per device per session, not once per render —
+ *  screen views fire on every mount otherwise and drown the funnel. */
+const oncePerSession = new Set<string>()
+
+export function track(name: EventName, detail?: string, opts?: { once?: boolean }): void {
+  if (!supabase) return
+  const key = detail ? `${name}:${detail}` : name
+  if (opts?.once) {
+    if (oncePerSession.has(key)) return
+    oncePerSession.add(key)
+  }
+  try {
+    void supabase
+      .from('events')
+      .insert({ name, device_id: deviceId(), detail: detail?.slice(0, 60) ?? null })
+      .then(() => {}, () => {})
+  } catch {
+    /* analytics must never break the app */
+  }
+}
