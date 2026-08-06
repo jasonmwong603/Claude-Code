@@ -68,6 +68,13 @@ export interface AppState {
   /** "Focus mode": dials down the game layer (levels/XP/avatar chrome) for users
    *  who want a straight financial tool. Defaults to off. */
   focusMode?: boolean
+  /** Months-to-keys as it stood at the last logged contribution, so a returning
+   *  user can be shown what moved instead of a number they can't compare to.
+   *  A date on its own is not a reason to come back; a date that visibly
+   *  changed is. */
+  lastLog?: { at: string; months: number }
+  /** Set once the user takes the monthly calendar reminder, so we stop asking. */
+  reminderSetAt?: string
 }
 
 export interface Quiz {

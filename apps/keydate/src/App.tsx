@@ -24,6 +24,7 @@ import { authConfigured, getCurrentUser, onAuthChange, signIn, signOut, type Aut
 import { pullState, pushState, queueSync } from './lib/sync'
 import { recordProfile, track, trackVisit } from './lib/analytics'
 import { KEYRING, badgeTests, calcStreak, levelInfo } from './lib/gamification'
+import { projectKeys } from './lib/projection'
 import { bankSummary } from './lib/plaid'
 import type { AppState, Badge, Plan } from './types'
 
@@ -251,7 +252,16 @@ export default function KeyDateApp() {
     const contributions = [...state.contributions, { date: new Date().toISOString(), amount }]
     const interim: AppState = { ...state, contributions }
     const { earnedBadges, newly } = awardBadges(interim)
-    persist({ ...interim, earnedBadges, xp: state.xp + 50 + newly.length * 50 })
+    // Snapshot the projection at this moment — the next visit compares against
+    // it to show the date moving, which is the reason to come back at all.
+    const saved = state.plan.startingSavings + contributions.reduce((a, c) => a + c.amount, 0)
+    const months = projectKeys(state.plan, saved, state.plan.monthly).likelyMonths
+    persist({
+      ...interim,
+      earnedBadges,
+      xp: state.xp + 50 + newly.length * 50,
+      lastLog: { at: new Date().toISOString(), months },
+    })
     track('contribution_logged')
     celebrateNewly(newly)
   }
@@ -531,6 +541,7 @@ export default function KeyDateApp() {
           <Dashboard
             state={state}
             onLog={logContribution}
+            onSetReminder={() => state && persist({ ...state, reminderSetAt: new Date().toISOString() })}
             onUpdatePlan={updatePlan}
             onReset={resetPlan}
             onOpenLesson={openLesson}

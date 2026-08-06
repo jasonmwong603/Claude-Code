@@ -299,3 +299,25 @@ Two public aggregate functions feed the admin console:
 Events only fire when `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are set at
 build time — a local `npm run build` without them produces a build that records
 nothing, which is easy to mistake for broken instrumentation.
+
+## Return loop
+
+The product only works if people come back once a month, and nothing was
+bringing them back. Two halves:
+
+**The trigger** — `src/lib/reminder.ts` generates a monthly recurring `.ics`.
+Chosen over push and email deliberately: push needs a server, VAPID keys, and on
+iOS the app installed first; email needs a provider and a scheduler. A calendar
+event needs none of that, survives clearing site data or changing phones, costs
+nothing, and lands next to payday rather than in a muted notification tray. The
+offer disappears once taken.
+
+**The payoff** — `AppState.lastLog` snapshots months-to-keys at each
+contribution, so a returning user is told what *moved* ("your keys date moved 4
+months closer") rather than shown a number they can't compare to. A date on its
+own is not a reason to come back; a date that visibly changed is. The card waits
+20 days so it reads as a welcome rather than a nag, and it says so plainly when
+the date slipped instead of only reporting good news.
+
+Email remains the obvious next increment — it needs a provider account (Resend
+or similar) plus `pg_cron`, so it is a decision, not just code.

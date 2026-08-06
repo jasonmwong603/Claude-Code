@@ -12,6 +12,7 @@ import {
   mortgagePayment,
   savingsGoal,
 } from '../lib/math'
+import { downloadReminder } from '../lib/reminder'
 import { projectKeys, maxQualifiedPrice, SCENARIOS } from '../lib/projection'
 import { KEYRING, calcStreak, levelInfo } from '../lib/gamification'
 import { bankSummary, refreshedAgo } from '../lib/plaid'
@@ -28,6 +29,7 @@ const roomCard = {
 export function Dashboard({
   state,
   onLog,
+  onSetReminder,
   onUpdatePlan,
   onReset,
   onOpenLesson,
@@ -38,6 +40,7 @@ export function Dashboard({
 }: {
   state: AppState
   onLog: (amount: number) => void
+  onSetReminder: () => void
   onUpdatePlan: (patch: Partial<Plan>, xpReward?: number) => void
   onReset: () => void
   onOpenLesson: (id: string) => void
@@ -56,6 +59,13 @@ export function Dashboard({
       return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
     })
   }, [state.contributions])
+  // 11th-13th take "th" regardless of last digit, so a plain last-digit lookup
+  // would render "11st" and "21th".
+  const ordinal = (n: number) =>
+    n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'
+  // Fire on the day they built the plan, and never past the 28th so the date
+  // exists in February.
+  const reminderDay = Math.min(28, new Date(plan.createdAt).getDate() || 1)
   const [logAmount, setLogAmount] = useState(plan.monthly)
   const [boost, setBoost] = useState(0)
   const lvl = levelInfo(state.xp)
@@ -341,6 +351,72 @@ export function Dashboard({
     label: 'Main floor · this month',
     node: (
       <>
+        {(() => {
+          /* Coming back is the whole product. Give returning users the payoff
+             (their date moved) and first-timers the trigger (a calendar
+             reminder) — a bare number gives them neither. */
+          const last = state.lastLog
+          const days = last ? Math.floor((Date.now() - new Date(last.at).getTime()) / 86400000) : 0
+          const moved = last && isFinite(last.months) && isFinite(dash.baseMonths)
+            ? Math.round(last.months - dash.baseMonths)
+            : 0
+          const showReturn = !!last && days >= 20
+          const showReminder = !state.reminderSetAt
+          if (!showReturn && !showReminder) return null
+          return (
+            <div
+              style={{
+                ...roomCard,
+                marginBottom: 12,
+                background: C.sproutSoft,
+                border: `1.5px solid ${C.sprout}`,
+              }}
+            >
+              {showReturn && (
+                <>
+                  <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+                    Welcome back — it’s been {days} days.
+                  </div>
+                  <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, marginBottom: showReminder ? 12 : 0 }}>
+                    {moved > 0
+                      ? `Since your last deposit your keys date moved ${moved} month${moved === 1 ? '' : 's'} closer. Log this month to keep it moving.`
+                      : moved < 0
+                        ? `Your date slipped ${Math.abs(moved)} month${Math.abs(moved) === 1 ? '' : 's'} while prices moved. Logging this month pulls it back.`
+                        : 'Your date is holding steady. Log this month to pull it closer.'}
+                  </div>
+                </>
+              )}
+              {showReminder && (
+                <>
+                  <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, marginBottom: 10 }}>
+                    🗓️ Want a nudge? Add a monthly reminder to your calendar — it’ll bring you
+                    back on the {reminderDay}{ordinal(reminderDay)} of each month.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      downloadReminder({ day: reminderDay })
+                      onSetReminder()
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '11px',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: '#fff',
+                      background: C.spruce,
+                      border: 'none',
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🗓️ Remind me every month
+                  </button>
+                </>
+              )}
+            </div>
+          )
+        })()}
         <div style={{ ...roomCard, marginBottom: 12 }}>
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Log this month’s savings</div>
           {loggedThisMonth ? (
