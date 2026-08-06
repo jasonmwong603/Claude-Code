@@ -74,6 +74,8 @@ jobs:
           cp terms.html _site/terms/index.html
           # Vendored libraries served from our own domain (no external CDN).
           cp -r vendor _site/vendor
+          # Brand marks for the static pages (favicons + the logo tile).
+          cp -r brand _site/brand
           # Custom domain for GitHub Pages — DNS verified, so this is active.
           echo 'keydate.ca' > _site/CNAME
 

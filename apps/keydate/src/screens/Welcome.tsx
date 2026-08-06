@@ -1,4 +1,5 @@
 import { C, DISPLAY_FONT } from '../theme'
+import { BrandMark } from '../components/atoms'
 import type { OAuthProvider } from '../lib/auth'
 
 /* First-run front door. New users choose how to start — Google, Facebook, or as
@@ -28,25 +29,7 @@ export function Welcome({
       }}
     >
       <div style={{ width: '100%', maxWidth: 380, textAlign: 'center' }}>
-        {/* Brand mark */}
-        <div
-          style={{
-            width: 68,
-            height: 68,
-            margin: '0 auto 20px',
-            borderRadius: 20,
-            background: C.spruce,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 10px 24px rgba(30,77,59,0.28)',
-          }}
-        >
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="8" cy="9" r="4.4" stroke={C.gold} strokeWidth="2.2" />
-            <path d="M11 11.5 20 20M17 17l2.5-2.5M15 15l2 2" stroke={C.gold} strokeWidth="2.2" strokeLinecap="round" />
-          </svg>
-        </div>
+        <BrandMark size={68} radius={20} />
 
         <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 800, fontSize: 30, letterSpacing: '-0.02em' }}>
           Key<span style={{ color: C.sprout }}>Date</span>

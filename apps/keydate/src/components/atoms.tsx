@@ -41,6 +41,26 @@ export function bigBtn(enabled = true, bg: string = C.spruce): CSSProperties {
   }
 }
 
+/** The brand mark. One component so the logo is swapped in one place if it
+ *  ever changes again. Served from public/, so the relative path resolves under
+ *  both /app/ and /prelaunchdemo/. */
+export function BrandMark({ size = 64, radius = 18 }: { size?: number; radius?: number }) {
+  return (
+    <img
+      src="./logo.png"
+      alt=""
+      width={size}
+      height={size}
+      style={{
+        display: 'block',
+        margin: '0 auto 20px',
+        borderRadius: radius,
+        boxShadow: '0 10px 24px rgba(30,77,59,0.28)',
+      }}
+    />
+  )
+}
+
 export function Field({
   label,
   hint,

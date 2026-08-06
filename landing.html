@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/brand/icon-192.png" />
+<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
 <title>KeyDate — Owning a home isn't impossible. It has a date.</title>
 <meta name="description" content="KeyDate turns a Canadian first-time buyer's income and savings into a real 'keys date' — with a plan that adapts, gamified saving, and plain-language FHSA/HBP lessons. Join the beta waitlist." />
 <style>
@@ -26,9 +29,9 @@
 
   /* title */
   .brand{position:relative;z-index:2;text-align:center;flex:0 0 auto}
-  .mark{width:46px;height:46px;border-radius:13px;background:var(--spruce);border:none;
-    display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;
-    box-shadow:0 10px 22px rgba(30,77,59,.24)}
+  /* The logo tile carries its own background and rounding. */
+  .mark{width:46px;height:46px;display:inline-block;margin-bottom:12px;
+    box-shadow:0 10px 22px rgba(30,77,59,.24);border-radius:13px}
   .wordmark{font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--ink)}
   .wordmark b{color:var(--sprout)}
   .tagline{font-family:Georgia,serif;font-weight:700;font-size:clamp(15px,3.4vw,19px);
@@ -78,9 +81,7 @@
 
     <!-- Title -->
     <div class="brand">
-      <span class="mark">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="8" cy="9" r="4.4" stroke="#E8B84B" stroke-width="2.2"/><path d="M11 11.5 20 20M17 17l2.5-2.5M15 15l2 2" stroke="#E8B84B" stroke-width="2.2" stroke-linecap="round"/></svg>
-      </span>
+      <img class="mark" src="/brand/logo.png" alt="KeyDate" width="46" height="46" />
       <div class="wordmark">Key<b>Date</b></div>
       <p class="tagline">Owning a home isn’t impossible. It has a date.</p>
     </div>

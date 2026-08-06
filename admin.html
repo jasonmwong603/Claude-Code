@@ -4,6 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex,nofollow" />
+<link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/brand/icon-192.png" />
+<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
 <title>KeyDate — Admin</title>
 <style>
   :root{
@@ -21,8 +24,9 @@
     background:radial-gradient(120% 90% at 50% 0%, #E3F2E9, var(--paper) 60%)}
   .gate.hide{display:none}
   .gate-card{width:100%;max-width:360px;text-align:center}
-  .mark{width:64px;height:64px;margin:0 auto 20px;border-radius:18px;background:var(--spruce);
-    display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(30,77,59,.28)}
+  /* The logo tile carries its own background and rounding. */
+  .mark{width:64px;height:64px;margin:0 auto 20px;border-radius:18px;display:block;
+    box-shadow:0 10px 24px rgba(30,77,59,.28)}
   .wordmark{font-weight:800;font-size:28px;letter-spacing:-.02em}
   .wordmark b{color:var(--sprout)}
   .gate h1{font-weight:800;font-size:19px;margin:14px 0 6px}
@@ -43,8 +47,7 @@
   header.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
     margin-bottom:18px}
   .brandline{display:flex;align-items:center;gap:12px}
-  .brandline .mk{width:38px;height:38px;border-radius:11px;background:var(--spruce);display:flex;
-    align-items:center;justify-content:center}
+  .brandline .mk{width:38px;height:38px;border-radius:11px;display:block}
   .brandline .t{font-weight:800;font-size:19px;letter-spacing:-.01em}
   .brandline .t b{color:var(--sprout)}
   .brandline .tag{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-top:1px}
@@ -122,9 +125,7 @@
   <!-- Passcode gate -->
   <div class="gate" id="gate">
     <div class="gate-card">
-      <div class="mark">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="8" cy="9" r="4.4" stroke="#E8B84B" stroke-width="2.2"/><path d="M11 11.5 20 20M17 17l2.5-2.5M15 15l2 2" stroke="#E8B84B" stroke-width="2.2" stroke-linecap="round"/></svg>
-      </div>
+      <img class="mark" src="/brand/logo.png" alt="KeyDate" width="64" height="64" />
       <div class="wordmark">Key<b>Date</b></div>
       <h1>Admin console</h1>
       <p>Private metrics dashboard. Enter the admin passcode to continue.</p>
@@ -141,9 +142,7 @@
   <main class="wrap" id="wrap">
     <header class="top">
       <div class="brandline">
-        <span class="mk">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="8" cy="9" r="4.4" stroke="#E8B84B" stroke-width="2.2"/><path d="M11 11.5 20 20M17 17l2.5-2.5M15 15l2 2" stroke="#E8B84B" stroke-width="2.2" stroke-linecap="round"/></svg>
-        </span>
+        <img class="mk" src="/brand/logo.png" alt="KeyDate" width="38" height="38" />
         <div><span class="t">Key<b>Date</b></span><span class="tag">Admin metrics console</span></div>
       </div>
       <div class="controls">
