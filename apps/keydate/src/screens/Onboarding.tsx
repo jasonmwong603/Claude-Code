@@ -34,7 +34,7 @@ export function Onboarding({ onSubmit }: { onSubmit: (r: OnboardingResult) => vo
           savings: '',
           monthly: '',
           targetSource: 'area',
-          customPrice: 0,
+          customPrice: '',
           targetLabel: '',
           listingUrl: '',
         }}

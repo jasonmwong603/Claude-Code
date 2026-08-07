@@ -19,13 +19,16 @@ export interface PlanFormValues {
 }
 
 export interface PlanFormInitial
-  extends Omit<PlanFormValues, 'resolved' | 'income' | 'savings' | 'monthly'> {
+  extends Omit<PlanFormValues, 'resolved' | 'income' | 'savings' | 'monthly' | 'customPrice'> {
   locationText: string
   resolved: ResolvedLocation | null
-  /** '' means "not entered yet" — distinct from a deliberate 0. */
+  /** '' means "not entered yet" — distinct from a deliberate 0. Every money
+   *  field on this form can start empty; a pre-filled 0 reads as a placeholder
+   *  the user can't clear. */
   income: number | ''
   savings: number | ''
   monthly: number | ''
+  customPrice: number | ''
 }
 
 const TARGET_MODES: { key: TargetSource; label: string }[] = [
@@ -46,14 +49,14 @@ export function PlanForm({
 }) {
   const [locQuery, setLocQuery] = useState(initial.locationText)
   const [resolved, setResolved] = useState<ResolvedLocation | null>(initial.resolved)
-  const [manualPrice, setManualPrice] = useState(0)
+  const [manualPrice, setManualPrice] = useState<number | ''>('')
   const [locFocused, setLocFocused] = useState(false)
   const [homeType, setHomeType] = useState<HomeTypeKey>(initial.homeType)
   const [income, setIncome] = useState<number | ''>(initial.income)
   const [savings, setSavings] = useState<number | ''>(initial.savings)
   const [monthly, setMonthly] = useState<number | ''>(initial.monthly)
   const [targetSource, setTargetSource] = useState<TargetSource>(initial.targetSource)
-  const [customPrice, setCustomPrice] = useState(initial.customPrice)
+  const [customPrice, setCustomPrice] = useState<number | ''>(initial.customPrice)
   const [targetLabel, setTargetLabel] = useState(initial.targetLabel)
   const [listingUrl, setListingUrl] = useState(initial.listingUrl)
 
@@ -62,7 +65,7 @@ export function PlanForm({
 
   const handleLocationChange = (v: string) => {
     setLocQuery(v)
-    setManualPrice(0)
+    setManualPrice('')
     setResolved(matchBuiltIn(v))
     setLocFocused(true)
   }
@@ -70,14 +73,15 @@ export function PlanForm({
   const pickSuggestion = (s: ResolvedLocation) => {
     setLocQuery(s.name)
     setResolved(s)
-    setManualPrice(0)
+    setManualPrice('')
     setLocFocused(false)
   }
 
-  const useManualPrice = (price: number) => {
+  const useManualPrice = (price: number | '') => {
     setManualPrice(price)
     const name = locQuery.trim()
-    setResolved(price > 0 && name ? { name, base: price, source: 'you entered' } : null)
+    const n = price === '' ? 0 : price
+    setResolved(n > 0 && name ? { name, base: n, source: 'you entered' } : null)
   }
 
   // Only offer manual entry when we truly have nothing to suggest.
@@ -87,7 +91,7 @@ export function PlanForm({
   const filled = (v: number | '') => v !== '' && !Number.isNaN(v)
   const canSubmit =
     !!resolved &&
-    (targetSource === 'area' || customPrice > 0) &&
+    (targetSource === 'area' || (filled(customPrice) && Number(customPrice) > 0)) &&
     filled(income) &&
     filled(savings) &&
     filled(monthly)
@@ -101,7 +105,7 @@ export function PlanForm({
       savings: Number(savings),
       monthly: Number(monthly),
       targetSource,
-      customPrice,
+      customPrice: Number(customPrice) || 0,
       targetLabel,
       listingUrl,
     })
@@ -195,7 +199,7 @@ export function PlanForm({
               We don’t have “{locQuery.trim()}” built in. What’s a typical home price there? (A quick
               web search for “average home price {locQuery.trim()}” gives a good number.)
             </div>
-            <MoneyInput value={manualPrice} onChange={(v) => useManualPrice(v === '' ? 0 : v)} step={10000} />
+            <MoneyInput value={manualPrice} onChange={useManualPrice} step={10000} />
           </div>
         )}
       </Field>
@@ -217,7 +221,7 @@ export function PlanForm({
           <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
             <div>
               <div style={{ fontSize: 12, color: C.sub, marginBottom: 6 }}>Target price</div>
-              <MoneyInput value={customPrice} onChange={(v) => setCustomPrice(v === '' ? 0 : v)} step={5000} />
+              <MoneyInput value={customPrice} onChange={setCustomPrice} step={5000} />
             </div>
             <input
               type="text"
@@ -277,7 +281,7 @@ export function PlanForm({
           {/* Say exactly what's still missing, in the order the fields appear. */}
           {!resolved
             ? 'Add a location first'
-            : targetSource === 'custom' && customPrice <= 0
+            : targetSource === 'custom' && !(filled(customPrice) && Number(customPrice) > 0)
               ? 'Enter your target price'
               : !filled(income)
                 ? 'Enter your household income'

@@ -48,7 +48,7 @@ export function EditPlan({
           savings: plan.startingSavings,
           monthly: plan.monthly,
           targetSource: source,
-          customPrice: source === 'custom' ? plan.target : 0,
+          customPrice: source === 'custom' ? plan.target : '',
           targetLabel: plan.targetLabel ?? '',
           listingUrl: plan.listingUrl ?? '',
         }}

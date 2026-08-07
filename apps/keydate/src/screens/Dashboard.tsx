@@ -839,13 +839,13 @@ function TargetRoom({
 }) {
   const [editing, setEditing] = useState(false)
   const [mode, setMode] = useState<TargetSource>(plan.targetSource ?? 'area')
-  const [price, setPrice] = useState(plan.targetSource === 'custom' ? plan.target : 0)
+  const [price, setPrice] = useState<number | ''>(plan.targetSource === 'custom' ? plan.target : '')
   const [label, setLabel] = useState(plan.targetLabel ?? '')
   const [url, setUrl] = useState(plan.listingUrl ?? '')
 
   const start = () => {
     setMode(plan.targetSource ?? 'area')
-    setPrice(plan.targetSource === 'custom' ? plan.target : 0)
+    setPrice(plan.targetSource === 'custom' ? plan.target : '')
     setLabel(plan.targetLabel ?? '')
     setUrl(plan.listingUrl ?? '')
     setEditing(true)
@@ -859,10 +859,10 @@ function TargetRoom({
       )
       onUpdatePlan({ target, targetSource: 'area', targetLabel: undefined, listingUrl: undefined }, 0)
       setEditing(false)
-    } else if (price > 0) {
+    } else if (Number(price) > 0) {
       onUpdatePlan(
         {
-          target: Math.max(1, price),
+          target: Math.max(1, Number(price)),
           targetSource: 'custom',
           targetLabel: label.trim() || 'My target',
           listingUrl: url.trim() || undefined,
@@ -916,7 +916,7 @@ function TargetRoom({
         <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
           <div>
             <div style={{ fontSize: 12, color: C.sub, marginBottom: 6 }}>Target price</div>
-            <MoneyInput value={price} onChange={(v) => setPrice(v === '' ? 0 : v)} step={5000} />
+            <MoneyInput value={price} onChange={setPrice} step={5000} />
           </div>
           <input
             type="text"
@@ -961,7 +961,7 @@ function TargetRoom({
         <button
           type="button"
           onClick={save}
-          disabled={mode === 'custom' && price <= 0}
+          disabled={mode === 'custom' && !(Number(price) > 0)}
           style={{
             flex: 2,
             padding: '12px',
@@ -969,10 +969,10 @@ function TargetRoom({
             fontWeight: 700,
             fontFamily: DISPLAY_FONT,
             color: '#fff',
-            background: mode === 'custom' && price <= 0 ? '#A9B8B0' : C.sprout,
+            background: mode === 'custom' && !(Number(price) > 0) ? '#A9B8B0' : C.sprout,
             border: 'none',
             borderRadius: 12,
-            cursor: mode === 'custom' && price <= 0 ? 'not-allowed' : 'pointer',
+            cursor: mode === 'custom' && !(Number(price) > 0) ? 'not-allowed' : 'pointer',
           }}
         >
           Update target
