@@ -76,8 +76,10 @@ on slide 2; everything else is written.
 
 ## Brand mark
 
-`logo.png` is the app icon as supplied — gold key on a dark green tile, corners
-made transparent so it sits on any background. `logo-key.png` is the key alone,
+`logo.png` is the app icon — gold key on a dark green tile. It is *composited*
+from a solid green field plus `logo-key.png` rather than masked out of a photo
+of a tile: masking cut along a green-to-white edge and left pale pixels that
+showed as a rim at favicon size. `logo-key.png` is the key alone,
 knocked out of the tile: the deck's dark slides are almost the same green as the
 tile, so the full icon would vanish on them. Sizes 32/180/192/256/512/1024 are
 generated for favicon and app-icon use.
