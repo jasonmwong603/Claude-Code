@@ -224,6 +224,8 @@
           <span class="who" id="rosterWho"></span>
           <span class="livedot"><i></i> live</span>
           <span style="flex:1"></span>
+          <button class="refresh" id="copyEmails" type="button" style="font-size:12px;padding:6px 12px">📋 Copy emails</button>
+          <button class="refresh" id="downloadCsv" type="button" style="font-size:12px;padding:6px 12px">⬇︎ CSV</button>
           <button class="linkbtn" id="signout">Sign out</button>
         </div>
         <div id="signupChart" style="margin:6px 0 16px"></div>
@@ -371,6 +373,8 @@
     document.getElementById('signinForm').addEventListener('submit', onSignIn);
     document.getElementById('signout').addEventListener('click', onSignOut);
     document.getElementById('betaToggle').addEventListener('click', onBetaToggle);
+    document.getElementById('copyEmails').addEventListener('click', copyEmails);
+    document.getElementById('downloadCsv').addEventListener('click', downloadCsv);
 
     if(!sb){ renderNoBackend(); return; }
     refreshAll();
@@ -603,6 +607,51 @@
   }
 
   function onSignOut(){ if(sb) sb.auth.signOut(); }
+
+  /* ---- getting the list back out ----
+   * Launch day means emailing everyone at once, and a table you can only read
+   * is not a list you can send to. Comma-separated for pasting straight into a
+   * BCC field; CSV for anything else. */
+  function copyEmails(){
+    if(!rosterRows.length) return;
+    var list = rosterRows.map(function(r){ return r.email; }).join(', ');
+    var btn = document.getElementById('copyEmails');
+    var done = function(ok){
+      btn.textContent = ok ? '✓ ' + rosterRows.length + ' copied' : '✗ press ⌘C';
+      setTimeout(function(){ btn.textContent = '📋 Copy emails'; }, 2500);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(list).then(function(){ done(true); }, function(){ fallback(list, done); });
+    } else { fallback(list, done); }
+  }
+  // Clipboard API needs a secure context and a user gesture; a hidden textarea
+  // works everywhere else, and leaves the text selected if even that is blocked.
+  function fallback(text, done){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position='fixed'; ta.style.left='-9999px';
+    document.body.appendChild(ta); ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch(e){}
+    document.body.removeChild(ta);
+    done(ok);
+  }
+
+  function downloadCsv(){
+    if(!rosterRows.length) return;
+    var esc = function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; };
+    var rows = [['email','source','joined']].concat(rosterRows.map(function(r){
+      return [r.email, r.source || '', r.created_at];
+    }));
+    var csv = rows.map(function(r){ return r.map(esc).join(','); }).join('\r\n');
+    // BOM so Excel opens UTF-8 addresses correctly.
+    var blob = new Blob(['\ufeff' + csv], { type:'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'keydate-waitlist-' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  }
 
   // Moderation queue: reports + the content they point at, with remove/dismiss.
   async function loadReports(){
