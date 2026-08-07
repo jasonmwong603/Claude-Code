@@ -76,10 +76,14 @@ on slide 2; everything else is written.
 
 ## Brand mark
 
-`logo.png` is the app icon — gold key on a dark green tile. It is *composited*
-from a solid green field plus `logo-key.png` rather than masked out of a photo
-of a tile: masking cut along a green-to-white edge and left pale pixels that
-showed as a rim at favicon size. `logo-key.png` is the key alone,
+`logo.png` is the app icon — gold key on a dark green tile, composited from a
+solid green field plus `logo-key.png`.
+
+It is a **fully opaque square with no rounded corners**. Every surface that
+displays an app icon rounds it itself, and a pre-rounded PNG means two masks
+that never align exactly — the sliver between them reads as a pale rim. Rounding
+for in-page use comes from CSS `border-radius`, which anti-aliases against
+whatever is actually behind it. `logo-key.png` is the key alone,
 knocked out of the tile: the deck's dark slides are almost the same green as the
 tile, so the full icon would vanish on them. Sizes 32/180/192/256/512/1024 are
 generated for favicon and app-icon use.
