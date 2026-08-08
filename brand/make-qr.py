@@ -1,13 +1,17 @@
-"""Generate KeyDate QR codes for print and screen.
+"""Generate the KeyDate QR code for print and screen.
+
+One code, one destination: the waitlist signup on keydate.ca. Extra variants
+were dropped deliberately — several codes on several surfaces is several ways
+to print the wrong one.
 
 Generated locally rather than through a QR web service on purpose: a hosted
 generator sees every scan-destination you make, and the ones that hand back a
 short redirect URL can change or expire what a printed poster points at. A QR
 encodes the real destination and nothing sits in the middle.
 
-Outputs, for each destination:
-  qr-<name>.png  — 2000px, for print
-  qr-<name>.svg  — vector, scales to any poster size without softening
+Outputs:
+  qr-keydate-poster.png  — 2000px, for print
+  qr-keydate-poster.svg  — vector, scales to any poster size without softening
 
 Run:  python3 brand/make-qr.py
 """
@@ -21,11 +25,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SPRUCE = (30, 77, 59)          # brand dark green — the "dark" modules
 WHITE = (255, 255, 255)
 
-# The tracked variant is the same destination with a source tag, so signups can
-# be attributed. landing.html whitelists these values.
+# The ?s= tag lands in the waitlist source column, so a scan is distinguishable
+# from someone typing the URL. landing.html whitelists the accepted values.
 TARGETS = [
-    ('keydate', 'https://keydate.ca/'),
-    ('keydate-qr', 'https://keydate.ca/?s=qr'),
     ('keydate-poster', 'https://keydate.ca/?s=poster'),
 ]
 
