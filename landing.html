@@ -124,6 +124,16 @@
   // public by design; Row-Level Security lets this key ONLY add an email, never
   // read the list. Signups also mirror to localStorage as a safety net so one is
   // never lost if the network hiccups.
+  // Where this visitor came from, so word-of-mouth can actually be measured.
+  // Whitelisted: the value lands in the waitlist table, and a URL is not a
+  // thing to trust. Anything unrecognised falls back to 'landing'.
+  var SOURCE = (function(){
+    try {
+      var s = new URLSearchParams(location.search).get('s') || '';
+      return ['qr','poster','card','ig','reddit'].indexOf(s) >= 0 ? s : 'landing';
+    } catch(e){ return 'landing'; }
+  })();
+
   var SUPABASE_URL = 'https://ksnlqrcbdumhvqdgjlqs.supabase.co';
   var SUPABASE_KEY = 'sb_publishable_u1BR8r6AJvGt5YXi-OfOqw_L5ewiDpS';
   // Optional generic endpoint (Formspree etc.); ignored when SUPABASE_URL is set.
@@ -165,10 +175,10 @@
         try{ fetch(SUPABASE_URL+'/rest/v1/waitlist',{method:'POST',keepalive:true,
           headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,
             'Content-Type':'application/json','Prefer':'return=minimal'},
-          body:JSON.stringify({email:email,source:'landing'})}).catch(function(){}); }catch(e){}
+          body:JSON.stringify({email:email,source:SOURCE})}).catch(function(){}); }catch(e){}
       } else if(WAITLIST_ENDPOINT){
         try{ fetch(WAITLIST_ENDPOINT,{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({email:email,source:'landing'})}).catch(function(){}); }catch(e){}
+          body:JSON.stringify({email:email,source:SOURCE})}).catch(function(){}); }catch(e){}
       }
       done();
     });
