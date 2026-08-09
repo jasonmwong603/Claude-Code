@@ -94,8 +94,15 @@ export type EventName =
  *  screen views fire on every mount otherwise and drown the funnel. */
 const oncePerSession = new Set<string>()
 
+/* /prelaunchdemo/ is the same build served at a second path, so without this
+ * every demo — and every click while rehearsing one — arrives as a real user
+ * walking the funnel. A handful of demo sessions is enough to make a small beta
+ * cohort unreadable, and there is no way to tell them apart afterwards: the
+ * device id is anonymous by design. Excluded at the source instead. */
+const isDemo = typeof location !== 'undefined' && location.pathname.includes('prelaunchdemo')
+
 export function track(name: EventName, detail?: string, opts?: { once?: boolean }): void {
-  if (!supabase) return
+  if (!supabase || isDemo) return
   const key = detail ? `${name}:${detail}` : name
   if (opts?.once) {
     if (oncePerSession.has(key)) return
